@@ -1,0 +1,178 @@
+From 9afb36998f31a4e8febad425da3c00578343acf3 Mon Sep 17 00:00:00 2001
+From: Dave Kleinschmidt <dave.f.kleinschmidt@gmail.com>
+Date: Tue, 1 Aug 2023 17:36:35 -0400
+Subject: [PATCH] add julia function descriptor to proto/cpp
+
+---
+ src/ray/common/function_descriptor.cc | 20 ++++++++
+ src/ray/common/function_descriptor.h  | 67 +++++++++++++++++++++++++++
+ src/ray/protobuf/common.proto         |  8 ++++
+ 3 files changed, 95 insertions(+)
+
+diff --git a/src/ray/common/function_descriptor.cc b/src/ray/common/function_descriptor.cc
+index c9f1a71de5..844a7bb49c 100644
+--- a/src/ray/common/function_descriptor.cc
++++ b/src/ray/common/function_descriptor.cc
+@@ -46,6 +46,18 @@ FunctionDescriptor FunctionDescriptorBuilder::BuildPython(
+   return ray::FunctionDescriptor(new PythonFunctionDescriptor(std::move(descriptor)));
+ }
+ 
++FunctionDescriptor FunctionDescriptorBuilder::BuildJulia(
++    const std::string &module_name,
++    const std::string &function_name,
++    const std::string &function_hash) {
++  rpc::FunctionDescriptor descriptor;
++  auto typed_descriptor = descriptor.mutable_julia_function_descriptor();
++  typed_descriptor->set_module_name(module_name);
++  typed_descriptor->set_function_name(function_name);
++  typed_descriptor->set_function_hash(function_hash);
++  return ray::FunctionDescriptor(new JuliaFunctionDescriptor(std::move(descriptor)));
++}
++
+ FunctionDescriptor FunctionDescriptorBuilder::BuildCpp(const std::string &function_name,
+                                                        const std::string &caller,
+                                                        const std::string &class_name) {
+@@ -65,6 +77,8 @@ FunctionDescriptor FunctionDescriptorBuilder::FromProto(rpc::FunctionDescriptor
+     return ray::FunctionDescriptor(new ray::PythonFunctionDescriptor(std::move(message)));
+   case ray::FunctionDescriptorType::kCppFunctionDescriptor:
+     return ray::FunctionDescriptor(new ray::CppFunctionDescriptor(std::move(message)));
++  case ray::FunctionDescriptorType::kJuliaFunctionDescriptor:
++    return ray::FunctionDescriptor(new ray::JuliaFunctionDescriptor(std::move(message)));
+   default:
+     break;
+   }
+@@ -96,6 +110,12 @@ FunctionDescriptor FunctionDescriptorBuilder::FromVector(
+         function_descriptor_list[0],   // function name
+         function_descriptor_list[1],   // caller
+         function_descriptor_list[2]);  // class name
++  } else if (language == rpc::Language::JULIA) {
++    RAY_CHECK(function_descriptor_list.size() == 3);
++    return FunctionDescriptorBuilder::BuildJulia(
++        function_descriptor_list[0],   // module name
++        function_descriptor_list[1],   // function name
++        function_descriptor_list[2]);  // function hash
+   } else {
+     RAY_LOG(FATAL) << "Unspported language " << language;
+     return FunctionDescriptorBuilder::Empty();
+diff --git a/src/ray/common/function_descriptor.h b/src/ray/common/function_descriptor.h
+index a9544b2e6c..fca7fac6f7 100644
+--- a/src/ray/common/function_descriptor.h
++++ b/src/ray/common/function_descriptor.h
+@@ -220,6 +220,68 @@ class PythonFunctionDescriptor : public FunctionDescriptorInterface {
+   const rpc::PythonFunctionDescriptor *typed_message_;
+ };
+ 
++class JuliaFunctionDescriptor : public FunctionDescriptorInterface {
++ public:
++  /// Construct from a protobuf message object.
++  /// The input message will be **copied** into this object.
++  ///
++  /// \param message The protobuf message.
++  explicit JuliaFunctionDescriptor(rpc::FunctionDescriptor message)
++      : FunctionDescriptorInterface(std::move(message)) {
++    RAY_CHECK(message_->function_descriptor_case() ==
++              ray::FunctionDescriptorType::kJuliaFunctionDescriptor);
++    typed_message_ = &(message_->julia_function_descriptor());
++  }
++
++  virtual size_t Hash() const {
++    return std::hash<int>()(ray::FunctionDescriptorType::kJuliaFunctionDescriptor) ^
++           std::hash<std::string>()(typed_message_->module_name()) ^
++           std::hash<std::string>()(typed_message_->function_name()) ^
++           std::hash<std::string>()(typed_message_->function_hash());
++  }
++
++  inline bool operator==(const JuliaFunctionDescriptor &other) const {
++    if (this == &other) {
++      return true;
++    }
++    return this->ModuleName() == other.ModuleName() &&
++           this->FunctionName() == other.FunctionName() &&
++           this->FunctionHash() == other.FunctionHash();
++  }
++
++  inline bool operator!=(const JuliaFunctionDescriptor &other) const {
++    return !(*this == other);
++  }
++
++  virtual std::string ToString() const {
++    return "{type=JuliaFunctionDescriptor, module_name=" +
++           typed_message_->module_name() +
++           ", function_name=" + typed_message_->function_name() +
++           ", function_hash=" + typed_message_->function_hash() + "}";
++  }
++
++  /// TODO: implement this?
++  // virtual std::string CallSiteString() const {
++  // }
++
++  virtual std::string CallString() const {
++    const std::string &module_name = typed_message_->module_name();
++    const std::string &function_name = typed_message_->function_name();
++    return module_name.empty() ? function_name : module_name + "." + function_name;
++  }
++
++  virtual std::string ClassName() const { return ""; }
++
++  const std::string &ModuleName() const { return typed_message_->module_name(); }
++
++  const std::string &FunctionName() const { return typed_message_->function_name(); }
++
++  const std::string &FunctionHash() const { return typed_message_->function_hash(); }
++
++ private:
++  const rpc::JuliaFunctionDescriptor *typed_message_;
++};
++
+ class CppFunctionDescriptor : public FunctionDescriptorInterface {
+  public:
+   /// Construct from a protobuf message object.
+@@ -329,6 +389,13 @@ class FunctionDescriptorBuilder {
+                                         const std::string &function_name,
+                                         const std::string &function_hash);
+ 
++  /// Build a JuliaFunctionDescriptor.
++  ///
++  /// \return a ray::JuliaFunctionDescriptor
++  static FunctionDescriptor BuildJulia(const std::string &module_name,
++                                       const std::string &function_name,
++                                       const std::string &function_hash);
++
+   /// Build a CppFunctionDescriptor.
+   ///
+   /// \return a ray::CppFunctionDescriptor
+diff --git a/src/ray/protobuf/common.proto b/src/ray/protobuf/common.proto
+index ec1b6b1ddb..212fcdac58 100644
+--- a/src/ray/protobuf/common.proto
++++ b/src/ray/protobuf/common.proto
+@@ -26,6 +26,7 @@ enum Language {
+   PYTHON = 0;
+   JAVA = 1;
+   CPP = 2;
++  JULIA = 3;
+ }
+ 
+ // Type of a worker.
+@@ -153,12 +154,19 @@ message CppFunctionDescriptor {
+   string class_name = 3;
+ }
+ 
++message JuliaFunctionDescriptor {
++  string module_name = 1;
++  string function_name = 2;
++  string function_hash = 3;
++}
++
+ // A union wrapper for various function descriptor types.
+ message FunctionDescriptor {
+   oneof function_descriptor {
+     JavaFunctionDescriptor java_function_descriptor = 1;
+     PythonFunctionDescriptor python_function_descriptor = 2;
+     CppFunctionDescriptor cpp_function_descriptor = 3;
++    JuliaFunctionDescriptor julia_function_descriptor = 4;
+   }
+ }
+ 
+-- 
+2.39.2 (Apple Git-143)
+

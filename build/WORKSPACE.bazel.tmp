@@ -11,6 +11,10 @@ http_archive(
         "https://github.com/ray-project/ray/archive/refs/tags/ray-2.5.1.tar.gz",
     ],
     sha256 = "8449075a06dd5d2ffece43835ac26f9027d8a2af788ba9137f00d1c85944f053",
+    patches = [
+        "//:0001-add-julia-function-descriptor-to-proto-cpp.patch",
+    ],
+    patch_args = ["-p1"],
 )
 
 # https://groups.google.com/g/bazel-discuss/c/lsbxZxNjJQw/m/NKb7f_eJBwAJ

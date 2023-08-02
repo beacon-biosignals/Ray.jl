@@ -5,3 +5,4 @@ build/WORKSPACE.bazel
 venv
 overrides
 Artifacts.toml
+build/WORKSPACE.bazel
