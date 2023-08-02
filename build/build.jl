@@ -42,7 +42,7 @@ artifacts_toml = joinpath(@__DIR__, "..", "Artifacts.toml")
 bind_artifact!(
     artifacts_toml,
     "ray_core_worker_julia",
-    tree_hash_sha1(override_dir);
+    Base.SHA1("0"^40);
     force=true,
 )
 
