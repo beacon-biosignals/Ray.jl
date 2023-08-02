@@ -24,8 +24,6 @@ julia --project wrapper.jl
 ray stop
 ```
 
-
-
 ## Sources
 
 The tarballs for `ray_core_worker_julia_jll.jl` have been built from these sources:
