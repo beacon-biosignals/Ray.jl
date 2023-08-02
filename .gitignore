@@ -1,5 +1,4 @@
 Manifest.toml
-Artifacts.toml
 venv
 build/bazel-*
 build/override
