@@ -1,3 +1,11 @@
+The Julia source code within this repository (all files under `src/`) are
+released under the terms of the MIT "Expat" License, the text of which is
+included below.  This license does not apply to the binary package wrapped by
+this Julia package and automatically downloaded by the Julia package manager
+upon installing this wrapper package.  The binary package's license is shipped
+alongside the binary itself and can be found within the
+`overrides/share/licenses` directory within its prefix.
+
 MIT License
 
 Copyright (c) 2023 Beacon Biosignals
