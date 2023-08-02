@@ -4,8 +4,7 @@
 
 pushd build
 
-JULIA_EXEC_PATH="$(realpath "$(which julia)")"                 # path/to/julia-1.9.1/bin/julia
-JULIA_INCLUDE_PATH="$(dirname "$JULIA_EXEC_PATH")/../include"  # path/to/julia-1.9.1/include
+JULIA_INCLUDE_PATH="$(julia -e 'println(joinpath(Sys.BINDIR, "..", "include"))')"
 
 [ -f ~/.julia/artifacts/Overrides.toml ] && rm ~/.julia/artifacts/Overrides.toml
 
