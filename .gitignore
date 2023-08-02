@@ -1,4 +1,7 @@
 Manifest.toml
 bazel-*
+build/include
+build/lib
+build/share
 build/WORKSPACE.bazel
 build/venv
