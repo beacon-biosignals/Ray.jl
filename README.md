@@ -9,12 +9,12 @@ https://discourse.julialang.org/t/how-to-configure-an-artifact-to-use-a-header-d
 ```sh
 ./build/build.sh
 
-ray head --start
-julia --project=. wrapper.jl
+ray start --head
+julia --project wrapper.jl
 ray stop
 ```
 
-Run `./build.clean.sh` to delete all files created by the build script.
+Run `./build/clean.sh` to delete all files created by the build script.
 
 Make sure you have ray installed:
 ```sh
