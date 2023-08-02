@@ -1,0 +1,4 @@
+Manifest.toml
+bazel-*
+build/WORKSPACE.bazel
+build/venv
