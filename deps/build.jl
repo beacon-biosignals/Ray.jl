@@ -21,11 +21,7 @@ open(joinpath(build_dir, "WORKSPACE.bazel"), "w+") do io
 end
 
 isdir(ray_dir) || cd(dirname(ray_dir)) do
-    run(`git clone https://github.com/ray-project/ray $(basename(ray_dir))`)
-end
-
-cd(ray_dir) do
-    run(`git checkout ray-2.5.1`)
+    run(`git clone https://github.com/beacon-biosignals/ray $(basename(ray_dir))`)
 end
 
 cd(build_dir) do
