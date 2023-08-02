@@ -10,16 +10,18 @@ At the moment the package requires that the shared libraries are built directly 
 # Build the required libraries
 julia --project -e 'using Pkg; Pkg.build(verbose=true)'
 
+# Build the Ray CLI. Based upon these instructions:
+# https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
+python3 -m venv venv
+source venv/bin/activate
+cd deps/ray/python
+pip install -e . --verbose
+cd -
+
+# Run the demo
 ray start --head
 julia --project wrapper.jl
 ray stop
-```
-
-Make sure you have ray installed:
-```sh
-python3 -m venv venv
-source venv/bin/activate
-pip install -U "ray[default]==2.5.1" "pydantic<2"
 ```
 
 ## Sources
