@@ -33,8 +33,8 @@ lib_path = joinpath(@__DIR__, "bazel-bin", "julia_core_worker_lib.so")
 
 # Copy library to a clean directory so the tree SHA1
 override_dir = joinpath(@__DIR__, "override")
-override_lib_path = joinpath(override_dir, "lib", basename(lib_path))
-mkpath(dirname(override_lib_path))
+override_lib_path = joinpath(override_dir, basename(lib_path))
+isdir(override_dir) || mkdir(override_dir)
 cp(lib_path, override_lib_path; force=true)
 
 # Update artifact git-tree-sha1
