@@ -1,11 +1,10 @@
-using Base: SHA1
 using CxxWrap
 using Mustache
 using TOML
-using UUIDs
 
-const PKG_ID = UUID("c348cde4-7f22-4730-83d8-6959fb7a17ba")
-
+pkg_uuid = TOML.parsefile(joinpath(@__DIR__, "..", "Project.toml"))["uuid"]
+artifact_dir = joinpath(@__DIR__, "bazel-bin")
+library_name = "julia_core_worker_lib.so"
 
 dict = Dict(
     "JULIA_INCLUDE_DIR" => joinpath(Sys.BINDIR, "..", "include"),
@@ -19,15 +18,17 @@ open(joinpath(@__DIR__, "WORKSPACE.bazel"), "w+") do io
 end
 
 cd(@__DIR__) do
-    run(`bazel build julia_core_worker_lib.so`)
+    run(`bazel build $library_name`)
 end
 
-artifact_dir = joinpath(@__DIR__, "bazel-bin")
+if !isfile(joinpath(artifact_dir, library_name))
+    error("Failed to build library: $(joinpath(artifact_dir, library_name))")
+end
 
 # Add entry to Overrides.toml
 overrides_toml = joinpath(homedir(), ".julia", "artifacts", "Overrides.toml")
 overrides_dict = TOML.parsefile(overrides_toml)
-overrides_dict[string(PKG_ID)] = Dict("ray_core_worker_julia" => abspath(artifact_dir))
+overrides_dict[pkg_uuid] = Dict("ray_core_worker_julia" => abspath(artifact_dir))
 open(overrides_toml, "w") do io
     TOML.print(io, overrides_dict)
 end
