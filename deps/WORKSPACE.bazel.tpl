@@ -4,13 +4,18 @@ workspace(name = "com_github_beacon_biosignals_ray_wrapper")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-http_archive(
+# http_archive(
+#     name = "com_github_ray_project_ray",
+#     strip_prefix = "ray-ray-2.5.1",
+#     urls = [
+#         "https://github.com/ray-project/ray/archive/refs/tags/ray-2.5.1.tar.gz",
+#     ],
+#     sha256 = "8449075a06dd5d2ffece43835ac26f9027d8a2af788ba9137f00d1c85944f053",
+# )
+
+local_repository(
     name = "com_github_ray_project_ray",
-    strip_prefix = "ray-ray-2.5.1",
-    urls = [
-        "https://github.com/ray-project/ray/archive/refs/tags/ray-2.5.1.tar.gz",
-    ],
-    sha256 = "8449075a06dd5d2ffece43835ac26f9027d8a2af788ba9137f00d1c85944f053",
+    path = "{{{RAY_DIR}}}",
 )
 
 # https://groups.google.com/g/bazel-discuss/c/lsbxZxNjJQw/m/NKb7f_eJBwAJ
