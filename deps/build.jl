@@ -2,8 +2,9 @@ using CxxWrap
 using Mustache
 using TOML
 
-pkg_uuid = TOML.parsefile(joinpath(@__DIR__, "..", "Project.toml"))["uuid"]
-artifact_dir = joinpath(@__DIR__, "bazel-bin")
+build_dir = @__DIR__()
+pkg_uuid = TOML.parsefile(joinpath(build_dir, "..", "Project.toml"))["uuid"]
+artifact_dir = joinpath(build_dir, "bazel-bin")
 library_name = "julia_core_worker_lib.so"
 
 dict = Dict(
@@ -11,13 +12,13 @@ dict = Dict(
     "CXXWRAP_PREFIX_DIR" => CxxWrap.prefix_path(),
 )
 
-template = Mustache.load(joinpath(@__DIR__, "WORKSPACE.bazel.tpl"))
+template = Mustache.load(joinpath(build_dir, "WORKSPACE.bazel.tpl"))
 
-open(joinpath(@__DIR__, "WORKSPACE.bazel"), "w+") do io
+open(joinpath(build_dir, "WORKSPACE.bazel"), "w+") do io
     Mustache.render(io, template, dict)
 end
 
-cd(@__DIR__) do
+cd(build_dir) do
     run(`bazel build $library_name`)
 end
 
