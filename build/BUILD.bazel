@@ -1,0 +1,32 @@
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Due to ray using a `@//` label (https://github.com/ray-project/ray/blob/ray-2.5.1/bazel/BUILD.hiredis#L10)
+# we need to copy the Ray defined `config_setting` (https://github.com/ray-project/ray/blob/ray-2.5.1/BUILD.bazel#L16-L19)
+# into our project due to us import Ray's transitive dependencies.
+config_setting(
+    name = "msvc-cl",
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc-cl"},
+)
+
+JULIA_CORE_WORKER_COPTS = [
+    "-isystem external/julia",
+    "-Wno-unused-variable",
+    "-Wno-pessimizing-move",
+]
+
+cc_binary(
+    name = "julia_core_worker_lib.so",
+    srcs = [
+        "wrapper.cc",
+        "wrapper.h",
+    ],
+    copts = JULIA_CORE_WORKER_COPTS,
+    deps = [
+        "@com_github_ray_project_ray//:core_worker_lib",
+        "@julia//:headers",
+        "@libcxxwrap_julia//:headers",
+    ],
+    linkshared=True,
+)

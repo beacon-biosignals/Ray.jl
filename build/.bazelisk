@@ -1,0 +1,2 @@
+# Restricted to use the Bazel version required by the ray project
+USE_BAZEL_VERSION=5.4.1

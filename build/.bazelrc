@@ -1,0 +1,25 @@
+# Must be first. Enables build:windows, build:linux, build:macos, build:freebsd, build:openbsd
+build --enable_platform_specific_config
+###############################################################################
+# On       Windows, provide: BAZEL_SH, and BAZEL_LLVM (if using clang-cl)
+# On all platforms, provide: PYTHON3_BIN_PATH=python
+###############################################################################
+# For --compilation_mode=dbg, consider enabling checks in the standard library as well (below).
+build --compilation_mode=opt
+# Using C++ 17 on all platforms.
+build:linux --cxxopt="-std=c++17"
+build:macos --cxxopt="-std=c++17"
+# This workaround is needed to prevent Bazel from compiling the same file twice (once PIC and once not).
+build:linux --force_pic
+build:macos --force_pic
+
+# TODO(mehrdadn): Revert the "-\\.(asm|S)$" exclusion when this Bazel bug
+# Ignore warnings for protobuf generated files and external projects.
+build --per_file_copt="\\.pb\\.cc$@-w"
+build:linux --per_file_copt="-\\.(asm|S)$,external/.*@-w,-Wno-error=implicit-function-declaration"
+build:macos --per_file_copt="-\\.(asm|S)$,external/.*@-w,-Wno-error=implicit-function-declaration"
+
+# Even with sandbox mode bazel prioritizes system headers over the ones in the sandbox.
+# It picks up the system headers when someone has protobuf installed via Homebrew.
+# Work around for https://github.com/bazelbuild/bazel/issues/8053
+build:macos --sandbox_block_path=/usr/local/
