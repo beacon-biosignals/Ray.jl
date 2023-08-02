@@ -1,7 +1,6 @@
 Manifest.toml
-bazel-*
-build/overrides
-build/WORKSPACE.bazel
 venv
-overrides
-Artifacts.toml
+deps/build.log
+deps/WORKSPACE.bazel
+deps/bazel-*
+deps/override

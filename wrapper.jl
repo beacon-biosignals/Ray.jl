@@ -5,7 +5,7 @@ using Pkg.Artifacts
 using ray_core_worker_julia_jll
 
 path = artifact"ray_core_worker_julia"
-@wrapmodule("$path/lib/julia_core_worker_lib.so")
+@wrapmodule("$path/julia_core_worker_lib.so")
 
 function __init__()
     @initcxx
