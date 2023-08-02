@@ -26,8 +26,8 @@ if !isfile(joinpath(artifact_dir, library_name))
     error("Failed to build library: $(joinpath(artifact_dir, library_name))")
 end
 
-# Add entry to Overrides.toml
-overrides_toml = joinpath(homedir(), ".julia", "artifacts", "Overrides.toml")
+# Add entry to depot specific Overrides.toml
+overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
 overrides_dict = TOML.parsefile(overrides_toml)
 overrides_dict[pkg_uuid] = Dict("ray_core_worker_julia" => abspath(artifact_dir))
 open(overrides_toml, "w") do io
