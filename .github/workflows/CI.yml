@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/checkout@v3
         with:
-          repository: https://github.com/beacon-biosignals/ray
+          repository: beacon-biosignals/ray
           path: deps/ray
       - name: Determine Ray commit
         id: ray-commit
