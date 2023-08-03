@@ -9,7 +9,11 @@
 
 namespace julia {
 
-std::string put_get(std::string str, int node_manager_port);
+void initialize_coreworker(int node_manager_port);
+void shutdown_coreworker();
+std::string get(ObjectID object_id);
+ObjectID put(std::string str);
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
 
 }  // namespace julia
