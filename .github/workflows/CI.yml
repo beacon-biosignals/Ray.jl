@@ -10,6 +10,8 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -26,10 +28,45 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.SHA }}  # Always checkout HEAD commit
+          fetch-depth: 2  # To determine parent commit SHA
+
+      # Requires that we checkout HEAD instead of a merge commit in order for these to be useful
+      # as cache keys.
+      - name: Determine cache SHAs
+        id: cache-sha
+        run: |
+          head_sha="$(git rev-parse HEAD)"
+          parent_sha="$(git rev-parse "$head_sha^")"
+          echo "SHA=$SHA"
+          echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
+          echo "parent_sha=$parent_sha" | tee -a "$GITHUB_OUTPUT"
+
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
+
+      # Allow Bazel to build off of the previous commit. We are using SHAs in our keys to allow for
+      # workflow restarts to pull the correct cache data instead of returning the most recent cached data.
+      # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
+      - uses: actions/cache/restore@v3
+        id: bazel-cache
+        with:
+          key: bazel-cache-${{ matrix.os }}-${{ matrix.arch }}-${{ steps.cache-sha.outputs.head_sha }}
+          path: ~/.cache/bazel
+          restore-keys: |
+            bazel-cache-${{ matrix.os }}-${{ matrix.arch }}-${{ steps.cache-sha.outputs.parent_sha }}
+            bazel-cache-
+
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+
+      # https://github.com/actions/cache/tree/main/save#always-save-cache
+      - uses: actions/cache/save@v3
+        if: always()
+        with:
+          key: ${{ steps.bazel-cache.outputs.cache-primary-key }}
+          path: ~/.cache/bazel
