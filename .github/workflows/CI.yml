@@ -55,6 +55,12 @@ jobs:
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.
 
+      - name: Build Ray CLI
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          cd deps/ray/python
+          pip install -e . --verbose
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
 
