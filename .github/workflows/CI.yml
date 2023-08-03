@@ -19,6 +19,8 @@ jobs:
       matrix:
         version:
           - "1.6"  # LTS / Oldest supported version
+          - "1.7"
+          - "1.8"
           - "1.9"  # Latest release
         os:
           - ubuntu-latest
@@ -43,6 +45,7 @@ jobs:
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
 
+      # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
       # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
       - uses: actions/cache/restore@v3
         id: bazel-cache
