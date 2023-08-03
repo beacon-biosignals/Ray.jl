@@ -6,6 +6,9 @@ using namespace ray;
 using ray::core::CoreWorkerProcess;
 using ray::core::CoreWorkerOptions;
 using ray::core::WorkerType;
+// using ray::FunctionDescriptorBuilder;
+// using ray::FunctionDescriptor;
+// using ray::JuliaFunctionDescriptor;
 
 const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
 
@@ -56,10 +59,21 @@ std::string put_get(std::string str, int node_manager_port)
     return data;
 }
 
+FunctionDescriptor make_julia_function_descriptor(std::string module_name,
+                                                  std::string function_name,
+                                                  std::string function_hash)
+{
+  return FunctionDescriptorBuilder::BuildJulia(module_name, function_name, function_hash);
+}
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     mod.method("put_get", &put_get);
+
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
+      .method("ToString", JuliaFunctionDescriptor.ToString);
+
+    mod.method("make_julia_function_descriptor", &make_julia_function_descriptor);
 }
 
 }  // namespace julia
