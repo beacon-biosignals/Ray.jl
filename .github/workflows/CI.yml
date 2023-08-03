@@ -18,9 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - "1.6"  # LTS / Oldest supported version
-          - "1.7"
-          - "1.8"
+          - "1.8"  # Version used with MVP
           - "1.9"  # Latest release
         os:
           - ubuntu-latest
