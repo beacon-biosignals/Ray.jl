@@ -1,12 +1,5 @@
 #include "wrapper.h"
 
-namespace julia {
-
-using namespace ray;
-using ray::core::CoreWorkerProcess;
-using ray::core::CoreWorkerOptions;
-using ray::core::WorkerType;
-
 const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
 
 void initialize_coreworker(int node_manager_port) {
@@ -69,6 +62,12 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+namespace jlcxx
+{
+  // Needed for upcasting
+  template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     mod.method("initialize_coreworker", &initialize_coreworker);
@@ -104,6 +103,21 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+
+    // class Buffer
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
+    mod.add_type<Buffer>("Buffer")
+        .method("Data", &Buffer::Data)
+        .method("Size", &Buffer::Size)
+        .method("OwnsData", &Buffer::OwnsData)
+        .method("IsPlasmaBuffer", &Buffer::IsPlasmaBuffer);
+    mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>())
+        .constructor<uint8_t *, size_t, bool>();
+
+    // mod.add_type<RayObject>("RayObject")
+    //     .constructor<const std::shared_ptr<Buffer>,
+    //                  const std::shared_ptr<Buffer>,
+    //                  const std::vector<rpc::ObjectReference>,
+    //                  bool>();
 }
 
-}  // namespace julia
