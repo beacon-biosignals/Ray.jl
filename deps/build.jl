@@ -34,8 +34,7 @@ end
 
 # Add entry to depot specific Overrides.toml
 overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
-!isfile(overrides_toml) && touch(overrides_toml)
-overrides_dict = TOML.parsefile(overrides_toml)
+overrides_dict = isfile(overrides_toml) ? TOML.parsefile(overrides_toml) : Dict{String,Any}()
 overrides_dict[pkg_uuid] = Dict("ray_core_worker_julia" => abspath(artifact_dir))
 open(overrides_toml, "w") do io
     TOML.print(io, overrides_dict)
