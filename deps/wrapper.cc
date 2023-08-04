@@ -27,20 +27,20 @@ void shutdown_coreworker() {
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(std::string str) {
+ObjectID put(void *ptr, size_t size) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
     ObjectID object_id;
-    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-    RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
+    auto shared_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(ptr), size, true);
+    RayObject ray_obj = RayObject(shared_buffer, nullptr, std::vector<rpc::ObjectReference>());
     RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
 
     return object_id;
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::string get(ObjectID object_id) {
+void *get(ObjectID object_id) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
@@ -50,11 +50,10 @@ std::string get(ObjectID object_id) {
 
     std::shared_ptr<RayObject> result = results[0];
     if (result == nullptr) {
-        return "\0";
+        return nullptr;
     }
 
-    std::string data = (std::string) reinterpret_cast<char *>(result->GetData()->Data());
-    return data;
+    return result->GetData()->Data();
 }
 
 std::string ToString(ray::FunctionDescriptor function_descriptor)
@@ -64,8 +63,8 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
 
 namespace jlcxx
 {
-  // Needed for upcasting
-  template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
+    // Needed for upcasting
+    template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)

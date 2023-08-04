@@ -14,8 +14,8 @@ using ray::core::WorkerType;
 
 void initialize_coreworker(int node_manager_port);
 void shutdown_coreworker();
-ObjectID put(std::string str);
-std::string get(ObjectID object_id);
+ObjectID put(void *ptr, size_t size);
+void *get(ObjectID object_id);
 
 std::string ToString(ray::FunctionDescriptor function_descriptor);
 
