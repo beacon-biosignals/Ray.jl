@@ -20,7 +20,7 @@ cd -
 
 # Run the demo
 ray start --head
-julia --project wrapper.jl
+julia --project demo.jl
 ray stop
 ```
 

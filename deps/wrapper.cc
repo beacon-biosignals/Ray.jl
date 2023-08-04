@@ -9,10 +9,7 @@ using ray::core::WorkerType;
 
 const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
 
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::string put_get(std::string str, int node_manager_port)
-{
+void initialize_coreworker(int node_manager_port) {
     // RAY_LOG_ENABLED(DEBUG);
 
     CoreWorkerOptions options;
@@ -30,7 +27,14 @@ std::string put_get(std::string str, int node_manager_port)
     options.metrics_agent_port = -1;
     options.driver_name = "julia_core_worker_test";
     CoreWorkerProcess::Initialize(options);
+}
 
+void shutdown_coreworker() {
+    CoreWorkerProcess::Shutdown();
+}
+
+// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+ObjectID put(std::string str) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
@@ -38,6 +42,13 @@ std::string put_get(std::string str, int node_manager_port)
     auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
     RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
+
+    return object_id;
+}
+
+// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+std::string get(ObjectID object_id) {
+    auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
@@ -50,9 +61,6 @@ std::string put_get(std::string str, int node_manager_port)
     }
 
     std::string data = (std::string) reinterpret_cast<char *>(result->GetData()->Data());
-
-    CoreWorkerProcess::Shutdown();
-
     return data;
 }
 
@@ -68,18 +76,24 @@ JuliaFunctionDescriptor build_julia_function_descriptor(std::string module_name,
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
-  mod.method("put_get", &put_get);
+    mod.method("initialize_coreworker", &initialize_coreworker);
+    mod.method("shutdown_coreworker", &shutdown_coreworker);
+    mod.add_type<ObjectID>("ObjectID");
+    mod.method("put", &put);
+    mod.method("get", &get);
 
-  mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-    .method("ToString", &JuliaFunctionDescriptor::ToString);
+    // XXX: may not want these in the end, just for interactive testing of the
+    // function descriptor stuff.
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
+      .method("ToString", &JuliaFunctionDescriptor::ToString);
 
-  // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
-  // could figure out how to de-reference this on the julia side but no dice so
-  // far.
-  mod.add_type<FunctionDescriptor>("FunctionDescriptor");
+    // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
+    // could figure out how to de-reference this on the julia side but no dice so
+    // far.
+    mod.add_type<FunctionDescriptor>("FunctionDescriptor");
 
-  mod.method("build_julia_function_descriptor", &build_julia_function_descriptor);
-  mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
+    mod.method("build_julia_function_descriptor", &build_julia_function_descriptor);
+    mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
 }
 
 }  // namespace julia
