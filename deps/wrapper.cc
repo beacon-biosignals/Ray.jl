@@ -64,19 +64,9 @@ std::string get(ObjectID object_id) {
     return data;
 }
 
-JuliaFunctionDescriptor build_julia_function_descriptor(std::string module_name,
-                                                        std::string function_name,
-                                                        std::string function_hash)
-{
-  FunctionDescriptor my_func;
-  my_func = FunctionDescriptorBuilder::BuildJulia(module_name, function_name, function_hash);
-  // de-reference the returned pointer.
-  return static_cast<const JuliaFunctionDescriptor &>(*my_func);
-}
-
 std::string ToString(ray::FunctionDescriptor function_descriptor)
 {
-  return function_descriptor->ToString();
+    return function_descriptor->ToString();
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
@@ -112,7 +102,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // far.
     mod.add_type<FunctionDescriptor>("FunctionDescriptor");
 
-    mod.method("build_julia_function_descriptor", &build_julia_function_descriptor);
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
 }
