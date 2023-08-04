@@ -74,6 +74,11 @@ JuliaFunctionDescriptor build_julia_function_descriptor(std::string module_name,
   return static_cast<const JuliaFunctionDescriptor &>(*my_func);
 }
 
+std::string ToString(ray::FunctionDescriptor function_descriptor)
+{
+  return function_descriptor->ToString();
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     mod.method("initialize_coreworker", &initialize_coreworker);
@@ -109,6 +114,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("build_julia_function_descriptor", &build_julia_function_descriptor);
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
+    mod.method("ToString", &ToString);
 }
 
 }  // namespace julia
