@@ -115,6 +115,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer);
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>())
         .constructor<uint8_t *, size_t, bool>();
+        // .constructor<uint8_t *, size_t, bool>([] (uint8_t *data, size_t size, bool copy_data = false) {
+        //     return jlcxx::create<LocalMemoryBuffer>(data, size, copy_data);
+        // });
 
     mod.method("put", &put);
     mod.method("get", &get);
