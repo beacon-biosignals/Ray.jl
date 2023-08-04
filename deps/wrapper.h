@@ -15,8 +15,7 @@ using ray::core::WorkerType;
 void initialize_coreworker(int node_manager_port);
 void shutdown_coreworker();
 ObjectID put(void *ptr, size_t size);
-void *get(ObjectID object_id);
-LocalMemoryBuffer *demo(LocalMemoryBuffer *buffer);
+std::shared_ptr<Buffer> get(ObjectID object_id);
 
 std::string ToString(ray::FunctionDescriptor function_descriptor);
 
