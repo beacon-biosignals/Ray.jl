@@ -6,9 +6,6 @@ using namespace ray;
 using ray::core::CoreWorkerProcess;
 using ray::core::CoreWorkerOptions;
 using ray::core::WorkerType;
-// using ray::FunctionDescriptorBuilder;
-// using ray::FunctionDescriptor;
-// using ray::JuliaFunctionDescriptor;
 
 const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
 
