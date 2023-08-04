@@ -82,10 +82,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("put_get", &put_get);
 
   mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-    // .constructor<rpc::FunctionDescriptor>()
-    .method("ToString", &JuliaFunctionDescriptor::ToString)
-    ;
+    .method("ToString", &JuliaFunctionDescriptor::ToString);
 
+  // this is a typedef for shared_ptr<FunctionDescriptorInterface>
   mod.add_type<FunctionDescriptor>("FunctionDescriptor");
 
   mod.method("print_julia_function_descriptor", &print_julia_function_descriptor);
