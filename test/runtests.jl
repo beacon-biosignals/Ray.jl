@@ -5,6 +5,8 @@ using Test
 include("utils.jl")
 
 @testset "ray_core_worker_julia_jll.jl" begin
+    include("buffer.jl")
+
     setup_ray_head_node() do
         setup_core_worker() do
             include("put_get.jl")
