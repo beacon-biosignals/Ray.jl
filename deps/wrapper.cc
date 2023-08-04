@@ -56,21 +56,13 @@ std::string put_get(std::string str, int node_manager_port)
     return data;
 }
 
-std::string print_julia_function_descriptor(std::string module_name,
-                                            std::string function_name,
-                                            std::string function_hash)
-{
-  FunctionDescriptor my_func;
-  my_func = FunctionDescriptorBuilder::BuildJulia(module_name, function_name, function_hash);
-  return my_func->ToString();
-}
-
 JuliaFunctionDescriptor build_julia_function_descriptor(std::string module_name,
                                                         std::string function_name,
                                                         std::string function_hash)
 {
   FunctionDescriptor my_func;
   my_func = FunctionDescriptorBuilder::BuildJulia(module_name, function_name, function_hash);
+  // de-reference the returned pointer.
   return static_cast<const JuliaFunctionDescriptor &>(*my_func);
 }
 
@@ -81,12 +73,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
     .method("ToString", &JuliaFunctionDescriptor::ToString);
 
-  // this is a typedef for shared_ptr<FunctionDescriptorInterface>
+  // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
+  // could figure out how to de-reference this on the julia side but no dice so
+  // far.
   mod.add_type<FunctionDescriptor>("FunctionDescriptor");
 
-  mod.method("print_julia_function_descriptor", &print_julia_function_descriptor);
   mod.method("build_julia_function_descriptor", &build_julia_function_descriptor);
-
   mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
 }
 

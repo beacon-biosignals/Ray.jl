@@ -10,9 +10,6 @@
 namespace julia {
 
 std::string put_get(std::string str, int node_manager_port);
-std::string print_julia_function_descriptor(std::string module_name,
-                                            std::string function_name,
-                                            std::string function_hash);
 ray::JuliaFunctionDescriptor build_julia_function_descriptor(std::string module_name,
                                                              std::string function_name,
                                                              std::string function_hash);
