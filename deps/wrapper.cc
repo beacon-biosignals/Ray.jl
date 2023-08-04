@@ -64,6 +64,11 @@ std::string get(ObjectID object_id) {
     return data;
 }
 
+std::string ToString(ray::FunctionDescriptor function_descriptor)
+{
+    return function_descriptor->ToString();
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     mod.method("initialize_coreworker", &initialize_coreworker);
@@ -85,6 +90,20 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("DRIVER", ray::core::WorkerType::DRIVER);
     mod.set_const("SPILL_WORKER", ray::core::WorkerType::SPILL_WORKER);
     mod.set_const("RESTORE_WORKER", ray::core::WorkerType::RESTORE_WORKER);
+
+    // function descriptors
+    // XXX: may not want these in the end, just for interactive testing of the
+    // function descriptor stuff.
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
+      .method("ToString", &JuliaFunctionDescriptor::ToString);
+
+    // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
+    // could figure out how to de-reference this on the julia side but no dice so
+    // far.
+    mod.add_type<FunctionDescriptor>("FunctionDescriptor");
+
+    mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
+    mod.method("ToString", &ToString);
 }
 
 }  // namespace julia

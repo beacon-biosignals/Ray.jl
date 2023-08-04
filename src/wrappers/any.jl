@@ -97,3 +97,15 @@ function Base.propertynames(::Type{WorkerType}, private::Bool=false)
         public_properties
     end
 end
+
+# build a FunctionDescriptor from a julia function
+function function_descriptor(f::Function)
+    mod = string(parentmodule(f))
+    name = string(nameof(f))
+    # TODO: actually hash the serialized function?
+    hash = ""
+    return BuildJulia(mod, name, hash)
+end
+
+Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
+Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))

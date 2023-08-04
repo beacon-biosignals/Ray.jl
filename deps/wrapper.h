@@ -14,6 +14,8 @@ void shutdown_coreworker();
 ObjectID put(std::string str);
 std::string get(ObjectID object_id);
 
+std::string ToString(ray::FunctionDescriptor function_descriptor);
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
 
 }  // namespace julia
