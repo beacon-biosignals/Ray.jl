@@ -57,8 +57,6 @@ jobs:
 
       - name: Build Ray CLI
         run: |
-          python3 -m venv venv
-          source venv/bin/activate
           cd deps/ray/python
           pip install -e . --verbose
       - uses: julia-actions/julia-buildpkg@v1
