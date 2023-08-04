@@ -77,7 +77,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("PYTHON", ray::Language::PYTHON);
     mod.set_const("JAVA", ray::Language::JAVA);
     mod.set_const("CPP", ray::Language::CPP);
-    // mod.set_const("JULIA", Language::JULIA);
+    mod.set_const("JULIA", Language::JULIA);
 
     // enum WorkerType
     mod.add_bits<ray::core::WorkerType>("WorkerType", jlcxx::julia_type("CppEnum"));

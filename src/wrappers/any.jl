@@ -59,15 +59,15 @@ function Base.getproperty(::Type{Language}, field::Symbol)
         JAVA
     elseif field === :CPP
         CPP
-    # elseif field === :JULIA
-    #     JULIA
+    elseif field === :JULIA
+        JULIA
     else
         Base.getfield(Language, field)
     end
 end
 
 function Base.propertynames(::Type{Language}, private::Bool=false)
-    public_properties = (:PYTHON, :JAVA, :CPP, #= :JULIA =#)
+    public_properties = (:PYTHON, :JAVA, :CPP, :JULIA)
     return if private
         tuple(public_properties..., fieldnames(typeof(Language))...)
     else
