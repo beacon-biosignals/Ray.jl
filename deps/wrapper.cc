@@ -27,12 +27,12 @@ void shutdown_coreworker() {
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(void *ptr, size_t size) {
+ObjectID put(Buffer *buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
     ObjectID object_id;
-    auto shared_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(ptr), size, true);
+    auto shared_buffer = std::shared_ptr<Buffer>(buffer);
     RayObject ray_obj = RayObject(shared_buffer, nullptr, std::vector<rpc::ObjectReference>());
     RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
 
@@ -77,7 +77,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_coreworker", &initialize_coreworker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
-    mod.method("put", &put);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
@@ -117,6 +116,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>())
         .constructor<uint8_t *, size_t, bool>();
 
+    mod.method("put", &put);
     mod.method("get", &get);
 
     // mod.add_type<RayObject>("RayObject")
