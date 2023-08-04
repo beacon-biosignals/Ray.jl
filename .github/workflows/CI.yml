@@ -55,10 +55,13 @@ jobs:
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.
 
-      - name: Build Ray CLI
-        run: |
-          cd deps/ray/python
-          pip install -e . --verbose
+      # TODO: Takes an hour to build with the existing cache setup
+      # - name: Build Ray CLI
+      #   run: |
+      #     cd deps/ray/python
+      #     pip install -e . --verbose
+      - name: Install Ray CLI
+        run: pip install -U "ray[default]==2.5.1" "pydantic<2"
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
 
