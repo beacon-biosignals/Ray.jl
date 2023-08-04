@@ -61,6 +61,10 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+LocalMemoryBuffer *demo(LocalMemoryBuffer *buffer) {
+    return buffer;
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -112,6 +116,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer);
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>())
         .constructor<uint8_t *, size_t, bool>();
+
+    // mod.method("demo", &demo);
+    mod.method("demo", [] (LocalMemoryBuffer *b) { return demo(b); });
 
     // mod.add_type<RayObject>("RayObject")
     //     .constructor<const std::shared_ptr<Buffer>,
