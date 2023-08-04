@@ -109,3 +109,6 @@ end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
+
+data_pointer(buffer::Buffer) = _data_pointer(buffer).cpp_object
+Base.sizeof(buffer::Buffer) = Int(_sizeof(buffer))
