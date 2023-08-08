@@ -1,18 +1,19 @@
 using Serialization: deserialize, serialize
 using Test
-using ray_core_worker_julia_jll: LocalMemoryBuffer, data_pointer, owns_data, is_plasma_buffer
+using ray_core_worker_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
 
 @testset "LocalMemoryBuffer" begin
     data = UInt16[1:3;]
 
     @testset "non-copied object reference" begin
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), false)
-        @test data_pointer(buffer[][]) == pointer_from_objref(data)
-        @test sizeof(buffer[][]) == sizeof(data)
-        @test !owns_data(buffer[][])
-        @test !is_plasma_buffer(buffer[][])
+        b = buffer[][]
+        @test Data(b) == pointer_from_objref(data)
+        @test Size(b) == sizeof(data)
+        @test !OwnsData(b)
+        @test !IsPlasmaBuffer(b)
 
-        result = unsafe_pointer_to_objref(data_pointer(buffer[][]))
+        result = unsafe_pointer_to_objref(Data(b).cpp_object)
         @test typeof(result) == typeof(data)
         @test result === data
     end
@@ -22,26 +23,28 @@ using ray_core_worker_julia_jll: LocalMemoryBuffer, data_pointer, owns_data, is_
     # segfault when trying to use `pointer_from_objref`.
     @testset "copied object reference" begin
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), true)
-        @test data_pointer(buffer[][]) != pointer_from_objref(data)
-        @test sizeof(buffer[][]) == sizeof(data)
-        @test owns_data(buffer[][])
-        @test !is_plasma_buffer(buffer[][])
+        b = buffer[][]
+        @test Data(b) != pointer_from_objref(data)
+        @test Size(b) == sizeof(data)
+        @test OwnsData(b)
+        @test !IsPlasmaBuffer(b)
 
-        # Attempting to use `unsafe_pointer_to_objref(data_pointer(buffer))` would result in a
+        # Attempting to use `unsafe_pointer_to_objref(Data(buffer).cpp_object)` would result in a
         # segfault.
     end
 
     @testset "copied data pointer" begin
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-        @test data_pointer(buffer[][]) != pointer(data)
-        @test sizeof(buffer[][]) == sizeof(data)
-        @test owns_data(buffer[][])
-        @test !is_plasma_buffer(buffer[][])
+        b = buffer[][]
+        @test Data(b) != pointer(data)
+        @test Size(b) == sizeof(data)
+        @test OwnsData(b)
+        @test !IsPlasmaBuffer(b)
 
         T = eltype(data)
-        len = sizeof(buffer[][]) ÷ sizeof(T)
+        len = Size(b) ÷ sizeof(T)
         result = Vector{T}(undef, len)
-        unsafe_copyto!(Ptr{UInt8}(pointer(result)), data_pointer(buffer[][]), sizeof(buffer[][]))
+        unsafe_copyto!(Ptr{UInt8}(pointer(result)), Data(b).cpp_object, Size(b))
         @test typeof(result) == typeof(data)
         @test result == data
         @test result !== data
@@ -50,12 +53,13 @@ using ray_core_worker_julia_jll: LocalMemoryBuffer, data_pointer, owns_data, is_
     @testset "copied serialized object" begin
         serialized = Vector{UInt8}(sprint(serialize, data))
         buffer = LocalMemoryBuffer(serialized, sizeof(serialized), true)
-        @test sizeof(buffer[][]) == sizeof(serialized)
-        @test owns_data(buffer[][])
-        @test !is_plasma_buffer(buffer[][])
+        b = buffer[][]
+        @test Size(b) == sizeof(serialized)
+        @test OwnsData(b)
+        @test !IsPlasmaBuffer(b)
 
-        v = Vector{UInt8}(undef, sizeof(buffer[][]))
-        unsafe_copyto!(pointer(v), data_pointer(buffer[][]), sizeof(buffer[][]))
+        v = Vector{UInt8}(undef, Size(b))
+        unsafe_copyto!(pointer(v), Data(b).cpp_object, Size(b))
         result = deserialize(IOBuffer(v))
         @test typeof(result) == typeof(data)
         @test result == data

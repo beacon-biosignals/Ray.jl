@@ -125,10 +125,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // class Buffer
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
     mod.add_type<Buffer>("Buffer")
-        .method("_data_pointer", &Buffer::Data)
-        .method("_sizeof", &Buffer::Size)
-        .method("owns_data", &Buffer::OwnsData)
-        .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer);
+        .method("Data", &Buffer::Data)
+        .method("Size", &Buffer::Size)
+        .method("OwnsData", &Buffer::OwnsData)
+        .method("IsPlasmaBuffer", &Buffer::IsPlasmaBuffer);
         // .method("_data_pointer", [] (std::shared_ptr<Buffer> b) { b->Data(); })
         // .method("owns_data", [] (std::shared_ptr<Buffer> b) { b->OwnsData(); })
         // .method("_sizeof", [] (std::shared_ptr<Buffer> b) { b->Size(); })
