@@ -7,13 +7,17 @@ At the moment the package requires that the shared libraries are built directly 
 ## Example
 
 ```sh
+# We recommend always using the same virtualenv as Bazel can cause unnecessary rebuilds when
+# using different versions of Python.
+python3 -m venv venv
+source venv/bin/activate
+
 # Build the required libraries
 julia --project -e 'using Pkg; Pkg.build(verbose=true)'
 
 # Build the Ray CLI. Based upon these instructions:
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-python3 -m venv venv
-source venv/bin/activate
+python -m pip install --upgrade pip wheel
 cd deps/ray/python
 pip install -e . --verbose
 cd -
