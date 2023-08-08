@@ -19,5 +19,6 @@ ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
 
 std::string ToString(ray::FunctionDescriptor function_descriptor);
+std::shared_ptr<LocalMemoryBuffer> make_shared_local_memory_buffer(uint8_t *data, size_t size, bool copy_data);
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
