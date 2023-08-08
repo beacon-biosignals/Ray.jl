@@ -103,16 +103,17 @@ void JuliaGcsClient::Disconnect() {
 
 std::string JuliaGcsClient::Get(const std::string &ns,
                                 const std::string &key) {
+  RAY_CHECK(gcs_client_);
   auto accessor = gcs_client_->InternalKV();
   std::string value;
   RAY_CHECK_OK(accessor.Get(ns, key, value));
-  // std::cout << "Got value: " << value << std::flush;
   return value;
 }
 
 void JuliaGcsClient::Put(const std::string &ns,
                          const std::string &key,
                          const std::string &value) {
+  RAY_CHECK(gcs_client_);
   auto accessor = gcs_client_->InternalKV();
   bool added;
   RAY_CHECK_OK(accessor.Put(ns, key, value, false, added));
