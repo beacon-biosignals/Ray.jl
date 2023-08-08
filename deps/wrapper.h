@@ -3,6 +3,7 @@
 #include <string>
 
 #include "jlcxx/jlcxx.hpp"
+#include "jlcxx/functions.hpp"
 #include "ray/core_worker/common.h"
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
@@ -14,7 +15,7 @@ using ray::core::WorkerType;
 
 void initialize_coreworker(int node_manager_port);
 void shutdown_coreworker();
-ObjectID put(Buffer *buffer);
+ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
 
 std::string ToString(ray::FunctionDescriptor function_descriptor);
