@@ -109,3 +109,4 @@ end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
+Base.show(io::IO, status::Status) = print(io, ToString(status))

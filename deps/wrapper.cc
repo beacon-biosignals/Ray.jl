@@ -69,6 +69,61 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
+  : options_(options), io_service_(nullptr) {}
+
+JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address)
+  : io_service_(nullptr)
+{
+  options_ = gcs::GcsClientOptions(gcs_address);
+}
+
+Status JuliaGcsClient::Connect() {
+  io_service_ = std::make_unique<instrumented_io_context>();
+  io_service_thread_ = std::make_unique<std::thread>([this] {
+    std::unique_ptr<boost::asio::io_service::work> work(
+        new boost::asio::io_service::work(*io_service_));
+    io_service_->run();
+  });
+
+  gcs_client_ = std::make_unique<gcs::GcsClient>(options_);
+  return gcs_client_->Connect(*io_service_);
+}
+
+void JuliaGcsClient::Disconnect() {
+  if (io_service_) {
+    std::cout << "stopping io service..." << std::flush;
+    io_service_->stop();
+  }
+  if (io_service_thread_->joinable()) {
+    std::cout << "joining io service thread..." << std::flush;
+    io_service_thread_->join();
+  }
+  if (gcs_client_) {
+    std::cout << "disconnecting wrapped client..." << std::flush;
+    gcs_client_->Disconnect();
+    gcs_client_.reset();
+  }
+}
+
+std::string JuliaGcsClient::Get(const std::string &ns,
+                                const std::string &key) {
+  auto accessor = gcs_client_->InternalKV();
+  std::string value;
+  RAY_CHECK_OK(accessor.Get(ns, key, value));
+  // std::cout << "Got value: " << value << std::flush;
+  return value;
+}
+
+void JuliaGcsClient::Put(const std::string &ns,
+                         const std::string &key,
+                         const std::string &value) {
+  auto accessor = gcs_client_->InternalKV();
+  bool added;
+  RAY_CHECK_OK(accessor.Put(ns, key, value, false, added));
+  return;
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
     mod.method("initialize_coreworker", &initialize_coreworker);
@@ -104,6 +159,16 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+
+    mod.add_type<Status>("Status")
+      .method("ok", &Status::ok)
+      .method("ToString", &Status::ToString);
+    mod.add_type<JuliaGcsClient>("JuliaGcsClient")
+      .constructor<const std::string&>()
+      .method("Connect", &JuliaGcsClient::Connect)
+      .method("Disconnect", &JuliaGcsClient::Disconnect)
+      .method("Put", &JuliaGcsClient::Put)
+      .method("Get", &JuliaGcsClient::Get);
 }
 
 }  // namespace julia
