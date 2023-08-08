@@ -7,11 +7,12 @@ using ray_core_worker_julia_jll: put, get
 
         # TODO: Currently uses size/length from `data`
         buffer = get(obj_ref)
-        b = buffer[][]
+        buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
+        buffer_size = Size(buffer[])
         T = eltype(data)
-        len = Size(b) ÷ sizeof(T)
+        len = buffer_size ÷ sizeof(T)
         result = Vector{T}(undef, len)
-        unsafe_copyto!(Ptr{UInt8}(pointer(result)), Ptr{UInt8}(Data(b).cpp_object), Size(b))
+        unsafe_copyto!(Ptr{UInt8}(pointer(result)), buffer_ptr, buffer_size)
         @test typeof(result) == typeof(data)
         @test result == data
         @test result !== data
@@ -22,9 +23,10 @@ using ray_core_worker_julia_jll: put, get
         obj_ref = put(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true))
 
         buffer = get(obj_ref)
-        b = buffer[][]
-        v = Vector{UInt8}(undef, Size(b))
-        unsafe_copyto!(Ptr{UInt8}(pointer(v)), Ptr{UInt8}(Data(b).cpp_object), Size(b))
+        buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
+        buffer_size = Size(buffer[])
+        v = Vector{UInt8}(undef, buffer_size)
+        unsafe_copyto!(Ptr{UInt8}(pointer(v)), buffer_ptr, buffer_size)
         result = String(v)
         @test typeof(result) == typeof(data)
         @test result == data
