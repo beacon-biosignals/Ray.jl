@@ -70,11 +70,9 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
 }
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
-  : options_(options), io_service_(nullptr) {}
+  : options_(options) {}
 
-JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address)
-  : io_service_(nullptr)
-{
+JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
   options_ = gcs::GcsClientOptions(gcs_address);
 }
 
@@ -92,15 +90,12 @@ Status JuliaGcsClient::Connect() {
 
 void JuliaGcsClient::Disconnect() {
   if (io_service_) {
-    std::cout << "stopping io service..." << std::flush;
     io_service_->stop();
   }
-  if (io_service_thread_->joinable()) {
-    std::cout << "joining io service thread..." << std::flush;
+  if (io_service_thread_ && (io_service_thread_->joinable())) {
     io_service_thread_->join();
   }
   if (gcs_client_) {
-    std::cout << "disconnecting wrapped client..." << std::flush;
     gcs_client_->Disconnect();
     gcs_client_.reset();
   }
