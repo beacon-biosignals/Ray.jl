@@ -3,7 +3,7 @@ using ray_core_worker_julia_jll: put, get
 @testset "put / get" begin
     @testset "roundtrip vector" begin
         data = UInt16[1:3;]
-        obj_ref = put(CxxPtr(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)))
+        obj_ref = put(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true))
 
         # TODO: Currently uses size/length from `data`
         buffer = get(obj_ref)[][]
@@ -18,7 +18,7 @@ using ray_core_worker_julia_jll: put, get
 
     @testset "roundtrip string" begin
         data = "Greetings from Julia!"
-        obj_ref = put(CxxPtr(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)))
+        obj_ref = put(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true))
 
         buffer = get(obj_ref)[][]
         v = Vector{UInt8}(undef, sizeof(buffer))

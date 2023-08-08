@@ -126,9 +126,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
     mod.add_type<Buffer>("Buffer")
         .method("_data_pointer", &Buffer::Data)
-        .method("_sizeof", &Buffer::Size)  // TODO: How can we extend a method in Base?
+        .method("_sizeof", &Buffer::Size)
         .method("owns_data", &Buffer::OwnsData)
         .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer);
+        // .method("_data_pointer", [] (std::shared_ptr<Buffer> b) { b->Data(); })
+        // .method("owns_data", [] (std::shared_ptr<Buffer> b) { b->OwnsData(); })
+        // .method("_sizeof", [] (std::shared_ptr<Buffer> b) { b->Size(); })
+        // .method("is_plasma_buffer", [] (std::shared_ptr<Buffer> b) { b->IsPlasmaBuffer(); });
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>());
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
