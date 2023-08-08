@@ -7,7 +7,7 @@ void initialize_coreworker(int node_manager_port) {
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::DRIVER;
-    options.language = Language::PYTHON;
+    options.language = Language::JULIA;
     options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
     options.job_id = JobID::FromInt(1001);
