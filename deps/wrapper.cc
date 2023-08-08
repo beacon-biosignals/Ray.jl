@@ -60,42 +60,25 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
-std::shared_ptr<Buffer> shared_buffer(Buffer *buffer)
-{
-    return std::shared_ptr<Buffer>(buffer);
-}
-
-std::shared_ptr<LocalMemoryBuffer> make_shared_local_memory_buffer(uint8_t *data, size_t size, bool copy_data = false)
-{
-    return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
-}
-
 namespace jlcxx
 {
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
-}
 
+    // Disable generated constructors
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
+    template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
 
-namespace jlcxx
-{
+    // Custom finalizer to show what is being deleted. Can be useful in tracking down
+    // segmentation faults due to double deallocations
+    // https://github.com/JuliaInterop/CxxWrap.jl/tree/main#overriding-finalization-behavior
     template<typename T>
     struct Finalizer<T, SpecializedFinalizer>
     {
         static void finalize(T* to_delete)
         {
-            std::cout << "calling specialized delete on: " << to_delete << std::endl;
+            std::cout << "calling delete on: " << to_delete << std::endl;
             delete to_delete;
-            // constexpr bool has_shared_ptr = requires(const T& t) {
-            //     t.shared_ptr();
-            // };
-  
-            // if constexpr(has_shared_ptr) {
-            //     std::cout << "calling specialized delete" << std::endl;
-            //     delete to_delete;
-            // } else {
-            //     delete to_delete;
-            // }
         }
     };
 }
@@ -145,23 +128,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("_data_pointer", &Buffer::Data)
         .method("_sizeof", &Buffer::Size)  // TODO: How can we extend a method in Base?
         .method("owns_data", &Buffer::OwnsData)
-        .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer)
-        .method("shared_ptr", &shared_buffer);
-    mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>())
-        .constructor<uint8_t *, size_t, bool>();
-        // .constructor<uint8_t *, size_t, bool>([] (uint8_t *data, size_t size, bool copy_data = false) {
-        //     return jlcxx::create<LocalMemoryBuffer>(data, size, copy_data);
-        // });
-
-    mod.method("make_shared_local_memory_buffer", &make_shared_local_memory_buffer);
-
-    /*
-    mod.add_type<rpc::ObjectReference>("ObjectReference")
-        .constructor<>();
-
-    mod.add_type<RayObject>("RayObject")
-        .constructor<const std::shared_ptr<Buffer> &, const std::shared_ptr<Buffer> &, const std::vector<rpc::ObjectReference> &, bool>()
-    */
+        .method("is_plasma_buffer", &Buffer::IsPlasmaBuffer);
+    mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>());
+    mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
+        return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
+    });
 
     mod.method("put", &put);
     mod.method("get", &get);
