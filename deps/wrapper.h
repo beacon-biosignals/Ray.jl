@@ -14,6 +14,7 @@ using namespace ray;
 using ray::core::CoreWorkerProcess;
 using ray::core::CoreWorkerOptions;
 using ray::core::WorkerType;
+using ray::core::RayFunction;
 
 void initialize_coreworker(int node_manager_port);
 void shutdown_coreworker();

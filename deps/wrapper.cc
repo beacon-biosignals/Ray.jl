@@ -26,6 +26,51 @@ void shutdown_coreworker() {
     CoreWorkerProcess::Shutdown();
 }
 
+
+void initialize_coreworker_worker(int node_manager_port) {
+    // RAY_LOG_ENABLED(DEBUG);
+
+    CoreWorkerOptions options;
+    options.worker_type = WorkerType::WORKER;
+    options.language = Language::JULIA;
+    options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
+    options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
+    options.job_id = JobID::FromInt(-1);
+    options.gcs_options = gcs::GcsClientOptions(NODE_MANAGER_IP_ADDRESS + ":6379");
+    // options.enable_logging = true;
+    // options.install_failure_signal_handler = true;
+    options.node_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.node_manager_port = node_manager_port;
+    options.raylet_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.metrics_agent_port = -1;
+    options.startup_token = 0;
+    options.task_execution_callback =
+        [](
+            const rpc::Address &caller_address,
+            TaskType task_type,
+            const std::string task_name,
+            const RayFunction &ray_function,
+            const std::unordered_map<std::string, double> &required_resources,
+            const std::vector<std::shared_ptr<RayObject>> &args,
+            const std::vector<rpc::ObjectReference> &arg_refs,
+            const std::string &debugger_breakpoint,
+            const std::string &serialized_retry_exception_allowlist,
+            std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns,
+            std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *dynamic_returns,
+            std::shared_ptr<LocalMemoryBuffer> &creation_task_exception_pb_bytes,
+            bool *is_retryable_error,
+            std::string *application_error,
+            const std::vector<ConcurrencyGroup> &defined_concurrency_groups,
+            const std::string name_of_concurrency_group_to_execute,
+            bool is_reattempt,
+            bool is_streaming_generator) {
+          return Status::OK();
+        };
+    CoreWorkerProcess::Initialize(options);
+
+    CoreWorkerProcess::RunTaskExecutionLoop();
+}
+
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
@@ -162,6 +207,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.method("initialize_coreworker", &initialize_coreworker);
+    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
