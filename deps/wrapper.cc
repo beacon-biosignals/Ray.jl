@@ -1,12 +1,5 @@
 #include "wrapper.h"
 
-namespace julia {
-
-using namespace ray;
-using ray::core::CoreWorkerProcess;
-using ray::core::CoreWorkerOptions;
-using ray::core::WorkerType;
-
 const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
 
 void initialize_coreworker(int node_manager_port) {
@@ -34,12 +27,11 @@ void shutdown_coreworker() {
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(std::string str) {
+ObjectID put(std::shared_ptr<Buffer> buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
     ObjectID object_id;
-    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
     RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
 
@@ -47,7 +39,7 @@ ObjectID put(std::string str) {
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::string get(ObjectID object_id) {
+std::shared_ptr<Buffer> get(ObjectID object_id) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
@@ -57,11 +49,10 @@ std::string get(ObjectID object_id) {
 
     std::shared_ptr<RayObject> result = results[0];
     if (result == nullptr) {
-        return "\0";
+        return nullptr;
     }
 
-    std::string data = (std::string) reinterpret_cast<char *>(result->GetData()->Data());
-    return data;
+    return result->GetData();
 }
 
 std::string ToString(ray::FunctionDescriptor function_descriptor)
@@ -69,13 +60,39 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+namespace jlcxx
+{
+    // Needed for upcasting
+    template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
+
+    // Disable generated constructors
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
+    template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
+
+    // Custom finalizer to show what is being deleted. Can be useful in tracking down
+    // segmentation faults due to double deallocations
+    // https://github.com/JuliaInterop/CxxWrap.jl/tree/main#overriding-finalization-behavior
+    template<typename T>
+    struct Finalizer<T, SpecializedFinalizer>
+    {
+        static void finalize(T* to_delete)
+        {
+            std::cout << "calling delete on: " << to_delete << std::endl;
+            delete to_delete;
+        }
+    };
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
+    // WARNING: The order in which register types and methods with jlcxx is important.
+    // You must register all function arguments and return types with jlcxx prior to registering
+    // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
+    // attempting to use the shared library in Julia.
+
     mod.method("initialize_coreworker", &initialize_coreworker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
-    mod.method("put", &put);
-    mod.method("get", &get);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
@@ -104,6 +121,26 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+
+    // class Buffer
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
+    mod.add_type<Buffer>("Buffer")
+        .method("Data", &Buffer::Data)
+        .method("Size", &Buffer::Size)
+        .method("OwnsData", &Buffer::OwnsData)
+        .method("IsPlasmaBuffer", &Buffer::IsPlasmaBuffer);
+    mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>());
+    mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
+        return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
+    });
+
+    mod.method("put", &put);
+    mod.method("get", &get);
+
+    // mod.add_type<RayObject>("RayObject")
+    //     .constructor<const std::shared_ptr<Buffer>,
+    //                  const std::shared_ptr<Buffer>,
+    //                  const std::vector<rpc::ObjectReference>,
+    //                  bool>();
 }
 
-}  // namespace julia

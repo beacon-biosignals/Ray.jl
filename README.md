@@ -18,10 +18,8 @@ cd deps/ray/python
 pip install -e . --verbose
 cd -
 
-# Run the demo
-ray start --head
-julia --project demo.jl
-ray stop
+# Run the tests
+julia --project -e 'using Pkg; Pkg.test()'
 ```
 
 ## Sources
