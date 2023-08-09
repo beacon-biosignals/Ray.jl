@@ -61,30 +61,30 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
 }
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
-  : options_(options) {
+    : options_(options) {
 }
 
 JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
-  options_ = gcs::GcsClientOptions(gcs_address);
+    options_ = gcs::GcsClientOptions(gcs_address);
 }
 
 Status JuliaGcsClient::Connect() {
-  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
-  return gcs_client_->Connect();
+    gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
+    return gcs_client_->Connect();
 }
 
 std::string JuliaGcsClient::Get(const std::string &ns,
                                 const std::string &key,
                                 int64_t timeout_ms) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  std::string value;
-  Status status = gcs_client_->InternalKVGet(ns, key, timeout_ms, value);
-  if (!status.ok()) {
-    throw std::runtime_error(status.ToString());
-  }
-  return value;
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    std::string value;
+    Status status = gcs_client_->InternalKVGet(ns, key, timeout_ms, value);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+    return value;
 }
 
 int JuliaGcsClient::Put(const std::string &ns,
@@ -92,43 +92,43 @@ int JuliaGcsClient::Put(const std::string &ns,
                         const std::string &value,
                         bool overwrite,
                         int64_t timeout_ms) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  int added_num;
-  Status status = gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num);
-  if (!status.ok()) {
-    throw std::runtime_error(status.ToString());
-  }
-  return added_num;
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    int added_num;
+    Status status = gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+    return added_num;
 }
 
 std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns,
                                               const std::string &prefix,
                                               int64_t timeout_ms) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  std::vector<std::string> results;
-  Status status = gcs_client_->InternalKVKeys(ns, prefix, timeout_ms, results);
-  if (!status.ok()) {
-    throw std::runtime_error(status.ToString());
-  }
-  return results;
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    std::vector<std::string> results;
+    Status status = gcs_client_->InternalKVKeys(ns, prefix, timeout_ms, results);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+    return results;
 }
 
 bool JuliaGcsClient::Exists(const std::string &ns,
                             const std::string &key,
                             int64_t timeout_ms) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  bool exists;
-  Status status = gcs_client_->InternalKVExists(ns, key, timeout_ms, exists);
-  if (!status.ok()) {
-    throw std::runtime_error(status.ToString());
-  }
-  return exists;
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    bool exists;
+    Status status = gcs_client_->InternalKVExists(ns, key, timeout_ms, exists);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+    return exists;
 }
 
 namespace jlcxx
@@ -183,7 +183,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // XXX: may not want these in the end, just for interactive testing of the
     // function descriptor stuff.
     mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-      .method("ToString", &JuliaFunctionDescriptor::ToString);
+        .method("ToString", &JuliaFunctionDescriptor::ToString);
 
     // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
     // could figure out how to de-reference this on the julia side but no dice so
@@ -215,14 +215,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     //                  bool>();
 
     mod.add_type<Status>("Status")
-      .method("ok", &Status::ok)
-      .method("ToString", &Status::ToString);
+        .method("ok", &Status::ok)
+        .method("ToString", &Status::ToString);
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
-      .constructor<const std::string&>()
-      .method("Connect", &JuliaGcsClient::Connect)
-      .method("Put", &JuliaGcsClient::Put)
-      .method("Get", &JuliaGcsClient::Get)
-      .method("Keys", &JuliaGcsClient::Keys)
-      .method("Exists", &JuliaGcsClient::Exists);
+        .constructor<const std::string&>()
+        .method("Connect", &JuliaGcsClient::Connect)
+        .method("Put", &JuliaGcsClient::Put)
+        .method("Get", &JuliaGcsClient::Get)
+        .method("Keys", &JuliaGcsClient::Keys)
+        .method("Exists", &JuliaGcsClient::Exists);
 }
 
