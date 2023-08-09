@@ -26,17 +26,14 @@ class JuliaGcsClient {
 public:
   JuliaGcsClient(const ray::gcs::GcsClientOptions &options);
   JuliaGcsClient(const std::string &gcs_address);
-  ~JuliaGcsClient() { Disconnect(); };
 
   ray::Status Connect();
-  void Disconnect();
 
-  std::string Get(const std::string &ns, const std::string &key);
-  void Put(const std::string &ns, const std::string &key, const std::string &val);
+  std::string Get(const std::string &ns, const std::string &key, int64_t timeout_ms);
+  void Put(const std::string &ns, const std::string &key, const std::string &val,
+           bool overwrite, int64_t timeout_ms, int &added_num);
 
-  std::unique_ptr<ray::gcs::GcsClient> gcs_client_;
-  std::unique_ptr<instrumented_io_context> io_service_;
-  std::unique_ptr<std::thread> io_service_thread_;
+  std::unique_ptr<ray::gcs::PythonGcsClient> gcs_client_;
   ray::gcs::GcsClientOptions options_;
 };
 

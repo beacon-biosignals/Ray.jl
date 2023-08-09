@@ -70,57 +70,40 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
 }
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
-  : options_(options) {}
+  : options_(options) {
+  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options);
+}
 
 JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
   options_ = gcs::GcsClientOptions(gcs_address);
+  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
 }
 
 Status JuliaGcsClient::Connect() {
-  io_service_ = std::make_unique<instrumented_io_context>();
-  io_service_thread_ = std::make_unique<std::thread>([this] {
-    std::unique_ptr<boost::asio::io_service::work> work(
-        new boost::asio::io_service::work(*io_service_));
-    io_service_->run();
-  });
-
-  gcs_client_ = std::make_unique<gcs::GcsClient>(options_);
-  return gcs_client_->Connect(*io_service_);
-}
-
-void JuliaGcsClient::Disconnect() {
-  if (io_service_) {
-    io_service_->stop();
-  }
-  if (io_service_thread_ && (io_service_thread_->joinable())) {
-    io_service_thread_->join();
-  }
-  if (gcs_client_) {
-    gcs_client_->Disconnect();
-    gcs_client_.reset();
-  }
+  return gcs_client_->Connect();
 }
 
 std::string JuliaGcsClient::Get(const std::string &ns,
-                                const std::string &key) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  auto accessor = gcs_client_->InternalKV();
+                                const std::string &key,
+                                int64_t timeout_ms) {
+  // if (!gcs_client_->channel_) {
+  //   throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  // }
   std::string value;
-  RAY_CHECK_OK(accessor.Get(ns, key, value));
+  RAY_CHECK_OK(gcs_client_->InternalKVGet(ns, key, timeout_ms, value));
   return value;
 }
 
 void JuliaGcsClient::Put(const std::string &ns,
                          const std::string &key,
-                         const std::string &value) {
-  if (!gcs_client_) {
-    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  }
-  auto accessor = gcs_client_->InternalKV();
-  bool added;
-  RAY_CHECK_OK(accessor.Put(ns, key, value, false, added));
+                         const std::string &value,
+                         bool overwrite,
+                         int64_t timeout_ms,
+                         int &added_num) {
+  // if (!gcs_client_->channel_) {
+  //   throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  // }
+  RAY_CHECK_OK(gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num));
   return;
 }
 
@@ -166,7 +149,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
       .constructor<const std::string&>()
       .method("Connect", &JuliaGcsClient::Connect)
-      .method("Disconnect", &JuliaGcsClient::Disconnect)
       .method("Put", &JuliaGcsClient::Put)
       .method("Get", &JuliaGcsClient::Get);
 }
