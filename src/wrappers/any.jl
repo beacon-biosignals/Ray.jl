@@ -4,6 +4,8 @@ export Language, WorkerType
 using CxxWrap
 using libcxxwrap_julia_jll
 
+using Serialization
+
 JLLWrappers.@generate_wrapper_header("ray_core_worker_julia")
 JLLWrappers.@declare_library_product(ray_core_worker_julia, "julia_core_worker_lib.so")
 @wrapmodule(joinpath(artifact"ray_core_worker_julia", "julia_core_worker_lib.so"))
@@ -102,8 +104,11 @@ end
 function function_descriptor(f::Function)
     mod = string(parentmodule(f))
     name = string(nameof(f))
-    # TODO: actually hash the serialized function?
-    hash = ""
+    hash = let io = IOBuffer()
+        serialize(io, f)
+        # hexidecimal string repr of hash
+        string(Base.hash(io.data); base=16)
+    end
     return BuildJulia(mod, name, hash)
 end
 
