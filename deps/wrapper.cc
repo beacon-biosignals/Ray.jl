@@ -87,20 +87,48 @@ std::string JuliaGcsClient::Get(const std::string &ns,
   return value;
 }
 
-void JuliaGcsClient::Put(const std::string &ns,
-                         const std::string &key,
-                         const std::string &value,
-                         bool overwrite,
-                         int64_t timeout_ms,
-                         int &added_num) {
+int JuliaGcsClient::Put(const std::string &ns,
+                        const std::string &key,
+                        const std::string &value,
+                        bool overwrite,
+                        int64_t timeout_ms) {
   if (!gcs_client_) {
     throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
   }
+  int added_num;
   Status status = gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num);
   if (!status.ok()) {
     throw std::runtime_error(status.ToString());
   }
-  return;
+  return added_num;
+}
+
+std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns,
+                                              const std::string &prefix,
+                                              int64_t timeout_ms) {
+  if (!gcs_client_) {
+    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  }
+  std::vector<std::string> results;
+  Status status = gcs_client_->InternalKVKeys(ns, prefix, timeout_ms, results);
+  if (!status.ok()) {
+    throw std::runtime_error(status.ToString());
+  }
+  return results;
+}
+
+bool JuliaGcsClient::Exists(const std::string &ns,
+                            const std::string &key,
+                            int64_t timeout_ms) {
+  if (!gcs_client_) {
+    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  }
+  bool exists;
+  Status status = gcs_client_->InternalKVExists(ns, key, timeout_ms, exists);
+  if (!status.ok()) {
+    throw std::runtime_error(status.ToString());
+  }
+  return exists;
 }
 
 namespace jlcxx
@@ -193,6 +221,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
       .constructor<const std::string&>()
       .method("Connect", &JuliaGcsClient::Connect)
       .method("Put", &JuliaGcsClient::Put)
-      .method("Get", &JuliaGcsClient::Get);
+      .method("Get", &JuliaGcsClient::Get)
+      .method("Keys", &JuliaGcsClient::Keys)
+      .method("Exists", &JuliaGcsClient::Exists);
 }
 

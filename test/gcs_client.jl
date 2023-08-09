@@ -1,43 +1,45 @@
 @testset "GCS client" begin
-    using ray_core_worker_julia_jll: Put, Get, Connect, JuliaGcsClient,
+    using UUIDs
+    using ray_core_worker_julia_jll: JuliaGcsClient, Connect,
+                                     Put, Get, Keys, Exists,
                                      Status, ok, ToString
 
     client = JuliaGcsClient("127.0.0.1:6379")
-    added = Ref{Cint}()
+
+    ns = string("TESTING-", uuid4())
 
     # throws if not connected
-    @test_throws ErrorException Put(client, "TESTING", "computer", "mistaek", false, -1, added)
-    @test_throws ErrorException Get(client, "TESTING", "computer", -1)
+    @test_throws ErrorException Put(client, ns, "computer", "mistaek", false, -1)
+    @test_throws ErrorException Get(client, ns, "computer", -1)
+    @test_throws ErrorException Keys(client, ns, "", -1)
+    @test_throws ErrorException Exists(client, ns, "computer", -1)
 
     status = Connect(client)
     @test ok(status)
     @test ToString(status) == "OK"
 
-    @test Put(client, "TESTING", "computer", "mistaek", false, -1, added) === nothing
-    @test added[] == 1
-
-    @test Put(client, "TESTING", "computer", "mistaek", false, -1, added) === nothing
-    @test added[] == 0
-
-    @test Get(client, "TESTING", "computer", -1) == "mistaek"
+    @test Put(client, ns, "computer", "mistaek", false, -1) == 1
+    @test Get(client, ns, "computer", -1) == "mistaek"
+    @test Keys(client, ns, "", -1) == ["computer"]
+    @test Keys(client, ns, "comp", -1) == ["computer"]
+    @test Keys(client, ns, "comppp", -1) == []
+    @test Exists(client, ns, "computer", -1)
 
     # no overwrite
-    @test Put(client, "TESTING", "computer", "blah", false, -1, added) === nothing
-    @test Get(client, "TESTING", "computer", -1) == "mistaek"
+    @test Put(client, ns, "computer", "blah", false, -1) == 0
+    @test Get(client, ns, "computer", -1) == "mistaek"
 
-    # overwrite
-    @test Put(client, "TESTING", "computer", "blah", true, -1, added) === nothing
-    @test Get(client, "TESTING", "computer", -1) == "blah"
-    # added only increments on new key I think?
-    @test added[] == 0
+    # overwrite ("added" only increments on new key I think)
+    @test Put(client, ns, "computer", "blah", true, -1) == 0
+    @test Get(client, ns, "computer", -1) == "blah"
 
     # throw on missing key
-    @test_throws ErrorException Get(client, "TESTING", "none", -1)
+    @test_throws ErrorException Get(client, ns, "none", -1)
 
     # ideally we'd throw on connect but it returns OK......
     badclient = JuliaGcsClient("127.0.0.1:6378")
     status = Connect(badclient)
 
     # ...but then throws when we try to do anything so at least there's that
-    @test_throws ErrorException Put(badclient, "TESTING", "computer", "mistaek", false, -1, added)
+    @test_throws ErrorException Put(badclient, ns, "computer", "mistaek", false, -1)
 end
