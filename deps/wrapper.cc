@@ -35,7 +35,7 @@ void initialize_coreworker_worker(int node_manager_port) {
     options.language = Language::JULIA;
     options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
-    options.job_id = JobID::FromInt(-1);
+    // options.job_id = JobID::FromInt(-1);  // For workers, the job ID is assigned by Raylet via an environment variable.
     options.gcs_options = gcs::GcsClientOptions(NODE_MANAGER_IP_ADDRESS + ":6379");
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
@@ -64,6 +64,10 @@ void initialize_coreworker_worker(int node_manager_port) {
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
+          std::string str = "returned";
+          auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+          RAY_CHECK(returns->size() == 1);
+          (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
           return Status::OK();
         };
     CoreWorkerProcess::Initialize(options);

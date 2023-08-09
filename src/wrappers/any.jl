@@ -116,3 +116,50 @@ Base.show(io::IO, status::Status) = print(io, ToString(status))
 function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
     return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
 end
+
+#=
+julia -e sleep(120) -- \
+  /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
+  --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
+  --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
+  --ray_node_manager_port=57236 --ray_address=127.0.0.1:6379 \
+  --ray_redis_password= \
+  --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
+  --ray_logs_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/logs \
+  --ray_node_ip_address=127.0.0.1
+=#
+function start_worker(args=ARGS)
+    s = ArgParseSettings()
+    @add_arg_table! s begin
+        "--ray_raylet_socket_name"
+            dest_name = "raylet_socket"
+            arg_type = String
+        "--ray_plasma_store_socket_name"
+            dest_name = "store_socket"
+            arg_type = String
+        "--ray_address"  # "127.0.0.1:6379"
+            dest_name = "address"
+            arg_type = String
+        "--ray_node_manager_port"
+            dest_name = "node_manager_port"
+            arg_type = Int
+        "--ray_node_ip_address"
+            dest_name = "node_ip_address"
+        "--ray_redis_password"
+            dest_name = "redis_password"
+        "--ray_session_dir"
+            dest_name = "session_dir"
+        "--ray_logs_dir"
+            dest_name = "logs_dir"
+        "arg1"
+            required = true
+    end
+
+    parsed_args = parse_args(args, s)
+
+    open(joinpath(parsed_args["logs_dir"], "julia_worker.log"), "w+") do io
+        global_logger(SimpleLogger(io))
+        @info "Testing"
+        initialize_coreworker_worker(parsed_args["node_manager_port"])
+    end
+end
