@@ -176,6 +176,39 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
+ObjectID submit_task() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+
+    RayFunction func(
+        Language::JULIA,
+        FunctionDescriptorBuilder::BuildJulia("", "demo_task", "")
+    );
+
+    std::vector<std::unique_ptr<TaskArg>> args;
+    std::string str = "hello";
+    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+    auto ray_obj = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>());
+    args.emplace_back(new TaskArgByValue(ray_obj));
+
+    TaskOptions options;
+
+    rpc::SchedulingStrategy scheduling_strategy;
+    scheduling_strategy.mutable_default_scheduling_strategy();
+
+    // https://github.com/ray-project/ray/blob/4e9e8913a6c9cc3533fe27478f30bdee1deffaf5/src/ray/core_worker/test/core_worker_test.cc#L79
+    auto return_refs = worker.SubmitTask(
+        func,
+        args,
+        options,
+        /*max_retries=*/0,
+        /*retry_exceptions=*/false,
+        scheduling_strategy,
+        /*debugger_breakpoint=*/""
+    );
+
+    return ObjectRefsToIds(return_refs)[0];
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -253,6 +286,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
+    mod.method("submit_task", &submit_task);
 
     // mod.add_type<RayObject>("RayObject")
     //     .constructor<const std::shared_ptr<Buffer>,
