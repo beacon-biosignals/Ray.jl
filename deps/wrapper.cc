@@ -71,26 +71,28 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
   : options_(options) {
-  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options);
 }
 
 JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
   options_ = gcs::GcsClientOptions(gcs_address);
-  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
 }
 
 Status JuliaGcsClient::Connect() {
+  gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
   return gcs_client_->Connect();
 }
 
 std::string JuliaGcsClient::Get(const std::string &ns,
                                 const std::string &key,
                                 int64_t timeout_ms) {
-  // if (!gcs_client_->channel_) {
-  //   throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  // }
+  if (!gcs_client_) {
+    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  }
   std::string value;
-  RAY_CHECK_OK(gcs_client_->InternalKVGet(ns, key, timeout_ms, value));
+  Status status = gcs_client_->InternalKVGet(ns, key, timeout_ms, value);
+  if (!status.ok()) {
+    throw std::runtime_error(status.ToString());
+  }
   return value;
 }
 
@@ -100,10 +102,13 @@ void JuliaGcsClient::Put(const std::string &ns,
                          bool overwrite,
                          int64_t timeout_ms,
                          int &added_num) {
-  // if (!gcs_client_->channel_) {
-  //   throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
-  // }
-  RAY_CHECK_OK(gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num));
+  if (!gcs_client_) {
+    throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+  }
+  Status status = gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num);
+  if (!status.ok()) {
+    throw std::runtime_error(status.ToString());
+  }
   return;
 }
 
