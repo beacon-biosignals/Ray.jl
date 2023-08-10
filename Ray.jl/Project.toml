@@ -9,6 +9,7 @@ ray_core_worker_julia_jll = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
 [compat]
 Aqua = "0.5"
 julia = "1.8"
+ray_core_worker_julia_jll = "0.1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
