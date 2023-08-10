@@ -63,13 +63,15 @@ jobs:
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.
       - name: "Monorepo setup"
-        shell: julia --color=yes --project Ray.jl {0}
+        shell: julia --color=yes --project=Ray.jl {0}
         run: |
           using Pkg
           Pkg.develop(PackageSpec(; path="."))
       - name: Install Ray CLI
         run: pip install -U "ray[default]==2.5.1" "pydantic<2"
       - uses: julia-actions/julia-buildpkg@v1
+        with:
+          project: 'Ray.jl'
       - uses: julia-actions/julia-runtest@v1
         with:
           project: 'Ray.jl'
