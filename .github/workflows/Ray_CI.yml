@@ -63,7 +63,7 @@ jobs:
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
             bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.
       - name: "Monorepo setup"
-        shell: julia --color=yes --project Ray.jl
+        shell: julia --color=yes --project Ray.jl {0}
         run: |
           using Pkg
           Pkg.develop(PackageSpec(; path="."))
