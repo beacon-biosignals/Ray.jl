@@ -3,6 +3,9 @@ uuid = "3f779ece-f0b6-4c4f-a81a-0cb2add9eb95"
 authors = ["Beacon Biosignals, Inc"]
 version = "0.0.1"
 
+[deps]
+ray_core_worker_julia_jll = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
+
 [compat]
 Aqua = "0.5"
 julia = "1.8"
