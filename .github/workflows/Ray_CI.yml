@@ -1,0 +1,68 @@
+name: Ray.jl - CI
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags: ["*"]
+    paths: ["Ray.jl/**", ".github/workflows/Ray_CI.yml"]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: ["Ray.jl/**",".github/workflows/Ray_CI.yml"]
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+jobs:
+  test:
+    # Run on push's or non-draft PRs
+    if: (github.event_name == 'push') || (github.event.pull_request.draft == false) || (github.event_name == 'workflow_dispatch')
+    name: Julia ${{ matrix.version }} - ${{ matrix.runs-on }} - ${{ matrix.threads}} threads - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.runs-on }}
+    permissions:
+      id-token: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.6'
+          - '1'
+        runs-on:
+          - ubuntu-latest
+        arch:
+          - x64
+        threads:
+          - 1
+    env:
+      JULIA_NUM_THREADS: ${{ matrix.threads }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/add-julia-registry@v1
+        with:
+          key: ${{ secrets.BEACONBUDDY_SSH_KEY }}
+          registry: beacon-biosignals/BeaconRegistry
+      - uses: actions/cache@v2
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-ray-ci-artifacts-${{ hashFiles('**/Project.toml') }}
+          restore-keys: ${{ runner.os }}-ray-ci-artifacts
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          project: 'Ray.jl'
+          annotate: true
+      - uses: julia-actions/julia-processcoverage@v1
+        with:
+          directories: 'Ray.jl/src/'
+      - uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: lcov.info
+          flags: Ray

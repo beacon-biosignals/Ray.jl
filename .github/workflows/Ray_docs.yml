@@ -1,0 +1,56 @@
+name: Ray.jl - Documentation
+on:
+  workflow_dispatch:
+  push:
+    tags: ['*']
+    branches:
+      - main
+    paths:
+      - '.github/workflows/Ray_docs.yml'
+      - 'Ray.jl/docs/**'
+      - 'Ray.jl/src/**'
+      - 'Ray.jl/Project.toml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/Ray_docs.yml'
+      - 'Ray.jl/docs/**'
+      - 'Ray.jl/src/**'
+      - 'Ray.jl/Project.toml'
+jobs:
+  Documentation:
+    # Run on push's or non-draft PRs
+    if: (github.event_name == 'push') || (github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: 1.8
+      - uses: julia-actions/add-julia-registry@v1
+        with:
+          key: ${{ secrets.BEACONBUDDY_SSH_KEY }}
+          registry: beacon-biosignals/BeaconRegistry
+      - uses: actions/cache@v2
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-ray-docs-artifacts-${{ hashFiles('**/Project.toml') }}
+          restore-keys: ${{ runner.os }}-ray-docs-artifacts
+      - name: Install dependencies
+        run: |
+          julia --project=docs/ -e 'using Pkg;
+              Pkg.develop(PackageSpec(path=pwd()));
+              Pkg.instantiate()'
+        working-directory: Ray.jl
+      - run: julia --project=docs "docs/make.jl"
+        working-directory: Ray.jl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
+          PYTHON: ""
+      - name: Ray.jl doc preview URL
+        if: github.event_name == 'pull_request'
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          pr="${{ github.event.number }}"
+          echo "https://${owner}.github.io/${repo}/Ray/previews/PR${pr}/"
