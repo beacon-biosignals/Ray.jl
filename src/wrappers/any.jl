@@ -100,6 +100,10 @@ function Base.propertynames(::Type{WorkerType}, private::Bool=false)
     end
 end
 
+#####
+##### Function descriptor wrangling
+#####
+
 # build a FunctionDescriptor from a julia function
 function function_descriptor(f::Function)
     mod = string(parentmodule(f))
@@ -114,7 +118,36 @@ end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
+function Base.propertynames(fd::JuliaFunctionDescriptor, private::Bool=false)
+    public_properties = (:module_name, :function_name, :function_hash)
+    return if private
+        tuple(public_properties..., fieldnames(typeof(fd))...)
+    else
+        public_properties
+    end
+end
+
+JuliaFunctionDescriptor(fd::FunctionDescriptor) = GimmeJuliaFunction(fd)[]
+Base.convert(::Type{JuliaFunctionDescriptor}, fd::FunctionDescriptor) = JuliaFunctionDescriptor(fd)
+
+function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
+    return if field === :module_name
+        # these return refs so we need to de-reference them
+        ModuleName(fd)[]
+    elseif field === :function_name
+        FunctionName(fd)[]
+    elseif field === :function_hash
+        FunctionHash(fd)[]
+    else
+        Base.getfield(fd, field)
+    end
+end
+
 Base.show(io::IO, status::Status) = print(io, ToString(status))
+
+#####
+##### Upstream fixes
+#####
 
 # Works around what appears to be a CxxWrap issue
 function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})

@@ -60,6 +60,13 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+ray::JuliaFunctionDescriptor * GimmeJuliaFunction(ray::FunctionDescriptor function_descriptor) {
+    if (!(function_descriptor->Type() == ray::FunctionDescriptorType::kJuliaFunctionDescriptor)) {
+        throw std::runtime_error("Cannot convert to JuliaFunctionDescriptor");
+    }
+    return function_descriptor->As<JuliaFunctionDescriptor>();
+}
+
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
     : options_(options) {
 }
@@ -183,12 +190,16 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // XXX: may not want these in the end, just for interactive testing of the
     // function descriptor stuff.
     mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-        .method("ToString", &JuliaFunctionDescriptor::ToString);
-
+        .method("ToString", &JuliaFunctionDescriptor::ToString)
+        .method("ModuleName", &JuliaFunctionDescriptor::ModuleName)
+        .method("FunctionName", &JuliaFunctionDescriptor::FunctionName)
+        .method("FunctionHash", &JuliaFunctionDescriptor::FunctionHash)
+        .method("CallString", &JuliaFunctionDescriptor::CallString);
     // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
     // could figure out how to de-reference this on the julia side but no dice so
     // far.
     mod.add_type<FunctionDescriptor>("FunctionDescriptor");
+    mod.method("GimmeJuliaFunction", &GimmeJuliaFunction);
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
