@@ -122,6 +122,10 @@ function task_executor()
     return getpid()
 end
 
+project_dir() = dirname(Pkg.project().path)
+submit_task() = _submit_task(project_dir())
+
+
 #=
 julia -e sleep(120) -- \
   /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \

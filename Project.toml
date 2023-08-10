@@ -10,6 +10,7 @@ JLLWrappers = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Mustache = "ffc61752-8dc7-55ee-8c37-f3e9cdd09e70"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 libcxxwrap_julia_jll = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
 

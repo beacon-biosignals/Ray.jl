@@ -183,7 +183,7 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID submit_task() {
+ObjectID _submit_task(std::string project_dir) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     RayFunction func(
@@ -198,6 +198,11 @@ ObjectID submit_task() {
     args.emplace_back(new TaskArgByValue(ray_obj));
 
     TaskOptions options;
+
+    // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
+    // RuntimeEnvInfo (`options.serialized_runtime_env_info`): https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L39-L46
+    // RuntimeEnvContext (`{"serialized_runtime_env": ...}`): https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
+    options.serialized_runtime_env_info = "{\"serialized_runtime_env\": \"{\\\"env_vars\\\": {\\\"JULIA_PROJECT\\\": \\\"" + project_dir + "\\\"}}\"}";
 
     rpc::SchedulingStrategy scheduling_strategy;
     scheduling_strategy.mutable_default_scheduling_strategy();
@@ -296,7 +301,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
-    mod.method("submit_task", &submit_task);
+    mod.method("_submit_task", &_submit_task);
 
     // mod.add_type<RayObject>("RayObject")
     //     .constructor<const std::shared_ptr<Buffer>,
