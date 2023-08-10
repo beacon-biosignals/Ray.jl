@@ -117,8 +117,8 @@ function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
     return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
 end
 
-function demo_task()
-    @info "demo_task called"
+function task_executor()
+    @info "task_executor called"
     return getpid()
 end
 
@@ -165,9 +165,6 @@ function start_worker(args=ARGS)
     open(joinpath(parsed_args["logs_dir"], "julia_worker.log"), "w+") do io
         global_logger(SimpleLogger(io))
         @info "Testing"
-        initialize_coreworker_worker(
-            parsed_args["node_manager_port"],
-            CxxWrap.@safe_cfunction(demo_task, Int32, ()),
-        )
+        initialize_coreworker_worker(parsed_args["node_manager_port"])
     end
 end

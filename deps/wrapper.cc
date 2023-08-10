@@ -66,7 +66,8 @@ void initialize_coreworker_worker(int node_manager_port) {
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          int pid = 42;
+          jlcxx::JuliaFunction task_executor("task_executor");
+          int pid = task_executor();
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -247,11 +248,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.method("initialize_coreworker", &initialize_coreworker);
-    mod.method("initialize_coreworker_worker", [] (int node_manager, jlcxx::SafeCFunction julia_func) {
-        auto f = jlcxx::make_function_pointer<int()>(julia_func);
-        std::cout << "f: " << f() << std::endl;
-        return initialize_coreworker_worker(node_manager);
-    });
+    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
