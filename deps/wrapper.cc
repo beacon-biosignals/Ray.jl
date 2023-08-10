@@ -60,11 +60,20 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
-ray::JuliaFunctionDescriptor * GimmeJuliaFunction(ray::FunctionDescriptor function_descriptor) {
+ray::JuliaFunctionDescriptor function_descriptor(const std::string &mod,
+                                                 const std::string &name,
+                                                 const std::string &hash) {
+    auto fd = FunctionDescriptorBuilder::BuildJulia(mod, name, hash);
+    auto ptr = fd->As<JuliaFunctionDescriptor>();
+    return *ptr;
+}
+
+ray::JuliaFunctionDescriptor GimmeJuliaFunction(ray::FunctionDescriptor function_descriptor) {
     if (!(function_descriptor->Type() == ray::FunctionDescriptorType::kJuliaFunctionDescriptor)) {
         throw std::runtime_error("Cannot convert to JuliaFunctionDescriptor");
     }
-    return function_descriptor->As<JuliaFunctionDescriptor>();
+    auto ptr = function_descriptor->As<JuliaFunctionDescriptor>();
+    return *ptr;
 }
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
@@ -202,6 +211,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("GimmeJuliaFunction", &GimmeJuliaFunction);
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
+    mod.method("function_descriptor", &function_descriptor);
     mod.method("ToString", &ToString);
 
     // class Buffer

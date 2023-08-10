@@ -113,7 +113,7 @@ function function_descriptor(f::Function)
         # hexidecimal string repr of hash
         string(Base.hash(io.data); base=16)
     end
-    return BuildJulia(mod, name, hash)
+    return function_descriptor(mod, name, hash)
 end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
@@ -127,8 +127,8 @@ function Base.propertynames(fd::JuliaFunctionDescriptor, private::Bool=false)
     end
 end
 
-JuliaFunctionDescriptor(fd::FunctionDescriptor) = GimmeJuliaFunction(fd)[]
-Base.convert(::Type{JuliaFunctionDescriptor}, fd::FunctionDescriptor) = JuliaFunctionDescriptor(fd)
+# JuliaFunctionDescriptor(fd::FunctionDescriptor) = GimmeJuliaFunction(fd)[]
+# Base.convert(::Type{JuliaFunctionDescriptor}, fd::FunctionDescriptor) = JuliaFunctionDescriptor(fd)
 
 function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
     return if field === :module_name

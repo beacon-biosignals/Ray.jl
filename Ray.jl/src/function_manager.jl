@@ -18,7 +18,7 @@
 # gcs client
 # maybe job id?
 
-using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get
+using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get, JuliaFunctionDescriptor, function_descriptor
 
 # XXX: what's the actual namespace to use?  probably set per-job but I dunno.
 const FUNCTION_MANAGER_NAMESPACE = "JuliaFunctions"
@@ -37,16 +37,18 @@ FunctionManager = FunctionManager1
 function_key(fd::JuliaFunctionDescriptor, job_id) = string("RemoteFunction:", job_id, ":", fd.function_hash)
 
 function export_function!(fm::FunctionManager, f, job_id)
-    fd = JuliaFunctionDescriptor(function_descriptor(f))
+    fd = function_descriptor(f)
     key = function_key(fd, job_id)
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         @debug "function already present in GCS store:" key f
     else
+        @debug "exporting function to GCS store:" key f
         val = base64encode(serialize, f)
         Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
     end
 end
 
+# XXX: this will error if the function is not found in the store.
 function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id)
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
