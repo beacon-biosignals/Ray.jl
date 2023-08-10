@@ -26,9 +26,13 @@ void shutdown_coreworker() {
     CoreWorkerProcess::Shutdown();
 }
 
+// https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
+// https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
-void initialize_coreworker_worker(int node_manager_port) {
+void initialize_coreworker_worker(int node_manager_port, int (*f)()) {
     // RAY_LOG_ENABLED(DEBUG);
+
+    std::cout << "Started" << std::endl;
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -45,7 +49,7 @@ void initialize_coreworker_worker(int node_manager_port) {
     options.metrics_agent_port = -1;
     options.startup_token = 0;
     options.task_execution_callback =
-        [](
+        [f](
             const rpc::Address &caller_address,
             TaskType task_type,
             const std::string task_name,
@@ -64,7 +68,9 @@ void initialize_coreworker_worker(int node_manager_port) {
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          std::string str = "returned";
+          int pid = f();
+          std::cout << "pid: " << pid << std::endl;
+          std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
           (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
@@ -244,7 +250,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.method("initialize_coreworker", &initialize_coreworker);
-    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
+    mod.method("initialize_coreworker_worker", [] (int node_manager, jlcxx::SafeCFunction julia_func) {
+        auto f = jlcxx::make_function_pointer<int()>(julia_func);
+        return initialize_coreworker_worker(node_manager, f);
+    });
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
