@@ -135,6 +135,11 @@ julia -e sleep(120) -- \
 =#
 function start_worker(args=ARGS)
     s = ArgParseSettings()
+
+    # Worker options are generated in the Raylet function `BuildProcessCommandArgs`
+    # (https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L232)
+    # and are parsed in Python here:
+    # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/workers/default_worker.py
     @add_arg_table! s begin
         "--ray_raylet_socket_name"
             dest_name = "raylet_socket"
@@ -150,12 +155,24 @@ function start_worker(args=ARGS)
             arg_type = Int
         "--ray_node_ip_address"
             dest_name = "node_ip_address"
+            required=true
+            arg_type=String
+            help="The ip address of the worker's node"
         "--ray_redis_password"
             dest_name = "redis_password"
+            required=false
+            arg_type=String
+            help="the password to use for Redis"
         "--ray_session_dir"
             dest_name = "session_dir"
         "--ray_logs_dir"
             dest_name = "logs_dir"
+        "--runtime-env-hash"
+            dest_name="runtime_env_hash"
+            required=false
+            arg_type=Int
+            default=0
+            help="The computed hash of the runtime env for this worker"
         "arg1"
             required = true
     end
