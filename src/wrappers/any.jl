@@ -1,5 +1,5 @@
 # export ray_core_worker_julia
-export Language, WorkerType
+export Language, WorkerType, start_worker
 
 using CxxWrap
 using libcxxwrap_julia_jll
