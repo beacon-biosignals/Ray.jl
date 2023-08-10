@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6'
+          - '1.8'
           - '1'
         runs-on:
           - ubuntu-latest
@@ -54,6 +54,26 @@ jobs:
           path: ~/.julia/artifacts
           key: ${{ runner.os }}-ray-ci-artifacts-${{ hashFiles('**/Project.toml') }}
           restore-keys: ${{ runner.os }}-ray-ci-artifacts
+      # use build cache from jll CI
+      # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
+      # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
+      - uses: actions/cache/restore@v3
+        id: bazel-cache
+        with:
+          key: bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('deps/WORKSPACE.bazel.tpl', 'deps/BUILD.bazel') }}
+          path: ~/.cache/bazel
+          restore-keys: |
+            bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
+            bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
+            bazel-cache.${{ matrix.os }}.${{ matrix.arch }}.
+      - name: "Monorepo setup"
+        shell: julia --color=yes --project Ray.jl
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(; path="."))
+      - name: Install Ray CLI
+        run: pip install -U "ray[default]==2.5.1" "pydantic<2"
+      - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
           project: 'Ray.jl'
@@ -65,4 +85,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
-          flags: Ray
+          flags: Ray.jl
