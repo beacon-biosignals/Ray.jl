@@ -9,6 +9,8 @@ include("utils.jl")
     include("buffer.jl")
 
     setup_ray_head_node() do
+        # GCS client only needs head node
+        include("gcs_client.jl")
         setup_core_worker() do
             include("put_get.jl")
             include("function_descriptor.jl")

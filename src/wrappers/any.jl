@@ -109,6 +109,7 @@ end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
+Base.show(io::IO, status::Status) = print(io, ToString(status))
 
 # Works around what appears to be a CxxWrap issue
 function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
