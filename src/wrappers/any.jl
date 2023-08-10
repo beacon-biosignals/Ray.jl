@@ -165,6 +165,9 @@ function start_worker(args=ARGS)
     open(joinpath(parsed_args["logs_dir"], "julia_worker.log"), "w+") do io
         global_logger(SimpleLogger(io))
         @info "Testing"
-        initialize_coreworker_worker(parsed_args["node_manager_port"])
+        initialize_coreworker_worker(
+            parsed_args["node_manager_port"],
+            CxxWrap.@safe_cfunction(task_executor, Int32, ()),
+        )
     end
 end
