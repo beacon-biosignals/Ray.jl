@@ -18,8 +18,8 @@ jobs:
   test:
     # Run on push's or non-draft PRs
     if: (github.event_name == 'push') || (github.event.pull_request.draft == false) || (github.event_name == 'workflow_dispatch')
-    name: Julia ${{ matrix.version }} - ${{ matrix.runs-on }} - ${{ matrix.threads}} threads - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.runs-on }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.threads}} threads - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
     permissions:
       id-token: write
       contents: read
@@ -29,7 +29,7 @@ jobs:
         version:
           - '1.8'
           - '1'
-        runs-on:
+        os:
           - ubuntu-latest
         arch:
           - x64
