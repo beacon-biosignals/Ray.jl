@@ -1,4 +1,4 @@
-@tepstset "function descriptor" begin
+@testset "function descriptor" begin
     fd = function_descriptor(isless)
 
     @test fd isa JuliaFunctionDescriptor
