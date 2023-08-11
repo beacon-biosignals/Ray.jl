@@ -35,7 +35,6 @@ function node_manager_port()
 end
 
 initialize_coreworker() = initialize_coreworker(node_manager_port())
-initialize_coreworker_worker() = initialize_coreworker_worker(node_manager_port())
 
 # function Base.Symbol(language::Language)
 #     return if language === PYTHON

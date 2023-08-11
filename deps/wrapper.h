@@ -18,7 +18,7 @@ using ray::core::TaskOptions;
 using ray::core::WorkerType;
 
 void initialize_coreworker(int node_manager_port);
-void initialize_coreworker_worker(int node_manager_port);
+void initialize_coreworker_worker(int node_manager_port, int (*f)());
 void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
