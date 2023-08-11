@@ -191,12 +191,12 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID _submit_task(std::string project_dir) {
+ObjectID _submit_task(std::string project_dir, std::string module_name, std::string function_name) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     RayFunction func(
         Language::JULIA,
-        FunctionDescriptorBuilder::BuildJulia("", "demo_task", "")
+        FunctionDescriptorBuilder::BuildJulia(module_name, function_name, "")
     );
 
     // TODO: These args are currently being ignored

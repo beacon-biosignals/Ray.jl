@@ -126,13 +126,17 @@ end
 
 function task_executor(ray_function)
     @info "task_executor called"
-    @info "lang is julia: $(GetLanguage(ray_function) == Language.JULIA)"
+    @info "fd: $(GetFunctionDescriptor(ray_function))"
     return getpid()
 end
 
 project_dir() = dirname(Pkg.project().path)
-submit_task() = _submit_task(project_dir())
 
+function submit_task(f::Function)
+    module_name = string(parentmodule(f))
+    function_name = string(nameof(f))
+    return _submit_task(project_dir(), module_name, function_name)
+end
 
 #=
 julia -e sleep(120) -- \
@@ -191,6 +195,8 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
+    # Note (omus): Logging is currently limited to a single worker as all workers attempt to
+    # write to the same file.
     open(joinpath(parsed_args["logs_dir"], "julia_worker.log"), "w+") do io
         global_logger(SimpleLogger(io))
         @info "Testing"
@@ -208,6 +214,7 @@ function start_worker(args=ARGS)
                 # std::runtime_error: Incorrect argument type for cfunction at position 1,
                 # expected: RayFunctionAllocated, obtained: Any
                 # ```
+                # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
                 (RayFunctionAllocated,),
             ),
         )
