@@ -14,6 +14,4 @@ include("utils.jl")
     setup_ray_head_node() do
         @tesset "function manager" begin include("function_manager.jl") end
     end
-
-    # include additional test files here
 end

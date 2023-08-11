@@ -5,10 +5,14 @@ on:
     branches:
       - main
     tags: ["*"]
-    paths: ["Ray.jl/**", ".github/workflows/Ray_CI.yml"]
+    paths:
+      - "Ray.jl/**"
+      - ".github/workflows/Ray_CI.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["Ray.jl/**",".github/workflows/Ray_CI.yml"]
+    paths:
+      - "Ray.jl/**"
+      - ".github/workflows/Ray_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -18,8 +22,9 @@ jobs:
   test:
     # Run on push's or non-draft PRs
     if: (github.event_name == 'push') || (github.event.pull_request.draft == false) || (github.event_name == 'workflow_dispatch')
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.threads}} threads - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on:
+      labels: ubuntu-20.04-16core
     permissions:
       id-token: write
       contents: read
@@ -33,10 +38,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-        threads:
-          - 1
-    env:
-      JULIA_NUM_THREADS: ${{ matrix.threads }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -57,25 +58,56 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
-      # use build cache from jll CI
       # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
       # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
-      - uses: actions/cache/restore@v3
-        id: bazel-cache
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        id: build-cache
         with:
-          key: bazel-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('deps/WORKSPACE.bazel.tpl', 'deps/BUILD.bazel') }}
-          path: ~/.cache/bazel
+          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('deps/WORKSPACE.bazel.tpl', 'deps/BUILD.bazel') }}
+          path: ~/.cache
           restore-keys: |
-            bazel-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
-            bazel-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
-            bazel-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.
+            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
+            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
+
+      # Based upon:
+      # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
+      - name: Build Ray CLI
+        run: |
+          pip install --upgrade pip wheel
+          pushd deps/ray
+
+          # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
+          # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
+          # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
+          # saving/restoring these files we can work around this.
+          RAY_GEN_CACHE_DIR=~/.cache/ray-generated
+          if [ -d "$RAY_GEN_CACHE_DIR" ]; then
+              dest=$(pwd)
+              pushd $RAY_GEN_CACHE_DIR
+              cp -rp --parents \
+                  python/ray/_raylet.so \
+                  python/ray/core/generated \
+                  python/ray/serve/generated \
+                  python/ray/core/src/ray/raylet/raylet \
+                  python/ray/core/src/ray/gcs \
+                  $dest
+              popd
+          fi
+
+          pushd python
+          pip install . --verbose  # Fresh build takes ~50 minutes on basic GH runner
+          popd
+
+          # By copying the entire Ray worktree we can easily restore missing files without having to
+          # delete the cache and build from scratch.
+          mkdir -p "$RAY_GEN_CACHE_DIR"
+          cp -rfp . "$RAY_GEN_CACHE_DIR"
       - name: "Monorepo setup"
         shell: julia --color=yes --project=Ray.jl {0}
         run: |
           using Pkg
           Pkg.develop(PackageSpec(; path="."))
-      - name: Install Ray CLI
-        run: pip install -U "ray[default]==2.5.1" "pydantic<2"
       - uses: julia-actions/julia-buildpkg@v1
         with:
           project: 'Ray.jl'
