@@ -6,6 +6,10 @@ using ray_core_worker_julia_jll: get, put, submit_task
 
 include("utils.jl")
 
+module M
+f(x) = x + 1
+end
+
 @testset "ray_core_worker_julia_jll.jl" begin
     include("buffer.jl")
 
