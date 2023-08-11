@@ -7,7 +7,7 @@ void initialize_coreworker(int node_manager_port) {
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::DRIVER;
-    options.language = Language::PYTHON;
+    options.language = Language::JULIA;
     options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
     options.job_id = JobID::FromInt(1001);
@@ -24,6 +24,58 @@ void initialize_coreworker(int node_manager_port) {
 
 void shutdown_coreworker() {
     CoreWorkerProcess::Shutdown();
+}
+
+// https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
+// https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
+
+void initialize_coreworker_worker(int node_manager_port, int (*f)()) {
+    // RAY_LOG_ENABLED(DEBUG);
+
+    CoreWorkerOptions options;
+    options.worker_type = WorkerType::WORKER;
+    options.language = Language::JULIA;
+    options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
+    options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
+    // options.job_id = JobID::FromInt(-1);  // For workers, the job ID is assigned by Raylet via an environment variable.
+    options.gcs_options = gcs::GcsClientOptions(NODE_MANAGER_IP_ADDRESS + ":6379");
+    // options.enable_logging = true;
+    // options.install_failure_signal_handler = true;
+    options.node_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.node_manager_port = node_manager_port;
+    options.raylet_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.metrics_agent_port = -1;
+    options.startup_token = 0;
+    options.task_execution_callback =
+        [f](
+            const rpc::Address &caller_address,
+            TaskType task_type,
+            const std::string task_name,
+            const RayFunction &ray_function,
+            const std::unordered_map<std::string, double> &required_resources,
+            const std::vector<std::shared_ptr<RayObject>> &args,
+            const std::vector<rpc::ObjectReference> &arg_refs,
+            const std::string &debugger_breakpoint,
+            const std::string &serialized_retry_exception_allowlist,
+            std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns,
+            std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *dynamic_returns,
+            std::shared_ptr<LocalMemoryBuffer> &creation_task_exception_pb_bytes,
+            bool *is_retryable_error,
+            std::string *application_error,
+            const std::vector<ConcurrencyGroup> &defined_concurrency_groups,
+            const std::string name_of_concurrency_group_to_execute,
+            bool is_reattempt,
+            bool is_streaming_generator) {
+          int pid = f();
+          std::string str = std::to_string(pid);
+          auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+          RAY_CHECK(returns->size() == 1);
+          (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
+          return Status::OK();
+        };
+    CoreWorkerProcess::Initialize(options);
+
+    CoreWorkerProcess::RunTaskExecutionLoop();
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
@@ -131,6 +183,45 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
+ObjectID _submit_task(std::string project_dir) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+
+    RayFunction func(
+        Language::JULIA,
+        FunctionDescriptorBuilder::BuildJulia("", "demo_task", "")
+    );
+
+    // TODO: These args are currently being ignored
+    std::vector<std::unique_ptr<TaskArg>> args;
+    std::string str = "hello";
+    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+    auto ray_obj = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>());
+    args.emplace_back(new TaskArgByValue(ray_obj));
+
+    TaskOptions options;
+
+    // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
+    // RuntimeEnvInfo (`options.serialized_runtime_env_info`): https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L39-L46
+    // RuntimeEnvContext (`{"serialized_runtime_env": ...}`): https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
+    options.serialized_runtime_env_info = "{\"serialized_runtime_env\": \"{\\\"env_vars\\\": {\\\"JULIA_PROJECT\\\": \\\"" + project_dir + "\\\"}}\"}";
+
+    rpc::SchedulingStrategy scheduling_strategy;
+    scheduling_strategy.mutable_default_scheduling_strategy();
+
+    // https://github.com/ray-project/ray/blob/4e9e8913a6c9cc3533fe27478f30bdee1deffaf5/src/ray/core_worker/test/core_worker_test.cc#L79
+    auto return_refs = worker.SubmitTask(
+        func,
+        args,
+        options,
+        /*max_retries=*/0,
+        /*retry_exceptions=*/false,
+        scheduling_strategy,
+        /*debugger_breakpoint=*/""
+    );
+
+    return ObjectRefsToIds(return_refs)[0];
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -162,6 +253,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.method("initialize_coreworker", &initialize_coreworker);
+    mod.method("initialize_coreworker_worker", [] (int node_manager, jlcxx::SafeCFunction julia_func) {
+        auto f = jlcxx::make_function_pointer<int()>(julia_func);
+        return initialize_coreworker_worker(node_manager, f);
+    });
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
@@ -207,6 +302,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
+    mod.method("_submit_task", &_submit_task);
 
     // mod.add_type<RayObject>("RayObject")
     //     .constructor<const std::shared_ptr<Buffer>,
