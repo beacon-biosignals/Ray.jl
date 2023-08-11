@@ -20,7 +20,7 @@ jobs:
       matrix:
         version:
           - "1.8"  # Version used with MVP
-          # - "1.9"  # Latest release
+          - "1.9"  # Latest release
         os:
           - ubuntu-latest
         arch:
