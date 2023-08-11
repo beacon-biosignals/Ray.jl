@@ -5,10 +5,14 @@ on:
     branches:
       - main
     tags: ["*"]
-    paths: ["Ray.jl/**", ".github/workflows/Ray_CI.yml"]
+    paths:
+      - "Ray.jl/**"
+      - ".github/workflows/Ray_CI.yml"
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["Ray.jl/**",".github/workflows/Ray_CI.yml"]
+    paths:
+      - "Ray.jl/**"
+      - ".github/workflows/Ray_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
