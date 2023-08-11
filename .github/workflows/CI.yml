@@ -54,7 +54,6 @@ jobs:
           restore-keys: |
             build-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
             build-cache.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
-            build-cache.${{ matrix.os }}.${{ matrix.arch }}.
 
       # Based upon:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
