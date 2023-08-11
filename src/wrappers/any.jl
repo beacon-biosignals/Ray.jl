@@ -126,16 +126,22 @@ end
 
 function task_executor(ray_function)
     @info "task_executor called"
-    @info "fd: $(GetFunctionDescriptor(ray_function))"
+    fd = GetFunctionDescriptor(ray_function)
+    @info "fd: $fd"
+    @info "Parsing $(CallString(fd))"
+    parsed = Meta.parse(CallString(fd))
+    @info "Evaling $(parsed)"
     return getpid()
+    # func = eval(parsed)
+    # @info "Function $func"
+    # return func()
 end
 
 project_dir() = dirname(Pkg.project().path)
 
 function submit_task(f::Function)
-    module_name = string(parentmodule(f))
-    function_name = string(nameof(f))
-    return _submit_task(project_dir(), module_name, function_name)
+    fd = function_descriptor(f)
+    return _submit_task(project_dir(), fd)
 end
 
 #=

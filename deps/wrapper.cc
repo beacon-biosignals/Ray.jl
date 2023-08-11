@@ -120,6 +120,11 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+std::string CallString(ray::FunctionDescriptor function_descriptor)
+{
+    return function_descriptor->CallString();
+}
+
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
     : options_(options) {
 }
@@ -191,13 +196,11 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID _submit_task(std::string project_dir, std::string module_name, std::string function_name) {
+// TODO (omus): Ideally we would only pass in a `JuliaFunctionDescriptor`
+ObjectID _submit_task(std::string project_dir, const ray::FunctionDescriptor &func_descriptor) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
-    RayFunction func(
-        Language::JULIA,
-        FunctionDescriptorBuilder::BuildJulia(module_name, function_name, "")
-    );
+    RayFunction func(Language::JULIA, func_descriptor);
 
     // TODO: These args are currently being ignored
     std::vector<std::unique_ptr<TaskArg>> args;
@@ -239,6 +242,7 @@ namespace jlcxx
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
+    // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -292,7 +296,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("CallString", &FunctionDescriptorInterface::CallString)
         .method("ClassName", &FunctionDescriptorInterface::ClassName)
         .method("DefaultTaskName", &FunctionDescriptorInterface::DefaultTaskName);
-        // .method("As", &FunctionDescriptorInterface::As);
 
     // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
     // could figure out how to de-reference this on the julia side but no dice so
@@ -304,9 +307,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // XXX: may not want these in the end, just for interactive testing of the
     // function descriptor stuff.
     mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor", jlcxx::julia_base_type<FunctionDescriptorInterface>());
+        // .method("JuliaFunctionDescriptor", [] (std::shared_ptr<FunctionDescriptorInterface> fd) {
+        //     return reinterpret_cast<JuliaFunctionDescriptor *>(fd);
+        // });
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+    mod.method("CallString", &CallString);
 
     // class RayFunction
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L46
