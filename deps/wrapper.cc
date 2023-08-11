@@ -30,13 +30,10 @@ void shutdown_coreworker() {
 // https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
 void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction julia_task_executor) {
-    // void (*task_executor)(
-    //     const RayFunction &ray_function,
-    //     const std::vector<std::shared_ptr<RayObject>> &args,
-    //     std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns)) {
-
     auto task_executor = jlcxx::make_function_pointer<int(
-         RayFunction
+        RayFunction
+        // const std::vector<std::shared_ptr<RayObject>> &args,
+        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     )>(julia_task_executor);
 
     CoreWorkerOptions options;
