@@ -12,3 +12,4 @@ function setup_ray_head_node(body)
         !prestarted && run(pipeline(`ray stop`, stdout=devnull))
     end
 end
+    
