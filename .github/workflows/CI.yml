@@ -15,13 +15,13 @@ jobs:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     # runs-on: ${{ matrix.os }}
     runs-on:
-      labels: ubuntu-20.04-16core
+      labels: ubuntu-20.04-32core
     strategy:
       fail-fast: false
       matrix:
         version:
           - "1.8"  # Version used with MVP
-          - "1.9"  # Latest release
+          # - "1.9"  # Latest release
         os:
           - ubuntu-latest
         arch:
