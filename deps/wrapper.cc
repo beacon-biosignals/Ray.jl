@@ -35,7 +35,9 @@ void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction ju
     //     const std::vector<std::shared_ptr<RayObject>> &args,
     //     std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns)) {
 
-    auto task_executor = jlcxx::make_function_pointer<int()>(julia_task_executor);
+    auto task_executor = jlcxx::make_function_pointer<int(
+         RayFunction
+    )>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -72,7 +74,7 @@ void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction ju
             bool is_reattempt,
             bool is_streaming_generator) {
           // task_executor(ray_function, returns, args);
-          int pid = task_executor();
+          int pid = task_executor(ray_function);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -290,6 +292,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+
+    // class RayFunction
+    mod.add_type<RayFunction>("RayFunction")
+        .constructor<>()
+        .constructor<Language, const FunctionDescriptor &>()
+        .method("GetLanguage", &RayFunction::GetLanguage)
+        .method("GetFunctionDescriptor", &RayFunction::GetFunctionDescriptor);
 
     // class Buffer
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h

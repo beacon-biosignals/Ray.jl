@@ -124,8 +124,9 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
-function task_executor()
+function task_executor(ray_function)
     @info "task_executor called"
+    @info "lang is julia: $(GetLanguage(ray_function) == Language.JULIA)"
     return getpid()
 end
 
@@ -195,7 +196,20 @@ function start_worker(args=ARGS)
         @info "Testing"
         initialize_coreworker_worker(
             parsed_args["node_manager_port"],
-            CxxWrap.@safe_cfunction(task_executor, Int32, ()),
+            CxxWrap.@safe_cfunction(
+                task_executor,
+                Int32,
+
+                # Note (omus): If you are trying to figure out what type to pass in here I
+                # recommend starting with `Any`. This will cause failures at runtime that
+                # show up in the "raylet.err" logs which tell you the type:
+                # ```
+                # libc++abi: terminating due to uncaught exception of type
+                # std::runtime_error: Incorrect argument type for cfunction at position 1,
+                # expected: RayFunctionAllocated, obtained: Any
+                # ```
+                (RayFunctionAllocated,),
+            ),
         )
     end
 end
