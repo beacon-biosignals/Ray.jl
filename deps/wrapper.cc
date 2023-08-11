@@ -191,6 +191,7 @@ ObjectID _submit_task(std::string project_dir) {
         FunctionDescriptorBuilder::BuildJulia("", "demo_task", "")
     );
 
+    // TODO: These args are currently being ignored
     std::vector<std::unique_ptr<TaskArg>> args;
     std::string str = "hello";
     auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
