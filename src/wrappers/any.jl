@@ -127,14 +127,9 @@ end
 function task_executor(ray_function)
     @info "task_executor called"
     fd = GetFunctionDescriptor(ray_function)
-    @info "fd: $fd"
-    @info "Parsing $(CallString(fd))"
-    parsed = Meta.parse(CallString(fd))
-    @info "Evaling $(parsed)"
-    return getpid()
-    # func = eval(parsed)
-    # @info "Function $func"
-    # return func()
+    func = eval(@__MODULE__, Meta.parse(CallString(fd)))
+    @info "Calling $func"
+    return func()
 end
 
 project_dir() = dirname(Pkg.project().path)
