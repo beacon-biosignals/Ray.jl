@@ -234,6 +234,7 @@ namespace jlcxx
 {
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
+    template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
 
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
@@ -279,21 +280,36 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("SPILL_WORKER", ray::core::WorkerType::SPILL_WORKER);
     mod.set_const("RESTORE_WORKER", ray::core::WorkerType::RESTORE_WORKER);
 
-    // function descriptors
-    // XXX: may not want these in the end, just for interactive testing of the
-    // function descriptor stuff.
-    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-        .method("ToString", &JuliaFunctionDescriptor::ToString);
+    // Needed by FunctionDescriptorInterface
+    mod.add_bits<ray::rpc::FunctionDescriptor::FunctionDescriptorCase>("FunctionDescriptorCase");
+
+    // class FunctionDescriptorInterface
+    mod.add_type<FunctionDescriptorInterface>("FunctionDescriptorInterface")
+        .method("Type", &FunctionDescriptorInterface::Type)
+        .method("Hash", &FunctionDescriptorInterface::Hash)
+        .method("ToString", &FunctionDescriptorInterface::ToString)
+        .method("CallSiteString", &FunctionDescriptorInterface::CallSiteString)
+        .method("CallString", &FunctionDescriptorInterface::CallString)
+        .method("ClassName", &FunctionDescriptorInterface::ClassName)
+        .method("DefaultTaskName", &FunctionDescriptorInterface::DefaultTaskName);
+        // .method("As", &FunctionDescriptorInterface::As);
 
     // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
     // could figure out how to de-reference this on the julia side but no dice so
     // far.
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/function_descriptor.h#L274
     mod.add_type<FunctionDescriptor>("FunctionDescriptor");
+
+    // function descriptors
+    // XXX: may not want these in the end, just for interactive testing of the
+    // function descriptor stuff.
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor", jlcxx::julia_base_type<FunctionDescriptorInterface>());
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
 
     // class RayFunction
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L46
     mod.add_type<RayFunction>("RayFunction")
         .constructor<>()
         .constructor<Language, const FunctionDescriptor &>()
