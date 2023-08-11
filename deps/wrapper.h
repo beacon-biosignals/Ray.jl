@@ -13,12 +13,6 @@
 using namespace ray;
 using ray::core::CoreWorkerProcess;
 using ray::core::CoreWorkerOptions;
-using ray::core::WorkerType;
-using ray::core::RayFunction;
-
-using namespace ray;
-using ray::core::CoreWorkerProcess;
-using ray::core::CoreWorkerOptions;
 using ray::core::RayFunction;
 using ray::core::TaskOptions;
 using ray::core::WorkerType;
