@@ -36,6 +36,16 @@ export_function!(fm, M.MM.f, jobid)
 mmf2 = import_function!(fm, mmfd, jobid)
 @test mmf2.(1:10) == M.MM.f.(1:10) != M.f.(1:10)
 
+fc = let
+    xthresh = 3
+    x -> isless(x, xthresh)
+end
+export_function!(fm, fc, jobid)
+
+fcd = function_descriptor(fc)
+fc2 = import_function!(fm, fcd, jobid)
+@test fc.(1:10) == fc2.(1:10) != f.(1:10)
+
 try
     using Distributed
     worker = only(addprocs(1; exeflags="--project"))
@@ -47,11 +57,6 @@ try
     @everywhere worker begin
         using Ray: FunctionManager, export_function!, import_function!
         using ray_core_worker_julia_jll: JuliaGcsClient, Connect, function_descriptor
-
-        client = JuliaGcsClient("127.0.0.1:6379")
-        Connect(client)
-
-        fm = FunctionManager(client, Dict{String,Any}())
     end
 
     # XXX: function descriptor does not serialize well, probalby since it's a
