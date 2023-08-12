@@ -28,6 +28,6 @@ end
     end
 
     setup_ray_head_node() do
-        @testset "function manager" begin include("function_manager.jl") end
+        include("function_manager.jl")
     end
 end
