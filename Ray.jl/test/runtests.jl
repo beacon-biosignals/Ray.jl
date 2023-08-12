@@ -1,6 +1,7 @@
 using Test
 using Ray
 using Aqua
+using Distributed
 
 using ray_core_worker_julia_jll
 

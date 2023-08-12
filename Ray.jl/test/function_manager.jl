@@ -1,5 +1,4 @@
 @testset "function manager" begin
-    using Distributed
     using Ray: FunctionManager, export_function!, import_function!
     using ray_core_worker_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
 
