@@ -144,7 +144,8 @@ julia -e sleep(120) -- \
   /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
-  --ray_node_manager_port=57236 --ray_address=127.0.0.1:6379 \
+  --ray_node_manager_port=57236
+  --ray_address=127.0.0.1:6379 \
   --ray_redis_password= \
   --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
   --ray_logs_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/logs \
@@ -179,6 +180,7 @@ function start_worker(args=ARGS)
             dest_name = "redis_password"
             required=false
             arg_type=String
+            default=""
             help="the password to use for Redis"
         "--ray_session_dir"
             dest_name = "session_dir"
@@ -203,6 +205,13 @@ function start_worker(args=ARGS)
     @info "Testing"
     initialize_coreworker_worker(
         parsed_args["node_manager_port"],
+        parsed_args["raylet_socket"],
+        parsed_args["store_socket"],
+        parsed_args["address"],
+        parsed_args["node_manager_port"],
+        parsed_args["node_ip_address"],
+        parsed_args["logs_dir"],
+        parsed_args["runtime_env_hash"],
         CxxWrap.@safe_cfunction(
             task_executor,
             Int32,
