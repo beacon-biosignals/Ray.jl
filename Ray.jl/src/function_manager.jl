@@ -39,7 +39,6 @@ function_key(fd::JuliaFunctionDescriptor, job_id) = string("RemoteFunction:", jo
 function export_function!(fm::FunctionManager, f, job_id)
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
-    @show fd
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
               deepcopy(key), # DFK: I _think_ the string memory may be freed if we don't copy
               -1)
