@@ -25,14 +25,6 @@ void initialize_coreworker(
     std::string node_ip_address,
     int node_manager_port);
 
-void initialize_coreworker_worker(
-    std::string raylet_socket,
-    std::string store_socket,
-    std::string gcs_address,
-    std::string node_ip_address,
-    int node_manager_port,
-    int (*f)());
-
 void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
