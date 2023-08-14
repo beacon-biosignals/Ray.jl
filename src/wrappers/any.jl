@@ -20,20 +20,6 @@ function __init__()
     @initcxx
 end  # __init__()
 
-function node_manager_port()
-    line = open("/tmp/ray/session_latest/logs/raylet.out") do io
-        while !eof(io)
-            line = readline(io)
-            if contains(line, "NodeManager server started")
-                return line
-            end
-        end
-    end
-
-    m = match(r"port (\d+)", line)
-    return m !== nothing ? parse(Int, m[1]) : error("Unable to find port")
-end
-
 function parse_ray_args()
    #==
     "Starting agent process with command: ...
