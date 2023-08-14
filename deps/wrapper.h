@@ -18,12 +18,11 @@ using ray::core::TaskOptions;
 using ray::core::WorkerType;
 
 void initialize_coreworker(int node_manager_port);
-void initialize_coreworker_worker(int node_manager_port, int (*f)());
 void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
 std::string ToString(ray::FunctionDescriptor function_descriptor);
-ObjectID _submit_task(std::string project_dir);
+ObjectID _submit_task(std::string project_dir, const ray::FunctionDescriptor &func_descriptor);
 
 // a wrapper class to manage the IO service + thread that the GcsClient needs.
 // we may want to use the PythonGcsClient however, which does not do async

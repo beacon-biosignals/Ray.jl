@@ -124,14 +124,20 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
-function task_executor()
+function task_executor(ray_function)
     @info "task_executor called"
-    return getpid()
+    fd = GetFunctionDescriptor(ray_function)
+    func = eval(@__MODULE__, Meta.parse(CallString(fd)))
+    @info "Calling $func"
+    return func()
 end
 
 project_dir() = dirname(Pkg.project().path)
-submit_task() = _submit_task(project_dir())
 
+function submit_task(f::Function)
+    fd = function_descriptor(f)
+    return _submit_task(project_dir(), fd)
+end
 
 #=
 julia -e sleep(120) -- \
@@ -190,12 +196,27 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
-    open(joinpath(parsed_args["logs_dir"], "julia_worker.log"), "w+") do io
-        global_logger(SimpleLogger(io))
-        @info "Testing"
-        initialize_coreworker_worker(
-            parsed_args["node_manager_port"],
-            CxxWrap.@safe_cfunction(task_executor, Int32, ()),
-        )
-    end
+    # Note (omus): Logging is currently limited to a single worker as all workers attempt to
+    # write to the same file.
+    global_logger(FileLogger(joinpath(parsed_args["logs_dir"], "julia_worker.log");
+                             append=true, always_flush=true))
+    @info "Testing"
+    initialize_coreworker_worker(
+        parsed_args["node_manager_port"],
+        CxxWrap.@safe_cfunction(
+            task_executor,
+            Int32,
+
+            # Note (omus): If you are trying to figure out what type to pass in here I
+            # recommend starting with `Any`. This will cause failures at runtime that
+            # show up in the "raylet.err" logs which tell you the type:
+            # ```
+            # libc++abi: terminating due to uncaught exception of type
+            # std::runtime_error: Incorrect argument type for cfunction at position 1,
+            # expected: RayFunctionAllocated, obtained: Any
+            # ```
+            # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
+            (RayFunctionAllocated,),
+        ),
+    )
 end

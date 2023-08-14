@@ -29,8 +29,12 @@ void shutdown_coreworker() {
 // https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
 // https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
-void initialize_coreworker_worker(int node_manager_port, int (*f)()) {
-    // RAY_LOG_ENABLED(DEBUG);
+void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction julia_task_executor) {
+    auto task_executor = jlcxx::make_function_pointer<int(
+        RayFunction
+        // const std::vector<std::shared_ptr<RayObject>> &args,
+        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+    )>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -47,7 +51,7 @@ void initialize_coreworker_worker(int node_manager_port, int (*f)()) {
     options.metrics_agent_port = -1;
     options.startup_token = 0;
     options.task_execution_callback =
-        [f](
+        [task_executor](
             const rpc::Address &caller_address,
             TaskType task_type,
             const std::string task_name,
@@ -66,7 +70,8 @@ void initialize_coreworker_worker(int node_manager_port, int (*f)()) {
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          int pid = f();
+          // task_executor(ray_function, returns, args);
+          int pid = task_executor(ray_function);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -110,6 +115,11 @@ std::shared_ptr<Buffer> get(ObjectID object_id) {
 std::string ToString(ray::FunctionDescriptor function_descriptor)
 {
     return function_descriptor->ToString();
+}
+
+std::string CallString(ray::FunctionDescriptor function_descriptor)
+{
+    return function_descriptor->CallString();
 }
 
 JuliaGcsClient::JuliaGcsClient(const gcs::GcsClientOptions &options)
@@ -183,13 +193,11 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID _submit_task(std::string project_dir) {
+// TODO (omus): Ideally we would only pass in a `JuliaFunctionDescriptor`
+ObjectID _submit_task(std::string project_dir, const ray::FunctionDescriptor &func_descriptor) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
-    RayFunction func(
-        Language::JULIA,
-        FunctionDescriptorBuilder::BuildJulia("", "demo_task", "")
-    );
+    RayFunction func(Language::JULIA, func_descriptor);
 
     // TODO: These args are currently being ignored
     std::vector<std::unique_ptr<TaskArg>> args;
@@ -226,10 +234,12 @@ namespace jlcxx
 {
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
+    template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
 
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
+    // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -253,10 +263,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.method("initialize_coreworker", &initialize_coreworker);
-    mod.method("initialize_coreworker_worker", [] (int node_manager, jlcxx::SafeCFunction julia_func) {
-        auto f = jlcxx::make_function_pointer<int()>(julia_func);
-        return initialize_coreworker_worker(node_manager, f);
-    });
+    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
@@ -274,19 +281,44 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("SPILL_WORKER", ray::core::WorkerType::SPILL_WORKER);
     mod.set_const("RESTORE_WORKER", ray::core::WorkerType::RESTORE_WORKER);
 
-    // function descriptors
-    // XXX: may not want these in the end, just for interactive testing of the
-    // function descriptor stuff.
-    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor")
-        .method("ToString", &JuliaFunctionDescriptor::ToString);
+    // Needed by FunctionDescriptorInterface
+    mod.add_bits<ray::rpc::FunctionDescriptor::FunctionDescriptorCase>("FunctionDescriptorCase");
+
+    // class FunctionDescriptorInterface
+    mod.add_type<FunctionDescriptorInterface>("FunctionDescriptorInterface")
+        .method("Type", &FunctionDescriptorInterface::Type)
+        .method("Hash", &FunctionDescriptorInterface::Hash)
+        .method("ToString", &FunctionDescriptorInterface::ToString)
+        .method("CallSiteString", &FunctionDescriptorInterface::CallSiteString)
+        .method("CallString", &FunctionDescriptorInterface::CallString)
+        .method("ClassName", &FunctionDescriptorInterface::ClassName)
+        .method("DefaultTaskName", &FunctionDescriptorInterface::DefaultTaskName);
 
     // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
     // could figure out how to de-reference this on the julia side but no dice so
     // far.
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/function_descriptor.h#L274
     mod.add_type<FunctionDescriptor>("FunctionDescriptor");
+
+    // function descriptors
+    // XXX: may not want these in the end, just for interactive testing of the
+    // function descriptor stuff.
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor", jlcxx::julia_base_type<FunctionDescriptorInterface>());
+        // .method("JuliaFunctionDescriptor", [] (std::shared_ptr<FunctionDescriptorInterface> fd) {
+        //     return reinterpret_cast<JuliaFunctionDescriptor *>(fd);
+        // });
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("ToString", &ToString);
+    mod.method("CallString", &CallString);
+
+    // class RayFunction
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L46
+    mod.add_type<RayFunction>("RayFunction")
+        .constructor<>()
+        .constructor<Language, const FunctionDescriptor &>()
+        .method("GetLanguage", &RayFunction::GetLanguage)
+        .method("GetFunctionDescriptor", &RayFunction::GetFunctionDescriptor);
 
     // class Buffer
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h

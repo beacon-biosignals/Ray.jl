@@ -5,6 +5,7 @@ using Base
 using Base: UUID
 import JLLWrappers
 using Logging
+using LoggingExtras
 using Pkg
 
 JLLWrappers.@generate_main_file_header("ray_core_worker_julia")
