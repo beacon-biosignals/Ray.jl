@@ -1,5 +1,5 @@
 @testset "function manager" begin
-    using Ray: FunctionManager, export_function!, import_function!
+    using Ray: FunctionManager, export_function!, import_function!, wait_for_function
     using ray_core_worker_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
@@ -13,12 +13,14 @@
     export_function!(fm, f, jobid)
 
     fd = function_descriptor(f)
+    @test wait_for_function(fm, fd, jobid) == :ok
     f2 = import_function!(fm, fd, jobid)
 
     @test f2.(1:10) == f.(1:10)
 
     mfd = function_descriptor(MyMod.f)
     @test_throws ErrorException import_function!(fm, mfd, jobid)
+    @test wait_for_function(fm, mfd, jobid; timeout_s=1) == :timed_out
     export_function!(fm, MyMod.f, jobid)
 
     # can import the function even when it's aliased in another module:

@@ -48,6 +48,17 @@ function export_function!(fm::FunctionManager, f, job_id)
     end
 end
 
+function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id;
+                           pollint_s=0.01, timeout_s=10)
+    key = function_key(fd, job_id)
+    status = timedwait(timeout_s; pollint=pollint_s) do
+        # timeout the Exists query to the same timeout we use here so we don't
+        # deadlock.
+        Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+    end
+    return status
+end
+
 # XXX: this will error if the function is not found in the store.
 function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id)
     return get!(fm.functions, fd.function_hash) do
