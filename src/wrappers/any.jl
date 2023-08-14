@@ -43,6 +43,12 @@ function parse_ray_args()
         end
     end
 
+    raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
+    raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
+
+    store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
+    store = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Object store socket")
+
     gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
     gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
 
@@ -52,20 +58,16 @@ function parse_ray_args()
     port_match = match(r"node-manager-port=([0-9]{1,5})", line)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
-    return (node_ip, node_port, gcs_address)
+    return (raylet, store, node_ip, node_port, gcs_address)
 end
 
 
 function initialize_coreworker()
 
-    # TODO: are these defaults? can they be overwritten by user and/or Ray?
-    raylet_socket = "/tmp/ray/session_latest/sockets/raylet"
-    store_socket = "/tmp/ray/session_latest/sockets/plasma_store"
-
-    node_ip, node_port, gcs_address = parse_ray_args()
+    raylet, store, node_ip, node_port, gcs_address = parse_ray_args()
 
     # TODO: downgrade to debug
-    @info "Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
+    @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
     return initialize_coreworker(raylet_socket, store_socket, gcs_address, node_ip, node_port)
 end
