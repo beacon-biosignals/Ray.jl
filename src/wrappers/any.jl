@@ -64,6 +64,7 @@ function initialize_coreworker()
 
     node_ip, node_port, gcs_address = parse_ray_args()
 
+    # TODO: downgrade to debug
     @info "Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
     return initialize_coreworker(raylet_socket, store_socket, gcs_address, node_ip, node_port)
