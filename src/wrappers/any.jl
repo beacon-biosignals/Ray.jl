@@ -34,22 +34,41 @@ function node_manager_port()
     return m !== nothing ? parse(Int, m[1]) : error("Unable to find port")
 end
 
-function gcs_address()
+function parse_ray_args()
+   #==
+    "Starting agent process with command: ...
+    --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493
+    --listen-port=52365 --node-manager-port=58888
+    --object-store-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/plasma_store
+    --raylet-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/raylet
+    --temp-dir=/tmp/ray --session-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385
+    --runtime-env-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/runtime_resources
+    --log-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/logs
+    --logging-rotate-bytes=536870912 --logging-rotate-backup-count=5
+    --session-name=session_2023-08-14_14-54-36_055139_41385
+    --gcs-address=127.0.0.1:6379 --minimal --agent-id 470211272
+   ==#
     line = open("/tmp/ray/session_latest/logs/raylet.out") do io
         while !eof(io)
             line = readline(io)
-            if contains(line, "Connect to gcs server via address")
+            if contains(line, "Starting agent process")
                 return line
             end
         end
-        error("Unable to find GCS address from raylet logs")
     end
 
-    m = match(r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{4}", line)
-    return m !== nothing ? String(m.match) : error("Unable to find GCS address")
+    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{4})", line)
+    gcs_address = gcs_match !== nothing ? gcs_match[1] : error("Unable to find GCS address")
+
+    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
+    node_ip = node_ip_match !== nothing ? node_ip_match[1] : error("Unable to find Node IP address")
+
+    port_match = match(r"node-manager-port=([0-9]+)", line)
+    node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
+
+    return (node_ip, node_port, gcs_address)
 end
 
-node_manager_address() = first(split(gcs_address(), ":"))
 
 initialize_coreworker() = function
 
@@ -57,17 +76,9 @@ initialize_coreworker() = function
     raylet_socket = "/tmp/ray/session_latest/sockets/plasma_store"
     store_socket = "/tmp/ray/session_latest/sockets/raylet"
 
-    # TODO: it's inefficient to read the same file multiple times...
-    gcs = gcs_address()                 # 127.0.0.1:6379
-    node_port = node_manager_port()     # 1234
-    node_ip = node_manager_address()    # 127.0.0.1
+    node_ip, node_port, gcs_address = parse_ray_args()
 
-    initialize_coreworker(
-        raylet_socket,
-        store_socket,
-        gcs,
-        node_port,
-        node_ip)
+    initialize_coreworker(raylet_socket, store_socket, gcs_address, node_port, node_ip)
 
     return nothing
 end
