@@ -123,3 +123,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
           flags: Ray.jl
+
+      # https://github.com/actions/cache/tree/main/save#always-save-cache
+      - name: Save build cache
+        uses: actions/cache/save@v3
+        if: always() && steps.build-cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+          path: ~/.cache
