@@ -178,7 +178,7 @@ julia -e sleep(120) -- \
   /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
-  --ray_node_manager_port=57236
+  --ray_node_manager_port=57236 \
   --ray_address=127.0.0.1:6379 \
   --ray_redis_password= \
   --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
