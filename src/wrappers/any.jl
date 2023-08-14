@@ -43,18 +43,24 @@ function parse_ray_args()
         end
     end
 
+
+    # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
     raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
     raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
 
+    # --object-store-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/plasma_store
     store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
     store = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Object store socket")
 
+    # --gcs-address=127.0.0.1:6379
     gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
     gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
 
+    # --node-ip-address=127.0.0.1
     node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
     node_ip = node_ip_match !== nothing ? String(node_ip_match[1]) : error("Unable to find Node IP address")
 
+    # --node-manager-port=63639
     port_match = match(r"node-manager-port=([0-9]{1,5})", line)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
@@ -69,7 +75,7 @@ function initialize_coreworker()
     # TODO: downgrade to debug
     @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
-    return initialize_coreworker(raylet_socket, store_socket, gcs_address, node_ip, node_port)
+    return initialize_coreworker(raylet, store, gcs_address, node_ip, node_port)
 end
 
 # function Base.Symbol(language::Language)
