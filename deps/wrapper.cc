@@ -201,10 +201,11 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-// TODO (omus): Ideally we would only pass in a `JuliaFunctionDescriptor`
-ObjectID _submit_task(std::string project_dir, const ray::FunctionDescriptor &func_descriptor) {
+ObjectID _submit_task(std::string project_dir,
+                      const ray::JuliaFunctionDescriptor &jl_func_descriptor) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
+    ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
     // TODO: These args are currently being ignored
