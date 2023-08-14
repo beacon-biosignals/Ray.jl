@@ -29,12 +29,15 @@ void shutdown_coreworker() {
 // https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
 // https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
-void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction julia_task_executor) {
-    auto task_executor = jlcxx::make_function_pointer<int(
-        RayFunction
-        // const std::vector<std::shared_ptr<RayObject>> &args,
-        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
-    )>(julia_task_executor);
+void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction julia_task_executor
+                                  ) {
+    // auto task_executor = jlcxx::make_function_pointer<int(
+    //     RayFunction
+    //     // const std::vector<std::shared_ptr<RayObject>> &args,
+    //     // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+    // )>(julia_task_executor);
+
+    jlcxx::JuliaFunction task_executor("task_executor", "ray_core_worker_julia_jll");
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -70,13 +73,26 @@ void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction ju
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          // task_executor(ray_function, returns, args);
-          int pid = task_executor(ray_function);
-          std::string str = std::to_string(pid);
-          auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-          RAY_CHECK(returns->size() == 1);
-          (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
-          return Status::OK();
+            // task_executor(ray_function, returns, args);
+            task_executor(caller_address,
+                          task_type,
+                          task_name,
+                          ray_function,
+                          // required_resources,
+                          args,
+                          arg_refs,
+                          debugger_breakpoint,
+                          serialized_retry_exception_allowlist,
+                          returns,
+                          dynamic_returns,
+                          creation_task_exception_pb_bytes,
+                          is_retryable_error,
+                          application_error,
+                          defined_concurrency_groups,
+                          name_of_concurrency_group_to_execute,
+                          is_reattempt,
+                          is_streaming_generator);
+            return Status::OK();
         };
     CoreWorkerProcess::Initialize(options);
 
@@ -320,6 +336,27 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetLanguage", &RayFunction::GetLanguage)
         .method("GetFunctionDescriptor", &RayFunction::GetFunctionDescriptor);
 
+    // types needed for task execution callback args
+    mod.add_type<rpc::Address>("Address");
+    mod.add_type<rpc::ObjectReference>("ObjectReference");
+    mod.add_type<ConcurrencyGroup>("ConcurrencyGroup");
+
+    mod.add_bits<TaskType>("TaskType", jlcxx::julia_type("CppEnum"));
+    mod.set_const("NORMAL_TASK", TaskType::NORMAL_TASK);
+    mod.set_const("ACTOR_CREATION_TASK", TaskType::ACTOR_CREATION_TASK);
+    mod.set_const("ACTOR_TASK", TaskType::ACTOR_TASK);
+    mod.set_const("DRIVER_TASK", TaskType::DRIVER_TASK);
+
+    // mod.add_type<jlcxx::Parametric<jlcxx::TypeVar<1>, jlcxx::TypeVar<2>>>("std::unordered_map")
+    //     .apply<std::unordered_map<std::string,double>>([](auto wrapped) {
+    //         typedef typename decltype(wrapped)::type WrappedT;
+    //         wrapped.method("cxxgetindex", &WrappedT::operator[]);
+    //     });
+
+    typedef std::unordered_map<std::string, double> RequiredResourceMap;
+    mod.add_type<RequiredResourceMap>("RequiredResourceMap")
+        .method("cxxgetindex", &RequiredResourceMap::operator[]);
+
     // class Buffer
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
     mod.add_type<Buffer>("Buffer")
@@ -336,7 +373,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("_submit_task", &_submit_task);
 
-    // mod.add_type<RayObject>("RayObject")
+    mod.add_type<RayObject>("RayObject");
     //     .constructor<const std::shared_ptr<Buffer>,
     //                  const std::shared_ptr<Buffer>,
     //                  const std::vector<rpc::ObjectReference>,
@@ -344,6 +381,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)
+        .method("OK", &Status::OK)
         .method("ToString", &Status::ToString);
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
         .constructor<const std::string&>()

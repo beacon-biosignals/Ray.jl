@@ -132,6 +132,12 @@ function task_executor(ray_function)
     return func()
 end
 
+function task_executor(args...)
+    types = join([string("  ", typeof(arg)) for arg in args], "\n")
+    @info "task_executor called with args of types\n$(types)"
+    return OK()
+end
+
 project_dir() = dirname(Pkg.project().path)
 
 function submit_task(f::Function)
@@ -200,7 +206,7 @@ function start_worker(args=ARGS)
     # write to the same file.
     global_logger(FileLogger(joinpath(parsed_args["logs_dir"], "julia_worker.log");
                              append=true, always_flush=true))
-    @info "Testing"
+    @info "Starting Julia worker with PID $(getpid())"
     initialize_coreworker_worker(
         parsed_args["node_manager_port"],
         CxxWrap.@safe_cfunction(

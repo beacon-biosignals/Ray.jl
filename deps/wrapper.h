@@ -4,11 +4,14 @@
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/type_conversion.hpp"
 #include "ray/core_worker/common.h"
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
 #include "ray/common/asio/instrumented_io_context.h"
+
+using namespace jlcxx;
 
 using namespace ray;
 using ray::core::CoreWorkerProcess;
