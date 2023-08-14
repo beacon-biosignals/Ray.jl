@@ -8,17 +8,17 @@ using ray_core_worker_julia_jll
 include("utils.jl")
 
 # setup some modules for teh function manager tests...
-module M
+module MyMod
 f(x) = x + 1
 
-module MM
+module MySubMod
 f(x) = x - 1
 end # module MM
 
 end # module M
 
-module N
-using ..M: f
+module NotMyMod
+using ..MyMod: f
 g(x) = x - 1
 end
 
