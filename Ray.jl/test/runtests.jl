@@ -22,7 +22,7 @@ using ..MyMod: f
 g(x) = x - 1
 end
 
-ENV["JULIA_DEBUG"] = "Ray"
+# ENV["JULIA_DEBUG"] = "Ray"
 
 @testset "Ray.jl" begin
     @testset "Aqua" begin
