@@ -3,9 +3,9 @@
 void initialize_coreworker(
     std::string raylet_socket,
     std::string store_socket,
-    std::string address,
-    int node_manager_port,
-    std::string node_ip_address) {
+    std::string gcs_address,
+    std::string node_ip_address,
+    int node_manager_port) {
     // RAY_LOG_ENABLED(DEBUG);
 
     CoreWorkerOptions options;
@@ -14,7 +14,7 @@ void initialize_coreworker(
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
     options.job_id = JobID::FromInt(1001);
-    options.gcs_options = gcs::GcsClientOptions(address);
+    options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
     options.node_ip_address = node_ip_address;
@@ -35,9 +35,9 @@ void shutdown_coreworker() {
 void initialize_coreworker_worker(
     std::string raylet_socket,
     std::string store_socket,
-    std::string address,
+    std::string gcs_address,
+    std::string node_ip_address,
     int node_manager_port,
-    std::string node_ip_address, 
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction
@@ -50,7 +50,7 @@ void initialize_coreworker_worker(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
-    options.gcs_options = gcs::GcsClientOptions(address);
+    options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
     options.node_ip_address = node_ip_address;

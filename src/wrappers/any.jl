@@ -44,10 +44,10 @@ function parse_ray_args()
     end
 
     gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{4})", line)
-    gcs_address = gcs_match !== nothing ? gcs_match[1] : error("Unable to find GCS address")
+    gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
 
     node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    node_ip = node_ip_match !== nothing ? node_ip_match[1] : error("Unable to find Node IP address")
+    node_ip = node_ip_match !== nothing ? String(node_ip_match[1]) : error("Unable to find Node IP address")
 
     port_match = match(r"node-manager-port=([0-9]+)", line)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
@@ -56,17 +56,17 @@ function parse_ray_args()
 end
 
 
-initialize_coreworker() = function
+function initialize_coreworker()
 
     # TODO: are these defaults? can they be overwritten by user and/or Ray?
-    raylet_socket = "/tmp/ray/session_latest/sockets/plasma_store"
-    store_socket = "/tmp/ray/session_latest/sockets/raylet"
+    raylet_socket = "/tmp/ray/session_latest/sockets/raylet"
+    store_socket = "/tmp/ray/session_latest/sockets/plasma_store"
 
     node_ip, node_port, gcs_address = parse_ray_args()
 
-    initialize_coreworker(raylet_socket, store_socket, gcs_address, node_port, node_ip)
+    @info "Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
-    return nothing
+    return initialize_coreworker(raylet_socket, store_socket, gcs_address, node_ip, node_port)
 end
 
 # function Base.Symbol(language::Language)
@@ -201,6 +201,7 @@ function start_worker(args=ARGS)
         "--ray_address"  # "127.0.0.1:6379"
             dest_name = "address"
             arg_type = String
+            help="The ip address of the GCS"
         "--ray_node_manager_port"
             dest_name = "node_manager_port"
             arg_type = Int
@@ -237,14 +238,11 @@ function start_worker(args=ARGS)
                              append=true, always_flush=true))
     @info "Testing"
     initialize_coreworker_worker(
-        parsed_args["node_manager_port"],
         parsed_args["raylet_socket"],
         parsed_args["store_socket"],
         parsed_args["address"],
-        parsed_args["node_manager_port"],
         parsed_args["node_ip_address"],
-        parsed_args["logs_dir"],
-        parsed_args["runtime_env_hash"],
+        parsed_args["node_manager_port"],
         CxxWrap.@safe_cfunction(
             task_executor,
             Int32,
@@ -261,4 +259,5 @@ function start_worker(args=ARGS)
             (RayFunctionAllocated,),
         ),
     )
+
 end

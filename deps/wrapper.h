@@ -22,15 +22,15 @@ void initialize_coreworker(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
-    int node_manager_port,
-    std::string node_ip_address);
+    std::string node_ip_address,
+    int node_manager_port);
 
 void initialize_coreworker_worker(
     std::string raylet_socket,
     std::string store_socket,
-    std::string address,
-    int node_manager_port,
+    std::string gcs_address,
     std::string node_ip_address,
+    int node_manager_port,
     int (*f)());
 
 void shutdown_coreworker();
