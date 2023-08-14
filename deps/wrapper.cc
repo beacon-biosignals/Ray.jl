@@ -1,22 +1,25 @@
 #include "wrapper.h"
 
-const std::string NODE_MANAGER_IP_ADDRESS = "127.0.0.1";
-
-void initialize_coreworker(int node_manager_port) {
+void initialize_coreworker(
+    std::string raylet_socket,
+    std::string store_socket,
+    std::string gcs_address,
+    std::string node_ip_address,
+    int node_manager_port) {
     // RAY_LOG_ENABLED(DEBUG);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::DRIVER;
     options.language = Language::JULIA;
-    options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
-    options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
+    options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
+    options.raylet_socket = raylet_socket;  // Required by `RayletClient`
     options.job_id = JobID::FromInt(1001);
-    options.gcs_options = gcs::GcsClientOptions(NODE_MANAGER_IP_ADDRESS + ":6379");
+    options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
-    options.node_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.node_ip_address = node_ip_address;
     options.node_manager_port = node_manager_port;
-    options.raylet_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.driver_name = "julia_core_worker_test";
     CoreWorkerProcess::Initialize(options);
@@ -29,7 +32,13 @@ void shutdown_coreworker() {
 // https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
 // https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
-void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction julia_task_executor) {
+void initialize_coreworker_worker(
+    std::string raylet_socket,
+    std::string store_socket,
+    std::string gcs_address,
+    std::string node_ip_address,
+    int node_manager_port,
+    jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction
         // const std::vector<std::shared_ptr<RayObject>> &args,
@@ -39,15 +48,14 @@ void initialize_coreworker_worker(int node_manager_port, jlcxx::SafeCFunction ju
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
     options.language = Language::JULIA;
-    options.store_socket = "/tmp/ray/session_latest/sockets/plasma_store"; // Required around `CoreWorkerClientPool` creation
-    options.raylet_socket = "/tmp/ray/session_latest/sockets/raylet";  // Required by `RayletClient`
-    // options.job_id = JobID::FromInt(-1);  // For workers, the job ID is assigned by Raylet via an environment variable.
-    options.gcs_options = gcs::GcsClientOptions(NODE_MANAGER_IP_ADDRESS + ":6379");
+    options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
+    options.raylet_socket = raylet_socket;  // Required by `RayletClient`
+    options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
-    options.node_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.node_ip_address = node_ip_address;
     options.node_manager_port = node_manager_port;
-    options.raylet_ip_address = NODE_MANAGER_IP_ADDRESS;
+    options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.startup_token = 0;
     options.task_execution_callback =
@@ -353,4 +361,3 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Keys", &JuliaGcsClient::Keys)
         .method("Exists", &JuliaGcsClient::Exists);
 }
-
