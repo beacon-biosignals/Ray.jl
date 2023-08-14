@@ -39,7 +39,6 @@ function_key(fd::JuliaFunctionDescriptor, job_id) = string("RemoteFunction:", jo
 function export_function!(fm::FunctionManager, f, job_id)
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
-    # @debug "generated key $key for $fd"
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         @debug "function already present in GCS store:" key f
     else
