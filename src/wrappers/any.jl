@@ -64,19 +64,14 @@ function parse_ray_args()
     port_match = match(r"node-manager-port=([0-9]{1,5})", line)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
-    return (raylet, store, node_ip, node_port, gcs_address)
-end
-
-
-function initialize_coreworker()
-
-    raylet, store, node_ip, node_port, gcs_address = parse_ray_args()
-
     # TODO: downgrade to debug
     @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
-    return initialize_coreworker(raylet, store, gcs_address, node_ip, node_port)
+    return (raylet, store, gcs_address, node_ip, node_port)
 end
+
+
+initialize_coreworker() = initialize_coreworker(parse_ray_args()...)
 
 # function Base.Symbol(language::Language)
 #     return if language === PYTHON
