@@ -34,7 +34,43 @@ function node_manager_port()
     return m !== nothing ? parse(Int, m[1]) : error("Unable to find port")
 end
 
-initialize_coreworker() = initialize_coreworker(node_manager_port())
+function gcs_address()
+    line = open("/tmp/ray/session_latest/logs/raylet.out") do io
+        while !eof(io)
+            line = readline(io)
+            if contains(line, "Connect to gcs server via address")
+                return line
+            end
+        end
+        error("Unable to find GCS address from raylet logs")
+    end
+
+    m = match(r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{4}", line)
+    return m !== nothing ? String(m.match) : error("Unable to find GCS address")
+end
+
+node_manager_address() = first(split(gcs_address(), ":"))
+
+initialize_coreworker() = function
+
+    # TODO: are these defaults? can they be overwritten by user and/or Ray?
+    raylet_socket = "/tmp/ray/session_latest/sockets/plasma_store"
+    store_socket = "/tmp/ray/session_latest/sockets/raylet"
+
+    # TODO: it's inefficient to read the same file multiple times...
+    gcs = gcs_address()                 # 127.0.0.1:6379
+    node_port = node_manager_port()     # 1234
+    node_ip = node_manager_address()    # 127.0.0.1
+
+    initialize_coreworker(
+        raylet_socket,
+        store_socket,
+        gcs,
+        node_port,
+        node_ip)
+
+    return nothing
+end
 
 # function Base.Symbol(language::Language)
 #     return if language === PYTHON
