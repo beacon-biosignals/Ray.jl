@@ -43,13 +43,13 @@ function parse_ray_args()
         end
     end
 
-    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{4})", line)
+    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
     gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
 
     node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
     node_ip = node_ip_match !== nothing ? String(node_ip_match[1]) : error("Unable to find Node IP address")
 
-    port_match = match(r"node-manager-port=([0-9]+)", line)
+    port_match = match(r"node-manager-port=([0-9]{1,5})", line)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
     return (node_ip, node_port, gcs_address)
