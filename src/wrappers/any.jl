@@ -238,6 +238,7 @@ function start_worker(args=ARGS)
     global_logger(FileLogger(joinpath(parsed_args["logs_dir"], "julia_worker.log");
                              append=true, always_flush=true))
     @info "Testing"
+    @info "$parsed_args"
     initialize_coreworker_worker(
         parsed_args["raylet_socket"],
         parsed_args["store_socket"],
