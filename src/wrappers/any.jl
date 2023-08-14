@@ -50,7 +50,7 @@ function parse_ray_args()
 
     # --object-store-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/plasma_store
     store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
-    store = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Object store socket")
+    store = store_match !== nothing ? String(store_match[1]) : error("Unable to find Object Store socket")
 
     # --gcs-address=127.0.0.1:6379
     gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
