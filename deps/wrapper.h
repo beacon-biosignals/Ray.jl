@@ -9,6 +9,8 @@
 #include "src/ray/protobuf/common.pb.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
 #include "ray/common/asio/instrumented_io_context.h"
+#include "ray/common/ray_object.h"
+
 
 using namespace ray;
 using ray::core::CoreWorkerProcess;
@@ -16,7 +18,8 @@ using ray::core::CoreWorkerOptions;
 using ray::core::RayFunction;
 using ray::core::TaskOptions;
 using ray::core::WorkerType;
-
+using ray::RayObject;
+using ray::rpc::ObjectReference;
 
 void initialize_coreworker(
     std::string raylet_socket,
