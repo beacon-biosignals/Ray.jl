@@ -22,9 +22,10 @@
 # function manager holds:
 # local cache of functions (keyed by function id/hash from descriptor)
 # gcs client
-# maybe job id?
+# ~~maybe job id?~~ this is managed by the core worker process
 
-using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get, JuliaFunctionDescriptor, function_descriptor
+using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get,
+                                 JuliaFunctionDescriptor, function_descriptor
 
 # python uses "fun" for the namespace: https://github.com/beacon-biosignals/ray/blob/dfk%2Fusing-Ray/python/ray/_private/ray_constants.py#L380
 # so "jlfun" seems reasonable
@@ -35,11 +36,13 @@ Base.@kwdef struct FunctionManager
     functions::Dict{String,Any}
 end
 
-# XXX: we should probably be packaging task-related metadata like the job_id in
-# a task/remotefunction-like struct instead of passing it around like this.
-function_key(fd::JuliaFunctionDescriptor, job_id) = string("RemoteFunction:", job_id, ":", fd.function_hash)
+const FUNCTION_MANAGER = Ref{FunctionManager}()
 
-function export_function!(fm::FunctionManager, f, job_id)
+function function_key(fd::JuliaFunctionDescriptor, job_id=get_current_job_id())
+    return string("RemoteFunction:", job_id, ":", fd.function_hash)
+end
+
+function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
@@ -54,7 +57,8 @@ function export_function!(fm::FunctionManager, f, job_id)
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id;
+function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+                           job_id=get_current_job_id();
                            pollint_s=0.01, timeout_s=10)
     key = function_key(fd, job_id)
     status = timedwait(timeout_s; pollint=pollint_s) do
@@ -66,7 +70,8 @@ function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor, job
 end
 
 # XXX: this will error if the function is not found in the store.
-function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id)
+function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+                          job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
         @debug "retrieving $(fd) from function store with key $(key)"

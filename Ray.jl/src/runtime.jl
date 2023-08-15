@@ -1,3 +1,32 @@
+function init()
+    # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
+    # more like what hte python Worker class does, getting node ID at
+    # initialization and using that as a proxy for whether it's connected or not
+    #
+    # https://github.com/beacon-biosignals/ray/blob/dfk%2Fusing-Ray/python/ray/_private/worker.py#L421
+    if isassigned(FUNCTION_MANAGER)
+        @warn "Ray already initialized, skipping..."
+        return nothing
+    end
+
+    args = parse_ray_args_from_raylet_out()
+    initialize_coreworker(args...)
+    atexit(rayjll.shutdown_coreworker)
+
+    gcs_address = args[3]
+    @info "connecting function manager to GCS at $gcs_address..."
+    gcs_client = JuliaGcsClient(gcs_address)
+    rayjll.Connect(gcs_client)
+    FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
+                                         functions=Dict{String,Any}())
+
+    return nothing
+end
+
+# this could go in JLL but if/when global worker is hosted here it's better to
+# keep it local
+get_current_job_id() = rayjll.ToInt(rayjll.GetCurrentJobId())
+
 function parse_ray_args_from_raylet_out()
     #=
     "Starting agent process with command: ... \
@@ -51,7 +80,8 @@ end
 # information instead of parsing logs?  I can't quite tell where it's coming
 # from (set from a `ray.address` config option):
 # https://github.com/beacon-biosignals/ray/blob/beacon-main/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-initialize_coreworker() = rayjll.initialize_coreworker(parse_ray_args_from_raylet_out()...)
+initialize_coreworker() = initialize_coreworker(parse_ray_args_from_raylet_out()...)
+initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
 
 project_dir() = dirname(Pkg.project().path)
 
