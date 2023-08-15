@@ -1,14 +1,20 @@
-# TODO: this should probably be moved to a Ray.jl package
-
 # NOTES:
 #
 # python function manager maintains a local table of "execution info" with a
 # "function_id" key and values taht are named tuples of name/function/max_calls.
 #
-# python remote function sets a UUID4 at construction time that's used to set
-# the function_hash (???)...comment suggests that "ideally" they'd use the hash
-# of the pickled function but that it's not stable for some reason.
-# but.....neither is a random UUID?????
+# python remote function sets a UUID4 at construction time:
+# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/remote_function.py#L128
+#
+# ...that's used to set the function_hash (???)...
+# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/remote_function.py#L263-L265
+#
+# later comment suggests that "ideally" they'd use the hash of the pickled
+# function:
+# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/includes/function_descriptor.pxi#L183-L186
+# 
+# ...but that it's not stable for some reason.  but.....neither is a random
+# UUID?????
 #
 # the function table key is built like
 # <key type>:<jobid>:key
@@ -23,14 +29,10 @@ using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get, JuliaFunction
 # XXX: what's the actual namespace to use?  probably set per-job but I dunno.
 const FUNCTION_MANAGER_NAMESPACE = "JuliaFunctions"
 
-# TODO: remove indirection after fields are settled
-Base.@kwdef struct FunctionManager1
+Base.@kwdef struct FunctionManager
     gcs_client::JuliaGcsClient
     functions::Dict{String,Any}
 end
-
-# TODO: remove indirection after fields are settled
-FunctionManager = FunctionManager1
 
 # XXX: we should probably be packaging task-related metadata like the job_id in
 # a task/remotefunction-like struct instead of passing it around like this.
@@ -40,7 +42,8 @@ function export_function!(fm::FunctionManager, f, job_id)
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
-              deepcopy(key), # DFK: I _think_ the string memory may be freed if we don't copy
+              deepcopy(key), # DFK: I _think_ the string memory may be mangled
+                             # if we don't copy.  not sure but it can't hurt
               -1)
         @debug "function already present in GCS store:" fd key f
     else
