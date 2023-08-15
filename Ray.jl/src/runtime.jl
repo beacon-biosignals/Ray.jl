@@ -51,8 +51,7 @@ end
 # information instead of parsing logs?  I can't quite tell where it's coming
 # from (set from a `ray.address` config option):
 # https://github.com/beacon-biosignals/ray/blob/beacon-main/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-initialize_coreworker() = initialize_coreworker(bootstrap_ray_args_from_raylet_out()...)
-initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
+initialize_coreworker() = rayjll.initialize_coreworker(bootstrap_ray_args_from_raylet_out()...)
 
 project_dir() = dirname(Pkg.project().path)
 
