@@ -4,6 +4,7 @@
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/stl.hpp"
 #include "ray/core_worker/common.h"
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
