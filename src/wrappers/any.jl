@@ -4,6 +4,8 @@ export Language, WorkerType, start_worker
 using CxxWrap
 using libcxxwrap_julia_jll
 
+using Serialization
+
 JLLWrappers.@generate_wrapper_header("ray_core_worker_julia")
 JLLWrappers.@declare_library_product(ray_core_worker_julia, "julia_core_worker_lib.so")
 @wrapmodule(joinpath(artifact"ray_core_worker_julia", "julia_core_worker_lib.so"))
@@ -135,18 +137,51 @@ function Base.propertynames(::Type{WorkerType}, private::Bool=false)
     end
 end
 
+#####
+##### Function descriptor wrangling
+#####
+
 # build a FunctionDescriptor from a julia function
 function function_descriptor(f::Function)
     mod = string(parentmodule(f))
     name = string(nameof(f))
-    # TODO: actually hash the serialized function?
-    hash = ""
-    return BuildJulia(mod, name, hash)
+    hash = let io = IOBuffer()
+        serialize(io, f)
+        # hexidecimal string repr of hash
+        string(Base.hash(io.data); base=16)
+    end
+    return function_descriptor(mod, name, hash)
 end
 
 Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
+function Base.propertynames(fd::JuliaFunctionDescriptor, private::Bool=false)
+    public_properties = (:module_name, :function_name, :function_hash)
+    return if private
+        tuple(public_properties..., fieldnames(typeof(fd))...)
+    else
+        public_properties
+    end
+end
+
+function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
+    return if field === :module_name
+        # these return refs so we need to de-reference them
+        ModuleName(fd)[]
+    elseif field === :function_name
+        FunctionName(fd)[]
+    elseif field === :function_hash
+        FunctionHash(fd)[]
+    else
+        Base.getfield(fd, field)
+    end
+end
+
 Base.show(io::IO, status::Status) = print(io, ToString(status))
+
+#####
+##### Upstream fixes
+#####
 
 # Works around what appears to be a CxxWrap issue
 function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})

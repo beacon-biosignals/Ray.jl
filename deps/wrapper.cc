@@ -125,6 +125,14 @@ std::string ToString(ray::FunctionDescriptor function_descriptor)
     return function_descriptor->ToString();
 }
 
+ray::JuliaFunctionDescriptor function_descriptor(const std::string &mod,
+                                                 const std::string &name,
+                                                 const std::string &hash) {
+    auto fd = FunctionDescriptorBuilder::BuildJulia(mod, name, hash);
+    auto ptr = fd->As<JuliaFunctionDescriptor>();
+    return *ptr;
+}
+
 std::string CallString(ray::FunctionDescriptor function_descriptor)
 {
     return function_descriptor->CallString();
@@ -201,10 +209,11 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-// TODO (omus): Ideally we would only pass in a `JuliaFunctionDescriptor`
-ObjectID _submit_task(std::string project_dir, const ray::FunctionDescriptor &func_descriptor) {
+ObjectID _submit_task(std::string project_dir,
+                      const ray::JuliaFunctionDescriptor &jl_func_descriptor) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
+    ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
     // TODO: These args are currently being ignored
@@ -302,21 +311,18 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("ClassName", &FunctionDescriptorInterface::ClassName)
         .method("DefaultTaskName", &FunctionDescriptorInterface::DefaultTaskName);
 
-    // this is a typedef for shared_ptr<FunctionDescriptorInterface>...I wish I
-    // could figure out how to de-reference this on the julia side but no dice so
-    // far.
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/function_descriptor.h#L274
     mod.add_type<FunctionDescriptor>("FunctionDescriptor");
 
     // function descriptors
     // XXX: may not want these in the end, just for interactive testing of the
     // function descriptor stuff.
-    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor", jlcxx::julia_base_type<FunctionDescriptorInterface>());
-        // .method("JuliaFunctionDescriptor", [] (std::shared_ptr<FunctionDescriptorInterface> fd) {
-        //     return reinterpret_cast<JuliaFunctionDescriptor *>(fd);
-        // });
+    mod.add_type<JuliaFunctionDescriptor>("JuliaFunctionDescriptor", jlcxx::julia_base_type<FunctionDescriptorInterface>())
+        .method("ModuleName", &JuliaFunctionDescriptor::ModuleName)
+        .method("FunctionName", &JuliaFunctionDescriptor::FunctionName)
+        .method("FunctionHash", &JuliaFunctionDescriptor::FunctionHash);
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
+    mod.method("function_descriptor", &function_descriptor);
     mod.method("ToString", &ToString);
     mod.method("CallString", &CallString);
 

@@ -58,7 +58,6 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
-
       # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
       # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
       - name: Restore build cache
@@ -124,3 +123,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
           flags: Ray.jl
+
+      # https://github.com/actions/cache/tree/main/save#always-save-cache
+      - name: Save build cache
+        uses: actions/cache/save@v3
+        if: always() && steps.build-cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+          path: ~/.cache
