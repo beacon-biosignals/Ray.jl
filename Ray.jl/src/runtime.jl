@@ -1,4 +1,4 @@
-function bootstrap_ray_args_from_raylet_out()
+function parse_ray_args_from_raylet_out()
     #=
     "Starting agent process with command: ... \
     --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493 \
