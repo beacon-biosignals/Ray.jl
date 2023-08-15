@@ -375,9 +375,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
     mod.add_type<RayObject>("RayObject")
-        .constructor<const std::shared_ptr<Buffer>,
-                     const std::shared_ptr<Buffer>,
-                     const std::vector<rpc::ObjectReference>,
+        .constructor<const std::shared_ptr<Buffer>&,
+                     const std::shared_ptr<Buffer>&,
+                     const std::vector<rpc::ObjectReference>&,
                      bool>()
         .method("GetData", &RayObject::GetData);
 
