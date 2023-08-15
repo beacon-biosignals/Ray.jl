@@ -141,6 +141,11 @@ ray::JuliaFunctionDescriptor function_descriptor(const std::string &mod,
     return *ptr;
 }
 
+ray::JuliaFunctionDescriptor unwrap_function_descriptor(ray::FunctionDescriptor fd) {
+    auto ptr = fd->As<JuliaFunctionDescriptor>();
+    return *ptr;
+}
+
 std::string CallString(ray::FunctionDescriptor function_descriptor)
 {
     return function_descriptor->CallString();
@@ -336,6 +341,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("function_descriptor", &function_descriptor);
+    mod.method("unwrap_function_descriptor", &unwrap_function_descriptor);
     mod.method("ToString", &ToString);
     mod.method("CallString", &CallString);
 

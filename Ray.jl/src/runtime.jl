@@ -14,11 +14,7 @@ function init()
     atexit(rayjll.shutdown_coreworker)
 
     gcs_address = args[3]
-    @info "connecting function manager to GCS at $gcs_address..."
-    gcs_client = JuliaGcsClient(gcs_address)
-    rayjll.Connect(gcs_client)
-    FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
-                                         functions=Dict{String,Any}())
+    _init_global_function_manager(gcs_address)
 
     return nothing
 end
@@ -86,15 +82,21 @@ initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
 project_dir() = dirname(Pkg.project().path)
 
 function submit_task(f::Function)
+    export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     return rayjll._submit_task(project_dir(), fd)
 end
 
 function task_executor(ray_function)
-    @info "task_executor called for JobID $(rayjll.GetCurrentJobId())"
+    @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
+    # TODO: may need to wait for function here...
+    @debug "task_executor: importing function" fd
+    func = import_function!(FUNCTION_MANAGER[],
+                            rayjll.unwrap_function_descriptor(fd),
+                            get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-    func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
+    # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
     @info "Calling $func"
     return func()
 end
@@ -159,6 +161,9 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
+    _init_global_function_manager(parsed_args["address"])
+
+    ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))
 

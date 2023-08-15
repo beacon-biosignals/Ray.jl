@@ -38,6 +38,14 @@ end
 
 const FUNCTION_MANAGER = Ref{FunctionManager}()
 
+function _init_global_function_manager(gcs_address)
+    @info "connecting function manager to GCS at $gcs_address..."
+    gcs_client = JuliaGcsClient(gcs_address)
+    rayjll.Connect(gcs_client)
+    FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
+                                         functions=Dict{String,Any}())
+end
+
 function function_key(fd::JuliaFunctionDescriptor, job_id=get_current_job_id())
     return string("RemoteFunction:", job_id, ":", fd.function_hash)
 end
@@ -45,6 +53,7 @@ end
 function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
+    @debug "exporting function to function store:" fd key
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
               deepcopy(key), # DFK: I _think_ the string memory may be mangled
                              # if we don't copy.  not sure but it can't hurt
@@ -70,11 +79,14 @@ function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor,
 end
 
 # XXX: this will error if the function is not found in the store.
+# TODO: consider _trying_ to resolve the function descriptor locally (i.e.,
+# somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function
+# store only if needed.
 function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
                           job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
-        @debug "retrieving $(fd) from function store with key $(key)"
+        @debug "function not found locally, retrieving from function store" fd key
         val = Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         try
             io = IOBuffer()
@@ -82,6 +94,9 @@ function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
             write(io, val)
             seekstart(io)
             f = deserialize(iob64)
+            # need to handle world-age issues on remote workers when
+            # deserializing the function effectively defines it
+            return (args...) -> invokelatest(f, args...)
         catch e
             error("Failed to deserialize function from store: $(fd)")
         end
