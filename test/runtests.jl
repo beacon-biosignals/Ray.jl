@@ -2,7 +2,7 @@ using CxxWrap
 using Test
 using ray_core_worker_julia_jll: JuliaFunctionDescriptor, function_descriptor
 using ray_core_worker_julia_jll: initialize_coreworker, shutdown_coreworker
-using ray_core_worker_julia_jll: get, put, submit_task
+using ray_core_worker_julia_jll: get, put
 
 include("utils.jl")
 
