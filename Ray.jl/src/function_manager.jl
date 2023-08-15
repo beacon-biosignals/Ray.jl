@@ -26,8 +26,9 @@
 
 using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get, JuliaFunctionDescriptor, function_descriptor
 
-# XXX: what's the actual namespace to use?  probably set per-job but I dunno.
-const FUNCTION_MANAGER_NAMESPACE = "JuliaFunctions"
+# python uses "fun" for the namespace: https://github.com/beacon-biosignals/ray/blob/dfk%2Fusing-Ray/python/ray/_private/ray_constants.py#L380
+# so "jlfun" seems reasonable
+const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 
 Base.@kwdef struct FunctionManager
     gcs_client::JuliaGcsClient

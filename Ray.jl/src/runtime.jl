@@ -61,7 +61,7 @@ function submit_task(f::Function)
 end
 
 function task_executor(ray_function)
-    @info "task_executor called"
+    @info "task_executor called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))

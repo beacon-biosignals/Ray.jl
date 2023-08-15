@@ -13,6 +13,7 @@ void initialize_coreworker(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
+    // XXX: this is hard coded! very bad!!!
     options.job_id = JobID::FromInt(1001);
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
@@ -89,6 +90,13 @@ void initialize_coreworker_worker(
     CoreWorkerProcess::Initialize(options);
 
     CoreWorkerProcess::RunTaskExecutionLoop();
+}
+
+// TODO: probably makes more sense to have a global worker rather than calling
+// GetCoreWorker() over and over again...(here and below)
+JobID GetCurrentJobId() {
+    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    return driver.GetCurrentJobId();
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
@@ -283,6 +291,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
+
+    mod.add_type<JobID>("JobID")
+        .method("ToInt", &JobID::ToInt);
+
+    mod.method("GetCurrentJobId", &GetCurrentJobId);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
