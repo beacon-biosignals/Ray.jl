@@ -13,3 +13,11 @@ function setup_ray_head_node(body)
     end
 end
     
+function setup_core_worker(body)
+    initialize_coreworker()
+    try
+        body()
+    finally
+        shutdown_coreworker()
+    end
+end

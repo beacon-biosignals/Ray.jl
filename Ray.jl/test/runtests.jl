@@ -17,5 +17,8 @@ include("utils.jl")
 
     setup_ray_head_node() do
         include("function_manager.jl")
+        setup_core_worker() do
+            include("task.jl")
+        end
     end
 end
