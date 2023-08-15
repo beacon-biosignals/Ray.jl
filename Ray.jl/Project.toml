@@ -8,6 +8,7 @@ ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 ray_core_worker_julia_jll = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
 

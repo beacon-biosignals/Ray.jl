@@ -1,6 +1,3 @@
-# export ray_core_worker_julia
-export Language, WorkerType, start_worker
-
 using CxxWrap
 using libcxxwrap_julia_jll
 
@@ -150,24 +147,26 @@ end
 
 function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                       node_manager_port, task_executor::Function)
-    cfunc = CxxWrap.@safe_cfunction(task_executor,
-                                    Int32,
-                                    # Note (omus): If you are trying to figure
-                                    # out what type to pass in here I recommend
-                                    # starting with `Any`. This will cause
-                                    # failures at runtime that show up in the
-                                    # "raylet.err" logs which tell you the type:
-                                    # ```
-                                    # libc++abi: terminating due to uncaught
-                                    # exception of type std::runtime_error:
-                                    # Incorrect argument type for cfunction at
-                                    # position 1, expected: RayFunctionAllocated,
-                                    # obtained: Any
-                                    # ```
-                                    # Using `ConstCxxRef` doesn't seem supported
-                                    # (i.e. `const &`)
-                                    (RayFunctionAllocated,))
+    # need to use `@eval` since `task_executor` is only defined at runtime
+    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor),
+                                          Int32,
+                                          # Note (omus): If you are trying to figure
+                                          # out what type to pass in here I recommend
+                                          # starting with `Any`. This will cause
+                                          # failures at runtime that show up in the
+                                          # "raylet.err" logs which tell you the type:
+                                          # ```
+                                          # libc++abi: terminating due to uncaught
+                                          # exception of type std::runtime_error:
+                                          # Incorrect argument type for cfunction at
+                                          # position 1, expected: RayFunctionAllocated,
+                                          # obtained: Any
+                                          # ```
+                                          # Using `ConstCxxRef` doesn't seem supported
+                                          # (i.e. `const &`)
+                                          (RayFunctionAllocated,))
 
+    @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
                                         ray_address, node_ip_address,
                                         node_manager_port, cfunc)

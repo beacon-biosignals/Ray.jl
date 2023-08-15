@@ -19,7 +19,6 @@ end
         setup_core_worker() do
             include("put_get.jl")
             include("function_descriptor.jl")
-            include("task.jl")
         end
     end
 end

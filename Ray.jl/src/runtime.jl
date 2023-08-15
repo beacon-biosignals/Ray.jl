@@ -52,26 +52,27 @@ end
 # from (set from a `ray.address` config option):
 # https://github.com/beacon-biosignals/ray/blob/beacon-main/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
 initialize_coreworker() = initialize_coreworker(bootstrap_ray_args_from_raylet_out()...)
-initialize_coreworker(args...) = ray_core_worker_julia_jll.initialize_coreworker(args...)
+initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
 
 project_dir() = dirname(Pkg.project().path)
 
 function submit_task(f::Function)
     fd = function_descriptor(f)
-    return _submit_task(project_dir(), fd)
+    return rayjll._submit_task(project_dir(), fd)
 end
 
 function task_executor(ray_function)
     @info "task_executor called"
-    fd = GetFunctionDescriptor(ray_function)
-    func = eval(@__MODULE__, Meta.parse(CallString(fd)))
+    fd = rayjll.GetFunctionDescriptor(ray_function)
+    # for some reason, `eval` gets shadowed by the Core (1-arg only) version
+    func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
     @info "Calling $func"
     return func()
 end
 
 #=
 julia -e sleep(120) -- \
-  /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
+  /Users/cvogt/.julia/dev/rayjll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
   --ray_node_manager_port=57236 \
@@ -134,11 +135,11 @@ function start_worker(args=ARGS)
 
     @info "Starting Julia worker runtime with args" parsed_args
 
-    return ray_core_worker_julia_jll.start_worker(parsed_args["raylet_socket"],
-                                                  parsed_args["store_socket"],
-                                                  parsed_args["address"],
-                                                  parsed_args["node_ip_address"],
-                                                  parsed_args["node_manager_port"],
-                                                  task_executor)
+    return rayjll.start_worker(parsed_args["raylet_socket"],
+                               parsed_args["store_socket"],
+                               parsed_args["address"],
+                               parsed_args["node_ip_address"],
+                               parsed_args["node_manager_port"],
+                               task_executor)
 
 end
