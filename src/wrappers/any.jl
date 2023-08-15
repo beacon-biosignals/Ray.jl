@@ -22,58 +22,6 @@ function __init__()
     @initcxx
 end  # __init__()
 
-function parse_ray_args()
-   #==
-    "Starting agent process with command: ...
-    --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493
-    --listen-port=52365 --node-manager-port=58888
-    --object-store-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/plasma_store
-    --raylet-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/raylet
-    --temp-dir=/tmp/ray --session-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385
-    --runtime-env-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/runtime_resources
-    --log-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/logs
-    --logging-rotate-bytes=536870912 --logging-rotate-backup-count=5
-    --session-name=session_2023-08-14_14-54-36_055139_41385
-    --gcs-address=127.0.0.1:6379 --minimal --agent-id 470211272
-   ==#
-    line = open("/tmp/ray/session_latest/logs/raylet.out") do io
-        while !eof(io)
-            line = readline(io)
-            if contains(line, "Starting agent process")
-                return line
-            end
-        end
-    end
-
-
-    # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
-    raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
-    raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
-
-    # --object-store-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/plasma_store
-    store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
-    store = store_match !== nothing ? String(store_match[1]) : error("Unable to find Object Store socket")
-
-    # --gcs-address=127.0.0.1:6379
-    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
-    gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
-
-    # --node-ip-address=127.0.0.1
-    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    node_ip = node_ip_match !== nothing ? String(node_ip_match[1]) : error("Unable to find Node IP address")
-
-    # --node-manager-port=63639
-    port_match = match(r"node-manager-port=([0-9]{1,5})", line)
-    node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
-
-    # TODO: downgrade to debug
-    @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
-
-    return (raylet, store, gcs_address, node_ip, node_port)
-end
-
-
-initialize_coreworker() = initialize_coreworker(parse_ray_args()...)
 
 # function Base.Symbol(language::Language)
 #     return if language === PYTHON
@@ -196,108 +144,31 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
-function task_executor(ray_function)
-    @info "task_executor called"
-    fd = GetFunctionDescriptor(ray_function)
-    func = eval(@__MODULE__, Meta.parse(CallString(fd)))
-    @info "Calling $func"
-    return func()
-end
+#####
+##### runtime wrappers
+#####
 
-project_dir() = dirname(Pkg.project().path)
+function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
+                      node_manager_port, task_executor::Function)
+    cfunc = CxxWrap.@safe_cfunction(task_executor,
+                                    Int32,
+                                    # Note (omus): If you are trying to figure
+                                    # out what type to pass in here I recommend
+                                    # starting with `Any`. This will cause
+                                    # failures at runtime that show up in the
+                                    # "raylet.err" logs which tell you the type:
+                                    # ```
+                                    # libc++abi: terminating due to uncaught
+                                    # exception of type std::runtime_error:
+                                    # Incorrect argument type for cfunction at
+                                    # position 1, expected: RayFunctionAllocated,
+                                    # obtained: Any
+                                    # ```
+                                    # Using `ConstCxxRef` doesn't seem supported
+                                    # (i.e. `const &`)
+                                    (RayFunctionAllocated,))
 
-function submit_task(f::Function)
-    fd = function_descriptor(f)
-    return _submit_task(project_dir(), fd)
-end
-
-#=
-julia -e sleep(120) -- \
-  /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
-  --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
-  --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
-  --ray_node_manager_port=57236 \
-  --ray_address=127.0.0.1:6379 \
-  --ray_redis_password= \
-  --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
-  --ray_logs_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/logs \
-  --ray_node_ip_address=127.0.0.1
-=#
-function start_worker(args=ARGS)
-    s = ArgParseSettings()
-
-    # Worker options are generated in the Raylet function `BuildProcessCommandArgs`
-    # (https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L232)
-    # and are parsed in Python here:
-    # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/workers/default_worker.py
-    @add_arg_table! s begin
-        "--ray_raylet_socket_name"
-            dest_name = "raylet_socket"
-            arg_type = String
-        "--ray_plasma_store_socket_name"
-            dest_name = "store_socket"
-            arg_type = String
-        "--ray_address"  # "127.0.0.1:6379"
-            dest_name = "address"
-            arg_type = String
-            help="The ip address of the GCS"
-        "--ray_node_manager_port"
-            dest_name = "node_manager_port"
-            arg_type = Int
-        "--ray_node_ip_address"
-            dest_name = "node_ip_address"
-            required=true
-            arg_type=String
-            help="The ip address of the worker's node"
-        "--ray_redis_password"
-            dest_name = "redis_password"
-            required=false
-            arg_type=String
-            default=""
-            help="the password to use for Redis"
-        "--ray_session_dir"
-            dest_name = "session_dir"
-        "--ray_logs_dir"
-            dest_name = "logs_dir"
-        "--runtime-env-hash"
-            dest_name="runtime_env_hash"
-            required=false
-            arg_type=Int
-            default=0
-            help="The computed hash of the runtime env for this worker"
-        "arg1"
-            required = true
-    end
-
-    parsed_args = parse_args(args, s)
-
-    # Note (omus): Logging is currently limited to a single worker as all workers attempt to
-    # write to the same file.
-    global_logger(FileLogger(joinpath(parsed_args["logs_dir"], "julia_worker.log");
-                             append=true, always_flush=true))
-    @info "Testing"
-    @info "$parsed_args"
-    initialize_coreworker_worker(
-        parsed_args["raylet_socket"],
-        parsed_args["store_socket"],
-        parsed_args["address"],
-        parsed_args["node_ip_address"],
-        parsed_args["node_manager_port"],
-        CxxWrap.@safe_cfunction(
-            task_executor,
-            Int32,
-
-            # Note (omus): If you are trying to figure out what type to pass in here I
-            # recommend starting with `Any`. This will cause failures at runtime that
-            # show up in the "raylet.err" logs which tell you the type:
-            # ```
-            # libc++abi: terminating due to uncaught exception of type
-            # std::runtime_error: Incorrect argument type for cfunction at position 1,
-            # expected: RayFunctionAllocated, obtained: Any
-            # ```
-            # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
-            (RayFunctionAllocated,),
-        ),
-    )
-
+    return initialize_coreworker_worker(raylet_socket, store_socket,
+                                        ray_address, node_ip_address,
+                                        node_manager_port, cfunc)
 end
