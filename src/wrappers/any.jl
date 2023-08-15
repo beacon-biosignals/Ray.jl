@@ -148,6 +148,14 @@ Base.show(io::IO, fd::FunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, fd::JuliaFunctionDescriptor) = print(io, ToString(fd))
 Base.show(io::IO, status::Status) = print(io, ToString(status))
 
+# build a RayObject from a string
+function ray_object(data::String)
+    data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
+    meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
+    nested_refs = ObjectReference()
+    return RayObject(data_buffer, meta_buffer, nested_refs, false)
+end
+
 # Works around what appears to be a CxxWrap issue
 function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
     return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
@@ -161,19 +169,23 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
-function task_executor(ray_function)
+function task_executor(ray_function, args)
     @info "task_executor called"
     fd = GetFunctionDescriptor(ray_function)
     func = eval(@__MODULE__, Meta.parse(CallString(fd)))
-    @info "Calling $func"
-    return func()
+    args = map(GetData, ray_args)
+    @info "Calling $func($args)"
+    return func(args)
 end
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function)
+function submit_task(f::Function, args...)
     fd = function_descriptor(f)
-    return _submit_task(project_dir(), fd)
+    ray_args = maps(args) do arg
+
+    end
+    return _submit_task(project_dir(), fd, ray_args)
 end
 
 #=
