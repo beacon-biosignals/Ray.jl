@@ -1,3 +1,29 @@
+function init()
+    # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
+    # more like what hte python Worker class does, getting node ID at
+    # initialization and using that as a proxy for whether it's connected or not
+    #
+    # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/_private/worker.py#L421
+    if isassigned(FUNCTION_MANAGER)
+        @warn "Ray already initialized, skipping..."
+        return nothing
+    end
+
+    args = parse_ray_args_from_raylet_out()
+    # TODO: use global state accessor to get next job id and provide that here
+    initialize_coreworker_driver(args...)
+    atexit(rayjll.shutdown_coreworker)
+
+    gcs_address = args[3]
+    _init_global_function_manager(gcs_address)
+
+    return nothing
+end
+
+# this could go in JLL but if/when global worker is hosted here it's better to
+# keep it local
+get_current_job_id() = rayjll.ToInt(rayjll.GetCurrentJobId())
+
 function parse_ray_args_from_raylet_out()
     #=
     "Starting agent process with command: ... \
@@ -50,21 +76,28 @@ end
 # TODO: use something like the java config bootstrap address (?) to get this
 # information instead of parsing logs?  I can't quite tell where it's coming
 # from (set from a `ray.address` config option):
-# https://github.com/beacon-biosignals/ray/blob/beacon-main/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-initialize_coreworker() = rayjll.initialize_coreworker(parse_ray_args_from_raylet_out()...)
+# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
+initialize_coreworker_driver() = initialize_coreworker_driver(parse_ray_args_from_raylet_out()...)
+initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
 project_dir() = dirname(Pkg.project().path)
 
 function submit_task(f::Function)
+    export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     return rayjll._submit_task(project_dir(), fd)
 end
 
 function task_executor(ray_function)
-    @info "task_executor called"
+    @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
+    # TODO: may need to wait for function here...
+    @debug "task_executor: importing function" fd
+    func = import_function!(FUNCTION_MANAGER[],
+                            rayjll.unwrap_function_descriptor(fd),
+                            get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-    func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
+    # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
     @info "Calling $func"
     return func()
 end
@@ -129,6 +162,10 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
+    _init_global_function_manager(parsed_args["address"])
+
+    # TODO: pass "debug mode" as a flag somehow
+    ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))
 

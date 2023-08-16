@@ -4,14 +4,14 @@
 # "function_id" key and values taht are named tuples of name/function/max_calls.
 #
 # python remote function sets a UUID4 at construction time:
-# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/remote_function.py#L128
+# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/remote_function.py#L128
 #
 # ...that's used to set the function_hash (???)...
-# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/remote_function.py#L263-L265
+# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/remote_function.py#L263-L265
 #
 # later comment suggests that "ideally" they'd use the hash of the pickled
 # function:
-# https://github.com/beacon-biosignals/ray/blob/beacon-main/python/ray/includes/function_descriptor.pxi#L183-L186
+# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/includes/function_descriptor.pxi#L183-L186
 # 
 # ...but that it's not stable for some reason.  but.....neither is a random
 # UUID?????
@@ -22,25 +22,38 @@
 # function manager holds:
 # local cache of functions (keyed by function id/hash from descriptor)
 # gcs client
-# maybe job id?
+# ~~maybe job id?~~ this is managed by the core worker process
 
-using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get, JuliaFunctionDescriptor, function_descriptor
+using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get,
+                                 JuliaFunctionDescriptor, function_descriptor
 
-# XXX: what's the actual namespace to use?  probably set per-job but I dunno.
-const FUNCTION_MANAGER_NAMESPACE = "JuliaFunctions"
+# python uses "fun" for the namespace: https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/_private/ray_constants.py#L380
+# so "jlfun" seems reasonable
+const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 
 Base.@kwdef struct FunctionManager
     gcs_client::JuliaGcsClient
     functions::Dict{String,Any}
 end
 
-# XXX: we should probably be packaging task-related metadata like the job_id in
-# a task/remotefunction-like struct instead of passing it around like this.
-function_key(fd::JuliaFunctionDescriptor, job_id) = string("RemoteFunction:", job_id, ":", fd.function_hash)
+const FUNCTION_MANAGER = Ref{FunctionManager}()
 
-function export_function!(fm::FunctionManager, f, job_id)
+function _init_global_function_manager(gcs_address)
+    @info "connecting function manager to GCS at $gcs_address..."
+    gcs_client = JuliaGcsClient(gcs_address)
+    rayjll.Connect(gcs_client)
+    FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
+                                         functions=Dict{String,Any}())
+end
+
+function function_key(fd::JuliaFunctionDescriptor, job_id=get_current_job_id())
+    return string("RemoteFunction:", job_id, ":", fd.function_hash)
+end
+
+function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     fd = function_descriptor(f)
     key = function_key(fd, job_id)
+    @debug "exporting function to function store:" fd key
     if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
               deepcopy(key), # DFK: I _think_ the string memory may be mangled
                              # if we don't copy.  not sure but it can't hurt
@@ -53,7 +66,8 @@ function export_function!(fm::FunctionManager, f, job_id)
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id;
+function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+                           job_id=get_current_job_id();
                            pollint_s=0.01, timeout_s=10)
     key = function_key(fd, job_id)
     status = timedwait(timeout_s; pollint=pollint_s) do
@@ -65,10 +79,14 @@ function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor, job
 end
 
 # XXX: this will error if the function is not found in the store.
-function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_id)
+# TODO: consider _trying_ to resolve the function descriptor locally (i.e.,
+# somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function
+# store only if needed.
+function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+                          job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
-        @debug "retrieving $(fd) from function store with key $(key)"
+        @debug "function not found locally, retrieving from function store" fd key
         val = Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         try
             io = IOBuffer()
@@ -76,6 +94,9 @@ function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor, job_
             write(io, val)
             seekstart(io)
             f = deserialize(iob64)
+            # need to handle world-age issues on remote workers when
+            # deserializing the function effectively defines it
+            return (args...) -> Base.invokelatest(f, args...)
         catch e
             error("Failed to deserialize function from store: $(fd)")
         end

@@ -1,6 +1,6 @@
 #include "wrapper.h"
 
-void initialize_coreworker(
+void initialize_coreworker_driver(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
@@ -13,6 +13,8 @@ void initialize_coreworker(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
+    // XXX: this is hard coded! very bad!!! should use global state accessor to
+    // get next job id instead
     options.job_id = JobID::FromInt(1001);
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
@@ -91,6 +93,13 @@ void initialize_coreworker_worker(
     CoreWorkerProcess::RunTaskExecutionLoop();
 }
 
+// TODO: probably makes more sense to have a global worker rather than calling
+// GetCoreWorker() over and over again...(here and below)
+JobID GetCurrentJobId() {
+    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    return driver.GetCurrentJobId();
+}
+
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
@@ -129,6 +138,11 @@ ray::JuliaFunctionDescriptor function_descriptor(const std::string &mod,
                                                  const std::string &name,
                                                  const std::string &hash) {
     auto fd = FunctionDescriptorBuilder::BuildJulia(mod, name, hash);
+    auto ptr = fd->As<JuliaFunctionDescriptor>();
+    return *ptr;
+}
+
+ray::JuliaFunctionDescriptor unwrap_function_descriptor(ray::FunctionDescriptor fd) {
     auto ptr = fd->As<JuliaFunctionDescriptor>();
     return *ptr;
 }
@@ -279,10 +293,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
-    mod.method("initialize_coreworker", &initialize_coreworker);
+    mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
     mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
+
+    mod.add_type<JobID>("JobID")
+        .method("ToInt", &JobID::ToInt);
+
+    mod.method("GetCurrentJobId", &GetCurrentJobId);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
@@ -323,6 +342,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("BuildJulia", &FunctionDescriptorBuilder::BuildJulia);
     mod.method("function_descriptor", &function_descriptor);
+    mod.method("unwrap_function_descriptor", &unwrap_function_descriptor);
     mod.method("ToString", &ToString);
     mod.method("CallString", &CallString);
 

@@ -14,7 +14,7 @@ function setup_ray_head_node(body)
 end
     
 function setup_core_worker(body)
-    initialize_coreworker()
+    Ray.init()
     try
         body()
     finally

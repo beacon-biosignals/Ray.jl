@@ -18,7 +18,7 @@ using ray::core::TaskOptions;
 using ray::core::WorkerType;
 
 
-void initialize_coreworker(
+void initialize_coreworker_driver(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
