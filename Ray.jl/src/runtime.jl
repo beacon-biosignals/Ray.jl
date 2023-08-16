@@ -92,7 +92,7 @@ function submit_task(f::Function, args)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-function task_executor(ray_function, args)
+function task_executor(ray_function, ray_objects)
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # TODO: may need to wait for function here...
@@ -102,7 +102,7 @@ function task_executor(ray_function, args)
                             get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    args = map(arg -> String(take!(GetData(arg))), ray_args)
+    args = map(arg -> String(take!(GetData(arg))), ray_objects)
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
     return func(args)
