@@ -134,8 +134,7 @@ function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
     return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
 end
 
-function Base.take!(buffer::Union{CxxWrap.CxxWrapCore.SmartPointer{<:Buffer},
-                                  CxxWrap.StdLib.SharedPtrAllocated{Buffer}})
+function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
     buffer_size = Size(buffer[])
     vec = Vector{UInt8}(undef, buffer_size)
