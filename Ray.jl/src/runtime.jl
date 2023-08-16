@@ -164,6 +164,7 @@ function start_worker(args=ARGS)
 
     _init_global_function_manager(parsed_args["address"])
 
+    # TODO: pass "debug mode" as a flag somehow
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))
