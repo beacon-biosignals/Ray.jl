@@ -1,3 +1,5 @@
+using ray_core_worker_julia_jll: initialize_coreworker_driver, shutdown_coreworker
+
 function setup_ray_head_node(body)
     prestarted = success(`ray status`)
     if !prestarted

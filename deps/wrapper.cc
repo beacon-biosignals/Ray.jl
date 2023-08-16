@@ -13,7 +13,8 @@ void initialize_coreworker_driver(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
-    // XXX: this is hard coded! very bad!!!
+    // XXX: this is hard coded! very bad!!! should use global state accessor to
+    // get next job id instead
     options.job_id = JobID::FromInt(1001);
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
