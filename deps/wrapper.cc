@@ -224,18 +224,17 @@ bool JuliaGcsClient::Exists(const std::string &ns,
 }
 
 ObjectID _submit_task(std::string project_dir,
-                      const ray::JuliaFunctionDescriptor &jl_func_descriptor) {
+                      const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      const std::vector<ObjectID> &object_ids) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
-    // TODO: These args are currently being ignored
     std::vector<std::unique_ptr<TaskArg>> args;
-    std::string str = "hello";
-    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-    auto ray_obj = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    args.emplace_back(new TaskArgByValue(ray_obj));
+    for (auto & obj_id : object_ids) {
+        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
+    }
 
     TaskOptions options;
 

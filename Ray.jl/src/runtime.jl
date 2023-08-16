@@ -82,10 +82,14 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function)
+function submit_task(f::Function, args)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    return rayjll._submit_task(project_dir(), fd)
+    object_ids = map(args) do arg
+        put(LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
+    end
+    object_ids = CxxWrap.StdVector(object_ids)
+    return rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
 function task_executor(ray_function, args)
