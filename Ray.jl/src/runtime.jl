@@ -105,7 +105,7 @@ function task_executor(ray_function, ray_objects)
     args = map(arg -> String(take!(GetData(arg))), ray_objects)
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
-    return func(args)
+    return func(args...)
 end
 
 #=
