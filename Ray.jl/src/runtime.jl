@@ -3,7 +3,7 @@ function init()
     # more like what hte python Worker class does, getting node ID at
     # initialization and using that as a proxy for whether it's connected or not
     #
-    # https://github.com/beacon-biosignals/ray/blob/dfk%2Fusing-Ray/python/ray/_private/worker.py#L421
+    # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/_private/worker.py#L421
     if isassigned(FUNCTION_MANAGER)
         @warn "Ray already initialized, skipping..."
         return nothing
@@ -75,7 +75,7 @@ end
 # TODO: use something like the java config bootstrap address (?) to get this
 # information instead of parsing logs?  I can't quite tell where it's coming
 # from (set from a `ray.address` config option):
-# https://github.com/beacon-biosignals/ray/blob/beacon-main/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
+# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
 initialize_coreworker() = initialize_coreworker(parse_ray_args_from_raylet_out()...)
 initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
 
