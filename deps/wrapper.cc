@@ -1,6 +1,6 @@
 #include "wrapper.h"
 
-void initialize_coreworker(
+void initialize_coreworker_driver(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
@@ -292,7 +292,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
-    mod.method("initialize_coreworker", &initialize_coreworker);
+    mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
     mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");

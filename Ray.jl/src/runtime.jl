@@ -10,7 +10,8 @@ function init()
     end
 
     args = parse_ray_args_from_raylet_out()
-    initialize_coreworker(args...)
+    # TODO: use global state accessor to get next job id and provide that here
+    initialize_coreworker_driver(args...)
     atexit(rayjll.shutdown_coreworker)
 
     gcs_address = args[3]
@@ -76,8 +77,8 @@ end
 # information instead of parsing logs?  I can't quite tell where it's coming
 # from (set from a `ray.address` config option):
 # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-initialize_coreworker() = initialize_coreworker(parse_ray_args_from_raylet_out()...)
-initialize_coreworker(args...) = rayjll.initialize_coreworker(args...)
+initialize_coreworker_driver() = initialize_coreworker_driver(parse_ray_args_from_raylet_out()...)
+initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
 project_dir() = dirname(Pkg.project().path)
 
