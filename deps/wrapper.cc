@@ -43,7 +43,7 @@ void initialize_coreworker_worker(
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction,
-        const std::vector<std::shared_ptr<RayObject>> &args
+        std::vector<std::shared_ptr<RayObject>>
         // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     )>(julia_task_executor);
 
@@ -379,6 +379,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
                      const std::vector<rpc::ObjectReference>&,
                      bool>()
         .method("GetData", &RayObject::GetData);
+    jlcxx::stl::apply_stl<rpc::RayObject>(mod);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)
