@@ -89,7 +89,7 @@ function submit_task(f::Function, args)
         put(LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
     end
     object_ids = CxxWrap.StdVector(object_ids)
-    return rayjll._submit_task(project_dir(), fd, object_ids)
+    return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
 function task_executor(ray_function, args)
