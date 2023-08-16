@@ -102,7 +102,7 @@ function task_executor(ray_function, ray_objects)
                             get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    args = map(arg -> String(take!(GetData(arg))), ray_objects)
+    args = map(arg -> String(take!(rayjll.GetData(arg))), ray_objects)
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
     return func(args...)
