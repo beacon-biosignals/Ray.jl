@@ -7,6 +7,7 @@ module Ray
 
 using ArgParse
 using Base64
+using CxxWrap: StdVector
 using Logging
 using LoggingExtras
 using Pkg
