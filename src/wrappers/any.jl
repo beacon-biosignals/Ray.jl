@@ -125,14 +125,6 @@ end
 Base.show(io::IO, status::Status) = print(io, ToString(status))
 Base.show(io::IO, jobid::JobID) = print(io, Int(ToInt(jobid)))
 
-# build a RayObject from a string
-function ray_object(data::String)
-    data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-    meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
-    nested_refs = CxxWrap.StdVector([ObjectReference()])
-    return RayObject(data_buffer, meta_buffer, nested_refs, false)
-end
-
 #####
 ##### Upstream fixes
 #####
