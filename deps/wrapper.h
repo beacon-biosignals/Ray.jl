@@ -68,4 +68,3 @@ public:
 };
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
-JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl);

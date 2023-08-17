@@ -165,7 +165,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                           # ```
                                           # Using `ConstCxxRef` doesn't seem supported
                                           # (i.e. `const &`)
-                                          (RayFunctionAllocated, StdVector))
+                                          (RayFunctionAllocated, Ptr))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
