@@ -1,5 +1,4 @@
 using CxxWrap
-using CxxWrap.StdLib: StdVectorAllocated
 using libcxxwrap_julia_jll
 
 using Serialization
@@ -166,7 +165,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                           # ```
                                           # Using `ConstCxxRef` doesn't seem supported
                                           # (i.e. `const &`)
-                                          (RayFunctionAllocated, StdVectorAllocated))
+                                          (RayFunctionAllocated, StdVector))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
