@@ -93,6 +93,9 @@ function submit_task(f::Function, args)
 end
 
 function task_executor(ray_function, ray_objects)
+    @debug "got ray_objects of type: $(typeof(ray_objects))"
+    ray_objects = rayjll.gimme_args(ray_objects)
+    @debug "ray_objects now of type: $(typeof(ray_objects))"
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # TODO: may need to wait for function here...
@@ -100,9 +103,7 @@ function task_executor(ray_function, ray_objects)
     func = import_function!(FUNCTION_MANAGER[],
                             rayjll.unwrap_function_descriptor(fd),
                             get_current_job_id())
-    # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-    # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    args = map(arg -> String(take!(rayjll.GetData(arg))), ray_objects)
+    args = map(arg -> String(take!(rayjll.GetData(arg[]))), ray_objects)
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
     return func(args...)

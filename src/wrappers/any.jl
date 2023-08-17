@@ -149,7 +149,8 @@ end
 function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                       node_manager_port, task_executor::Function)
     # need to use `@eval` since `task_executor` is only defined at runtime
-    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor),
+    # cfunc = @eval CxxWrap.@safe_cfunction($(task_executor),
+    cfunc = @eval Base.@cfunction($task_executor,
                                           Int32,
                                           # Note (omus): If you are trying to figure
                                           # out what type to pass in here I recommend
@@ -165,7 +166,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                           # ```
                                           # Using `ConstCxxRef` doesn't seem supported
                                           # (i.e. `const &`)
-                                          (RayFunctionAllocated, Ptr))
+                                          (RayFunctionAllocated, Ptr{Cvoid}))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,

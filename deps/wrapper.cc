@@ -40,12 +40,15 @@ void initialize_coreworker_worker(
     std::string gcs_address,
     std::string node_ip_address,
     int node_manager_port,
-    jlcxx::SafeCFunction julia_task_executor) {
-    auto task_executor = jlcxx::make_function_pointer<int(
-        RayFunction,
-        const std::vector<std::shared_ptr<RayObject>>*
-        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
-    )>(julia_task_executor);
+    void * julia_task_executor) {
+    // jlcxx::SafeCFunction julia_task_executor) {
+    // auto task_executor = jlcxx::make_function_pointer<int(
+    //     RayFunction,
+    //     const void*// const std::vector<std::shared_ptr<RayObject>>*
+    //     // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+    // )>(julia_task_executor);
+
+    auto task_executor = reinterpret_cast<int (*)(RayFunction, const void*)>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -81,8 +84,9 @@ void initialize_coreworker_worker(
             bool is_reattempt,
             bool is_streaming_generator) {
           // task_executor(ray_function, returns, args);
-          const std::vector<std::shared_ptr<RayObject>>* ptr = &args;
-          int pid = task_executor(ray_function, ptr);
+          // const std::vector<std::shared_ptr<RayObject>>* ptr = &args;
+            auto args_ptr = static_cast<const void *>(&args);
+          int pid = task_executor(ray_function, args_ptr);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -92,6 +96,11 @@ void initialize_coreworker_worker(
     CoreWorkerProcess::Initialize(options);
 
     CoreWorkerProcess::RunTaskExecutionLoop();
+}
+
+std::vector<std::shared_ptr<RayObject>> gimme_args(void * void_ptr) {
+    auto args_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(void_ptr);
+    return *args_ptr;
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -293,8 +302,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
-    mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
-    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
@@ -354,6 +361,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetLanguage", &RayFunction::GetLanguage)
         .method("GetFunctionDescriptor", &RayFunction::GetFunctionDescriptor);
 
+    mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
+    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
+
     // class Buffer
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
     mod.add_type<Buffer>("Buffer")
@@ -393,4 +403,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Get", &JuliaGcsClient::Get)
         .method("Keys", &JuliaGcsClient::Keys)
         .method("Exists", &JuliaGcsClient::Exists);
+
+    mod.method("gimme_args", &gimme_args);
+    mod.method("void_args", &void_args);
+
 }
