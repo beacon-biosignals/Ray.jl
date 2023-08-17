@@ -405,6 +405,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Exists", &JuliaGcsClient::Exists);
 
     mod.method("gimme_args", &gimme_args);
-    mod.method("void_args", &void_args);
-
 }
