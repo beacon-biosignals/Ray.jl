@@ -43,7 +43,7 @@ void initialize_coreworker_worker(
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction,
-        const std::vector<std::shared_ptr<RayObject>>*
+        std::vector<std::shared_ptr<RayObject>>
         // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     )>(julia_task_executor);
 
@@ -81,8 +81,7 @@ void initialize_coreworker_worker(
             bool is_reattempt,
             bool is_streaming_generator) {
           // task_executor(ray_function, returns, args);
-          const std::vector<std::shared_ptr<RayObject>>* ptr = &args;
-          int pid = task_executor(ray_function, ptr);
+          int pid = task_executor(ray_function, args);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -380,8 +379,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
                      const std::vector<rpc::ObjectReference>&,
                      bool>()
         .method("GetData", &RayObject::GetData);
-    jlcxx::stl::apply_stl<RayObject*>(mod);
-    jlcxx::stl::apply_stl<std::shared_ptr<RayObject>*>(mod);
+    jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)

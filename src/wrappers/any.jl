@@ -165,7 +165,11 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                           # ```
                                           # Using `ConstCxxRef` doesn't seem supported
                                           # (i.e. `const &`)
-                                          (RayFunctionAllocated, Ptr))
+                                          (RayFunctionAllocated,
+                                           # TODO: can simplify this I think?
+                                           # maybe not if it has to be the
+                                           # concrete type...
+                                           CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}}))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
