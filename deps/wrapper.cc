@@ -379,7 +379,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
                      const std::vector<rpc::ObjectReference>&,
                      bool>()
         .method("GetData", &RayObject::GetData);
-    jlcxx::stl::apply_stl<rpc::RayObject>(mod);
+    jlcxx::stl::apply_stl<RayObject*>(mod);
+    jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)
