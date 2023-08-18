@@ -8,6 +8,7 @@
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
+#include "ray/gcs/gcs_client/global_state_accessor.h"
 #include "ray/common/asio/instrumented_io_context.h"
 
 using namespace ray;

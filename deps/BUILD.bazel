@@ -25,6 +25,7 @@ cc_binary(
     copts = JULIA_CORE_WORKER_COPTS,
     deps = [
         "@com_github_ray_project_ray//:core_worker_lib",
+        "@com_github_ray_project_ray//:global_state_accessor_lib",
         "@julia//:headers",
         "@libcxxwrap_julia//:headers",
     ],

@@ -386,4 +386,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Get", &JuliaGcsClient::Get)
         .method("Keys", &JuliaGcsClient::Keys)
         .method("Exists", &JuliaGcsClient::Exists);
+
+    mod.add_type<ray::gcs::GlobalStateAccessor>("GlobalStateAccessor")
+        .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID);
 }
