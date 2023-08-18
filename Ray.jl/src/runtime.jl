@@ -113,7 +113,7 @@ function submit_task(f::Function, args...)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-function task_executor(ray_function, ray_objects, returns_ptr)
+function task_executor(ray_function, ray_objects)
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # TODO: may need to wait for function here...
@@ -132,21 +132,7 @@ function task_executor(ray_function, ray_objects, returns_ptr)
 
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
-    result = func(args...)
-
-    # cast results to StdVector(Pair(ObjectID, SharedPtr(RayObject))) and store it in the pointer
-    io = IOBuffer()
-    serialize(io, result)
-    data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(io.data)), sizeof(io.data), true)
-    meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
-    nested_refs = CxxWrap.StdVector(ObjectReference[])
-    ray_obj = RayObject(data_buffer, meta_buffer, nested_refs, false)
-
-    # TODO: unsafe_store!(returns_ptr, object_id, 1)
-    unsafe_store!(returns_ptr, ray_object, 2)
-
-    # TODO: return Status::OK here?
-    return nothing
+    return rayjll.RayObject(func(args...))
 end
 
 #=
