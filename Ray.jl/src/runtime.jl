@@ -82,10 +82,10 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function, args)
+function submit_task(f::Function, args...)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    object_ids = map(args) do arg
+    object_ids = map(collect(args)) do arg
         io=IOBuffer()
         serialize(io, arg)
         buffer_ptr = Ptr{Nothing}(pointer(io.data))
