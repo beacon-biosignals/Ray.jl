@@ -41,6 +41,7 @@ void initialize_coreworker_worker(
     std::string gcs_address,
     std::string node_ip_address,
     int node_manager_port,
+    int64_t startup_token,
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction,
@@ -60,7 +61,7 @@ void initialize_coreworker_worker(
     options.node_manager_port = node_manager_port;
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
-    options.startup_token = 0;
+    options.startup_token = startup_token;
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
