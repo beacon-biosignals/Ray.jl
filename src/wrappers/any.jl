@@ -149,9 +149,9 @@ _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oi
 function RayObject(x)
     io = IOBuffer()
     serialize(io, x)
-    data_buffer = rayjll.LocalMemoryBuffer(pointer(io.data), sizeof(io.data), true)
-    meta_buffer = rayjll.LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
-    nested_refs = CxxWrap.StdVector{rayjll.ObjectReference}()
+    data_buffer = LocalMemoryBuffer(pointer(io.data), sizeof(io.data), true)
+    meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
+    nested_refs = StdVector{ObjectReference}()
     return RayObject(data_buffer, meta_buffer, nested_refs, false)
 end
 
