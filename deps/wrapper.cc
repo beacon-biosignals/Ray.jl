@@ -42,8 +42,8 @@ void initialize_coreworker_worker(
     int node_manager_port,
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
-        RayFunction
-        // const std::vector<std::shared_ptr<RayObject>> &args,
+        RayFunction,
+        std::vector<std::shared_ptr<RayObject>>
         // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     )>(julia_task_executor);
 
@@ -81,7 +81,7 @@ void initialize_coreworker_worker(
             bool is_reattempt,
             bool is_streaming_generator) {
           // task_executor(ray_function, returns, args);
-          int pid = task_executor(ray_function);
+          int pid = task_executor(ray_function, args);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -224,18 +224,17 @@ bool JuliaGcsClient::Exists(const std::string &ns,
 }
 
 ObjectID _submit_task(std::string project_dir,
-                      const ray::JuliaFunctionDescriptor &jl_func_descriptor) {
+                      const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      const std::vector<ObjectID> &object_ids) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
-    // TODO: These args are currently being ignored
     std::vector<std::unique_ptr<TaskArg>> args;
-    std::string str = "hello";
-    auto buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-    auto ray_obj = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    args.emplace_back(new TaskArgByValue(ray_obj));
+    for (auto & obj_id : object_ids) {
+        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
+    }
 
     TaskOptions options;
 
@@ -370,11 +369,17 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("_submit_task", &_submit_task);
 
-    // mod.add_type<RayObject>("RayObject")
-    //     .constructor<const std::shared_ptr<Buffer>,
-    //                  const std::shared_ptr<Buffer>,
-    //                  const std::vector<rpc::ObjectReference>,
-    //                  bool>();
+    // class ObjectReference
+    mod.add_type<rpc::ObjectReference>("ObjectReference");
+    jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
+
+    mod.add_type<RayObject>("RayObject")
+        .constructor<const std::shared_ptr<Buffer>&,
+                     const std::shared_ptr<Buffer>&,
+                     const std::vector<rpc::ObjectReference>&,
+                     bool>()
+        .method("GetData", &RayObject::GetData);
+    jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)

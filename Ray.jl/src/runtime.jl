@@ -82,13 +82,16 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function)
+function submit_task(f::Function, args)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    return rayjll._submit_task(project_dir(), fd)
+    object_ids = map(args) do arg
+       rayjll.put(rayjll.LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
+    end
+    return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-function task_executor(ray_function)
+function task_executor(ray_function, ray_objects)
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # TODO: may need to wait for function here...
@@ -98,8 +101,10 @@ function task_executor(ray_function)
                             get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    @info "Calling $func"
-    return func()
+    args = map(arg -> String(take!(rayjll.GetData(arg[]))), ray_objects)
+    arg_string = join(string.("::", typeof.(args)), ", ")
+    @info "Calling $func($arg_string)"
+    return func(args...)
 end
 
 #=
