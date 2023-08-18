@@ -4,12 +4,15 @@
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/stl.hpp"
 #include "ray/core_worker/common.h"
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
 #include "ray/gcs/gcs_client/global_state_accessor.h"
 #include "ray/common/asio/instrumented_io_context.h"
+#include "ray/common/ray_object.h"
+
 
 using namespace ray;
 using ray::core::CoreWorkerProcess;
@@ -17,7 +20,8 @@ using ray::core::CoreWorkerOptions;
 using ray::core::RayFunction;
 using ray::core::TaskOptions;
 using ray::core::WorkerType;
-
+using ray::RayObject;
+using ray::rpc::ObjectReference;
 
 void initialize_coreworker_driver(
     std::string raylet_socket,
@@ -31,7 +35,9 @@ void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
 std::string ToString(ray::FunctionDescriptor function_descriptor);
-ObjectID _submit_task(std::string project_dir, const ray::JuliaFunctionDescriptor &func_descriptor);
+ObjectID _submit_task(std::string project_dir,
+                      const ray::JuliaFunctionDescriptor &func_descriptor,
+                      const std::vector<ObjectID> &object_ids);
 
 // a wrapper class to manage the IO service + thread that the GcsClient needs.
 // we may want to use the PythonGcsClient however, which does not do async
