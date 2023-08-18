@@ -369,7 +369,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("_submit_task", &_submit_task);
 
-    // mod.add_type<rpc::ObjectReference>("ObjectReference");
+    // class ObjectReference
     mod.add_type<rpc::ObjectReference>("ObjectReference");
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
