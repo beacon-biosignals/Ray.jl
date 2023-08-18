@@ -82,11 +82,16 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function, args)
+function submit_task(f::Function, args...)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    object_ids = map(args) do arg
-       rayjll.put(rayjll.LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
+    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
+    object_ids = map(collect(args)) do arg
+        io=IOBuffer()
+        serialize(io, arg)
+        buffer_ptr = Ptr{Nothing}(pointer(io.data))
+        buffer_size = sizeof(io.data)
+        return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
     end
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
@@ -101,7 +106,12 @@ function task_executor(ray_function, ray_objects)
                             get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    args = map(arg -> String(take!(rayjll.GetData(arg[]))), ray_objects)
+    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
+    args = map(ray_objects) do ray_obj
+        v = take!(rayjll.GetData(ray_obj[]))
+        io = IOBuffer(v)
+        return deserialize(io)
+    end
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
     return func(args...)
