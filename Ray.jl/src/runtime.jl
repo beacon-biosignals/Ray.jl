@@ -1,3 +1,5 @@
+const GLOBAL_STATE_ACCESSOR = Ref{rayjll.GlobalStateAccessor}()
+
 function init()
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
@@ -9,12 +11,24 @@ function init()
         return nothing
     end
 
+    # TODO: use something like the java config bootstrap address (?) to get this
+    # information instead of parsing logs?  I can't quite tell where it's coming
+    # from (set from a `ray.address` config option):
+    # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
     args = parse_ray_args_from_raylet_out()
-    # TODO: use global state accessor to get next job id and provide that here
-    initialize_coreworker_driver(args...)
+    gcs_address = args[3]
+
+    opts = rayjll.GcsClientOptions(gcs_address)
+    GLOBAL_STATE_ACCESSOR[] = rayjll.GlobalStateAccessor(opts)
+    rayjll.Connect(GLOBAL_STATE_ACCESSOR[]) ||
+        error("Failed to connect to Ray GCS at $(gcs_address)")
+    atexit(() -> rayjll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
+
+    job_id = rayjll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
+
+    initialize_coreworker_driver(args..., job_id)
     atexit(rayjll.shutdown_coreworker)
 
-    gcs_address = args[3]
     _init_global_function_manager(gcs_address)
 
     return nothing
@@ -73,11 +87,6 @@ function parse_ray_args_from_raylet_out()
     return (raylet, store, gcs_address, node_ip, node_port)
 end
 
-# TODO: use something like the java config bootstrap address (?) to get this
-# information instead of parsing logs?  I can't quite tell where it's coming
-# from (set from a `ray.address` config option):
-# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-initialize_coreworker_driver() = initialize_coreworker_driver(parse_ray_args_from_raylet_out()...)
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
 project_dir() = dirname(Pkg.project().path)
