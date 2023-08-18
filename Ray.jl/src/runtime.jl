@@ -86,7 +86,7 @@ function submit_task(f::Function, args)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     object_ids = map(args) do arg
-       rayjll. put(rayjll.LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
+       rayjll.put(rayjll.LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
     end
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
