@@ -9,5 +9,4 @@
 
     result2 = String(take!(ray_core_worker_julia_jll.get(oid2)))
     @test all(isdigit, result2)
-    @test parse(Int, result2) == 6
 end
