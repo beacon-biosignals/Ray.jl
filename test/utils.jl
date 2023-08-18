@@ -1,4 +1,4 @@
-using ray_core_worker_julia_jll: initialize_coreworker_driver, shutdown_coreworker
+using ray_core_worker_julia_jll: initialize_coreworker_driver, shutdown_coreworker, FromInt
 
 function setup_ray_head_node(body)
     prestarted = success(`ray status`)
