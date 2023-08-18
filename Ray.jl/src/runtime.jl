@@ -85,6 +85,7 @@ project_dir() = dirname(Pkg.project().path)
 function submit_task(f::Function, args...)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
+    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
     object_ids = map(collect(args)) do arg
         io=IOBuffer()
         serialize(io, arg)
@@ -105,6 +106,7 @@ function task_executor(ray_function, ray_objects)
                             get_current_job_id())
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
+    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
     args = map(ray_objects) do ray_obj
         v = take!(rayjll.GetData(ray_obj[]))
         io = IOBuffer(v)
