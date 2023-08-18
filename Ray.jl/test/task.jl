@@ -1,12 +1,13 @@
 @testset "Submit task" begin
-    # oid = submit_task(Int32 ∘ length, ["hello"])
-    # result = String(take!(ray_core_worker_julia_jll.get(oid)))
-    # @test all(isdigit, result)
-    # @test parse(Int, result) == 5
-
+    oid1 = submit_task(Int32 ∘ length, "hello")
     addme(x...) = Int32(sum(x))
-    oid = submit_task(addme, 1, 2, 3)
-    result = String(take!(ray_core_worker_julia_jll.get(oid)))
-    @test all(isdigit, result)
-    @test parse(Int, result) == 6
+    oid2 = submit_task(addme, 1, 2, 3)
+
+    result1 = String(take!(ray_core_worker_julia_jll.get(oid1)))
+    @test all(isdigit, result1)
+    @test parse(Int, result1) == 5
+
+    result2 = String(take!(ray_core_worker_julia_jll.get(oid2)))
+    @test all(isdigit, result2)
+    @test parse(Int, result2) == 6
 end
