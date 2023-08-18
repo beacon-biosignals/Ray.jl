@@ -45,8 +45,8 @@ void initialize_coreworker_worker(
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction,
-        std::vector<std::shared_ptr<RayObject>>
-        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+        std::vector<std::shared_ptr<RayObject>>,
+        std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>>
     )>(julia_task_executor);
 
     CoreWorkerOptions options;
@@ -82,13 +82,12 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-            RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: entered task_execuation_callback...";
-          // task_executor(ray_function, returns, args);
-          int pid = task_executor(ray_function, args);
-          std::string str = std::to_string(pid);
-          auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-          RAY_CHECK(returns->size() == 1);
-          (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
+          task_executor(ray_function, args, *returns);
+
+        //   std::string str = std::to_string(pid);
+        //   auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+        //   RAY_CHECK(returns->size() == 1);
+        //   (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
           return Status::OK();
         };
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
