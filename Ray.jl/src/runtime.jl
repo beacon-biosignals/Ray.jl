@@ -88,7 +88,6 @@ function submit_task(f::Function, args)
     object_ids = map(args) do arg
        rayjll. put(rayjll.LocalMemoryBuffer(Ptr{Nothing}(pointer(arg)), sizeof(arg), true))
     end
-    object_ids = StdVector(object_ids)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 

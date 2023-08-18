@@ -142,6 +142,10 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
+# XXX: Need to convert julia vectors to StdVector. This function helps us avoid having
+# CxxWrap as a direct dependency in Ray.jl
+_submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
+
 #####
 ##### runtime wrappers
 #####
