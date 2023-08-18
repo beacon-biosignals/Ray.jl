@@ -294,7 +294,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // attempting to use the shared library in Julia.
 
     mod.add_type<JobID>("JobID")
-        .method("ToInt", &JobID::ToInt);
+        .method("ToInt", &JobID::ToInt)
+        .method("FromInt", &JobID::FromInt);
 
     mod.method("GetCurrentJobId", &GetCurrentJobId);
 
