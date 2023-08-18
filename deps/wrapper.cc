@@ -5,7 +5,8 @@ void initialize_coreworker_driver(
     std::string store_socket,
     std::string gcs_address,
     std::string node_ip_address,
-    int node_manager_port) {
+    int node_manager_port,
+    JobID job_id) {
     // RAY_LOG_ENABLED(DEBUG);
 
     CoreWorkerOptions options;
@@ -15,7 +16,7 @@ void initialize_coreworker_driver(
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
     // XXX: this is hard coded! very bad!!! should use global state accessor to
     // get next job id instead
-    options.job_id = JobID::FromInt(1001);
+    options.job_id = job_id;
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     // options.enable_logging = true;
     // options.install_failure_signal_handler = true;
@@ -292,15 +293,17 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    mod.add_type<JobID>("JobID")
+        .method("ToInt", &JobID::ToInt)
+        .method("FromInt", &JobID::FromInt);
+
+    mod.method("GetCurrentJobId", &GetCurrentJobId);
+
     mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
     mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
     mod.method("shutdown_coreworker", &shutdown_coreworker);
     mod.add_type<ObjectID>("ObjectID");
 
-    mod.add_type<JobID>("JobID")
-        .method("ToInt", &JobID::ToInt);
-
-    mod.method("GetCurrentJobId", &GetCurrentJobId);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
@@ -391,4 +394,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Get", &JuliaGcsClient::Get)
         .method("Keys", &JuliaGcsClient::Keys)
         .method("Exists", &JuliaGcsClient::Exists);
+
+    mod.add_type<gcs::GcsClientOptions>("GcsClientOptions")
+        .constructor<const std::string&>();
+
+    mod.add_type<gcs::GlobalStateAccessor>("GlobalStateAccessor")
+        .constructor<const gcs::GcsClientOptions&>()
+        .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
+        .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
+        .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 }

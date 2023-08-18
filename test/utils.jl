@@ -1,4 +1,4 @@
-using ray_core_worker_julia_jll: initialize_coreworker_driver, shutdown_coreworker
+using ray_core_worker_julia_jll: initialize_coreworker_driver, shutdown_coreworker, FromInt
 
 function setup_ray_head_node(body)
     prestarted = success(`ray status`)
@@ -33,7 +33,8 @@ function setup_core_worker(body)
                                  "/tmp/ray/session_latest/sockets/plasma_store",
                                  "127.0.0.1:6379",
                                  "127.0.0.1",
-                                 node_manager_port())
+                                 node_manager_port(),
+                                 FromInt(1234))
     try
         body()
     finally

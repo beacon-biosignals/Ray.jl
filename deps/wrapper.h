@@ -9,6 +9,7 @@
 #include "ray/core_worker/core_worker.h"
 #include "src/ray/protobuf/common.pb.h"
 #include "ray/gcs/gcs_client/gcs_client.h"
+#include "ray/gcs/gcs_client/global_state_accessor.h"
 #include "ray/common/asio/instrumented_io_context.h"
 #include "ray/common/ray_object.h"
 
@@ -27,7 +28,8 @@ void initialize_coreworker_driver(
     std::string store_socket,
     std::string gcs_address,
     std::string node_ip_address,
-    int node_manager_port);
+    int node_manager_port,
+    JobID job_id);
 
 void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
