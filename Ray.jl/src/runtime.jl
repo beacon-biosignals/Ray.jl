@@ -113,25 +113,46 @@ function submit_task(f::Function, args...)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-function task_executor(ray_function, ray_objects)
-    @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
-    fd = rayjll.GetFunctionDescriptor(ray_function)
-    # TODO: may need to wait for function here...
-    @debug "task_executor: importing function" fd
-    func = import_function!(FUNCTION_MANAGER[],
-                            rayjll.unwrap_function_descriptor(fd),
-                            get_current_job_id())
-    # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-    # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    args = map(ray_objects) do ray_obj
-        v = take!(rayjll.GetData(ray_obj[]))
-        io = IOBuffer(v)
-        return deserialize(io)
+function task_executor(ray_function, ray_objects, application_error)
+    @show typeof(application_error)
+    try
+        @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
+        fd = rayjll.GetFunctionDescriptor(ray_function)
+        # TODO: may need to wait for function here...
+        @debug "task_executor: importing function" fd
+        func = import_function!(FUNCTION_MANAGER[],
+                                rayjll.unwrap_function_descriptor(fd),
+                                get_current_job_id())
+        # for some reason, `eval` gets shadowed by the Core (1-arg only) version
+        # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
+        # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
+        args = map(ray_objects) do ray_obj
+            v = take!(rayjll.GetData(ray_obj[]))
+            io = IOBuffer(v)
+            return deserialize(io)
+        end
+        arg_string = join(string.("::", typeof.(args)), ", ")
+        @info "Calling $func($arg_string)"
+        return func(args...)
+    catch e
+        # timestamp format to match python time.time()
+        # https://docs.python.org/3/library/time.html#time.time
+        timestamp = Dates.datetime2epochms(now()) / 1000
+        bt = catch_backtrace()
+        err_msg = sprint(showerror, e, bt)
+        @error "Caught exception during task execution: $(err_msg)"
+        # XXX: for some reason CxxWrap does not allow this:
+        # 
+        # application_error[] = err_msg
+        # 
+        # so we use a cpp function whose only job is to assign the value to the
+        # pointer
+        status = rayjll.report_error(application_error, err_msg, timestamp)
+        @debug "push error status: $status"
+        # XXX: waiting on https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/pull/31
+        # return e
+        return zero(Int32)
     end
-    arg_string = join(string.("::", typeof.(args)), ", ")
-    @info "Calling $func($arg_string)"
-    return func(args...)
 end
 
 #=

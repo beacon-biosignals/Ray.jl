@@ -45,7 +45,8 @@ void initialize_coreworker_worker(
     jlcxx::SafeCFunction julia_task_executor) {
     auto task_executor = jlcxx::make_function_pointer<int(
         RayFunction,
-        std::vector<std::shared_ptr<RayObject>>
+        std::vector<std::shared_ptr<RayObject>>, // args
+        std::string*                             // application_error
         // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     )>(julia_task_executor);
 
@@ -84,7 +85,7 @@ void initialize_coreworker_worker(
             bool is_streaming_generator) {
             RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: entered task_execuation_callback...";
           // task_executor(ray_function, returns, args);
-          int pid = task_executor(ray_function, args);
+          int pid = task_executor(ray_function, args, application_error);
           std::string str = std::to_string(pid);
           auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
           RAY_CHECK(returns->size() == 1);
@@ -267,6 +268,19 @@ ObjectID _submit_task(std::string project_dir,
     return ObjectRefsToIds(return_refs)[0];
 }
 
+Status report_error(std::string *application_error,
+                    const std::string &err_msg,
+                    double timestamp) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    auto const &jobid = worker.GetCurrentJobId();
+
+    // report error to coreworker
+    *application_error = err_msg;
+
+    // push error to relevant driver
+    return worker.PushError(jobid, "task", err_msg, timestamp);
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -409,4 +423,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
+
+    mod.method("report_error", &report_error);
 }

@@ -173,7 +173,8 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                            # TODO: can simplify this I think?
                                            # maybe not if it has to be the
                                            # concrete type...
-                                           CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}}))
+                                           CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}},
+                                           CxxPtr{CxxWrap.StdString}))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
