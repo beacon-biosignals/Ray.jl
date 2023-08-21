@@ -1,12 +1,12 @@
 @testset "Submit task" begin
-    oid1 = submit_task(Int32 ∘ length, "hello")
-    addme(x...) = Int32(sum(x))
-    oid2 = submit_task(addme, 1, 2, 3)
+    oid1 = submit_task(length, "hello")
+    oid2 = submit_task(max, 1, 2)
 
-    result1 = String(take!(ray_core_worker_julia_jll.get(oid1)))
-    @test all(isdigit, result1)
-    @test parse(Int, result1) == 5
+    result1 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid1))))
+    @test result1 isa Int
+    @test result1 == 5
 
-    result2 = String(take!(ray_core_worker_julia_jll.get(oid2)))
-    @test all(isdigit, result2)
+    result2 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid2))))
+    @test result2 isa Int
+    @test result2 == 2
 end

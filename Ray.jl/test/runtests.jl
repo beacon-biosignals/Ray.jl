@@ -2,6 +2,7 @@ using Test
 using Ray
 using Aqua
 using Distributed
+using Serialization
 
 using ray_core_worker_julia_jll
 
