@@ -146,13 +146,19 @@ end
 # CxxWrap as a direct dependency in Ray.jl
 _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
 
+const objects = []
+
 function RayObject(x)
     io = IOBuffer()
     serialize(io, x)
     data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(io.data)), sizeof(io.data), true)
     meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
     nested_refs = StdVector{ObjectReference}()
-    return RayObject(data_buffer, meta_buffer, nested_refs, false)
+
+    put(data_buffer)
+
+    object = RayObject(data_buffer, meta_buffer, nested_refs, false)
+    return object
 end
 
 #####
@@ -163,7 +169,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                       node_manager_port, task_executor::Function)
     # need to use `@eval` since `task_executor` is only defined at runtime
     cfunc = @eval CxxWrap.@safe_cfunction($(task_executor),
-                                          RayObjectAllocated,
+                                          CxxWrap.StdLib.SharedPtrAllocated{LocalMemoryBuffer},
                                           # Note (omus): If you are trying to figure
                                           # out what type to pass in here I recommend
                                           # starting with `Any`. This will cause

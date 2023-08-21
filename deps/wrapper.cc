@@ -42,7 +42,7 @@ void initialize_coreworker_worker(
     std::string node_ip_address,
     int node_manager_port,
     jlcxx::SafeCFunction julia_task_executor) {
-    auto task_executor = jlcxx::make_function_pointer<RayObject(
+    auto task_executor = jlcxx::make_function_pointer<std::shared_ptr<LocalMemoryBuffer>(
         RayFunction,
         std::vector<std::shared_ptr<RayObject>>
         // XXX: std::pair not wrapped: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
@@ -82,10 +82,10 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          RayObject result = task_executor(ray_function, args);
+          std::shared_ptr<LocalMemoryBuffer> buffer = task_executor(ray_function, args);
 
           RAY_CHECK(returns->size() == 1);
-          (*returns)[0].second = std::make_shared<RayObject>(std::move(result));
+          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
         };
     CoreWorkerProcess::Initialize(options);
