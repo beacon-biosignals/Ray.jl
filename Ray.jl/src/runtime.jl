@@ -115,6 +115,8 @@ function submit_task(f::Function, args...)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
+const BUFFERS = []
+
 function task_executor(ray_function, ray_objects)
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
@@ -134,7 +136,17 @@ function task_executor(ray_function, ray_objects)
 
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
-    return rayjll.RayObject(func(args...))
+    result = func(args...)
+    @info "Result: $result"
+
+    io = IOBuffer()
+    serialize(io, result)
+    buffer_ptr = Ptr{Nothing}(pointer(io.data))
+    buffer_size = sizeof(io.data)
+    buffer = rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true)
+    rayjll.put(buffer)
+    push!(BUFFERS, buffer)
+    return buffer
 end
 
 #=

@@ -146,13 +146,19 @@ end
 # CxxWrap as a direct dependency in Ray.jl
 _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
 
+const objects = []
+
 function RayObject(x)
     io = IOBuffer()
     serialize(io, x)
     data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(io.data)), sizeof(io.data), true)
     meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
     nested_refs = StdVector{ObjectReference}()
-    return RayObject(data_buffer, meta_buffer, nested_refs, false)
+
+    put(data_buffer)
+
+    object = RayObject(data_buffer, meta_buffer, nested_refs, false)
+    return object
 end
 
 #####
@@ -177,7 +183,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                  CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}})
 
     # need to use `@eval` since `task_executor` is only defined at runtime
-    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor), Int32, ($(arg_types...),))
+    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor), CxxWrap.StdLib.SharedPtrAllocated{LocalMemoryBuffer},, ($(arg_types...),))
 
     @info "cfunction generated!"
     result = initialize_coreworker_worker(raylet_socket, store_socket, ray_address,
