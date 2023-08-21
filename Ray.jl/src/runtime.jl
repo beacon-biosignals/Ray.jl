@@ -189,6 +189,10 @@ function start_worker(args=ARGS)
             arg_type=Int
             default=0
             help="The computed hash of the runtime env for this worker"
+        "--startup_token"
+            dest_name="startup_token"
+            required=false
+            arg_type=Int
         "arg1"
             required = true
     end
