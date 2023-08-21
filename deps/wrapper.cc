@@ -42,11 +42,18 @@ void initialize_coreworker_worker(
     std::string node_ip_address,
     int node_manager_port,
     jlcxx::SafeCFunction julia_task_executor) {
-    auto task_executor = jlcxx::make_function_pointer<std::shared_ptr<LocalMemoryBuffer>(
+    // auto task_executor = jlcxx::make_function_pointer<void(
+    //     RayFunction,
+    //     std::vector<std::shared_ptr<LocalMemoryBuffer>>,
+    //     std::vector<std::shared_ptr<RayObject>>
+    //     // XXX: std::pair not wrapped: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
+    //     // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>>
+    // )>(julia_task_executor);
+
+    auto task_executor = reinterpret_cast<void (*)(
         RayFunction,
-        std::vector<std::shared_ptr<RayObject>>
-        // XXX: std::pair not wrapped: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
-        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>>
+        const void*,
+        const void*
     )>(julia_task_executor);
 
     CoreWorkerOptions options;
@@ -82,15 +89,33 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-          std::shared_ptr<LocalMemoryBuffer> buffer = task_executor(ray_function, args);
+          std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
+          task_executor(ray_function, return_vec, args);
+
+          RAY_CHECK(return_vec.size() == 1);
+
+          std::shared_ptr<LocalMemoryBuffer> buffer = nullptr; // return_vec[0];
+          if (buffer == nullptr) {
+            std::cout << "Buffer Size: null" << std::endl;
+          }
+          else {
+            std::cout << "Buffer Size: " << buffer->Size() << std::endl;
+          }
+          // auto memory_buffer = std::make_shared<LocalMemoryBuffer>(buffer->Data(), buffer->Size(), true);
 
           RAY_CHECK(returns->size() == 1);
-          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
+          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), true);
           return Status::OK();
         };
     CoreWorkerProcess::Initialize(options);
 
     CoreWorkerProcess::RunTaskExecutionLoop();
+}
+
+void assign_hack(std::vector<std::shared_ptr<LocalMemoryBuffer>> vec, std::shared_ptr<LocalMemoryBuffer> buf) {
+    std::string str = "hi";
+    auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
+    vec.push_back(memory_buffer);
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -367,6 +392,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
+    // TODO: Try parent
+    jlcxx::stl::apply_stl<std::shared_ptr<LocalMemoryBuffer>>(mod);
 
     mod.method("put", &put);
     mod.method("get", &get);
@@ -411,4 +438,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
+
+    mod.method("assign_hack", &assign_hack);
 }
