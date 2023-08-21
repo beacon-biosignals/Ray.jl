@@ -41,7 +41,7 @@ void initialize_coreworker_worker(
     std::string gcs_address,
     std::string node_ip_address,
     int node_manager_port,
-    jlcxx::SafeCFunction julia_task_executor) {
+    void *julia_task_executor) {
     // auto task_executor = jlcxx::make_function_pointer<void(
     //     RayFunction,
     //     std::vector<std::shared_ptr<LocalMemoryBuffer>>,
@@ -90,11 +90,12 @@ void initialize_coreworker_worker(
             bool is_reattempt,
             bool is_streaming_generator) {
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          task_executor(ray_function, return_vec, args);
+          auto args_ptr = static_cast<const void *>(&args);
+          task_executor(ray_function, &return_vec, args_ptr);
 
           RAY_CHECK(return_vec.size() == 1);
 
-          std::shared_ptr<LocalMemoryBuffer> buffer = nullptr; // return_vec[0];
+          std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
           if (buffer == nullptr) {
             std::cout << "Buffer Size: null" << std::endl;
           }
@@ -112,10 +113,18 @@ void initialize_coreworker_worker(
     CoreWorkerProcess::RunTaskExecutionLoop();
 }
 
-void assign_hack(std::vector<std::shared_ptr<LocalMemoryBuffer>> vec, std::shared_ptr<LocalMemoryBuffer> buf) {
-    std::string str = "hi";
-    auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-    vec.push_back(memory_buffer);
+std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_returns(void *returns) {
+    auto returns_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(returns);
+    return returns_ptr;
+}
+
+std::vector<std::shared_ptr<RayObject>> cast_args(void *args) {
+    auto args_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(args);
+    return *args_ptr;
+}
+
+void assign_hack(std::vector<std::shared_ptr<LocalMemoryBuffer>> *vec, std::shared_ptr<LocalMemoryBuffer> buf) {
+    vec->push_back(buf);
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -440,4 +449,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
     mod.method("assign_hack", &assign_hack);
+    mod.method("cast_returns", &cast_returns);
+    mod.method("cast_args", &cast_args);
 }
