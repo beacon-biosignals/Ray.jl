@@ -12,7 +12,7 @@
 #include "ray/gcs/gcs_client/global_state_accessor.h"
 #include "ray/common/asio/instrumented_io_context.h"
 #include "ray/common/ray_object.h"
-
+#include "ray/util/logging.h"
 
 using namespace ray;
 using ray::core::CoreWorkerProcess;

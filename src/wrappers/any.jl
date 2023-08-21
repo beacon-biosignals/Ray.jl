@@ -151,7 +151,7 @@ _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oi
 #####
 
 function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                      node_manager_port, task_executor::Function)
+                      node_manager_port, startup_token, task_executor::Function)
 
     # Note (omus): If you are trying to figure out what type to pass in here I recommend
     # starting with `Any`. This will cause failures at runtime that show up in the
@@ -173,5 +173,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
                                         ray_address, node_ip_address,
-                                        node_manager_port, cfunc)
+                                        node_manager_port, startup_token,
+                                        cfunc)
+    @info "worker exiting `ray_core_worker_julia_jll.start_worker`"
 end

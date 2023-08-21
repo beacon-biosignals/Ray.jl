@@ -190,6 +190,11 @@ function start_worker(args=ARGS)
             arg_type=Int
             default=0
             help="The computed hash of the runtime env for this worker"
+        "--startup_token"
+            dest_name="startup_token"
+            required=false
+            arg_type=Int
+            default=0
         "arg1"
             required = true
     end
@@ -210,6 +215,6 @@ function start_worker(args=ARGS)
                                parsed_args["address"],
                                parsed_args["node_ip_address"],
                                parsed_args["node_manager_port"],
+                               parsed_args["startup_token"],
                                task_executor)
-
 end
