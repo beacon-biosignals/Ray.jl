@@ -163,12 +163,12 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     # ```
     # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
     arg_types = (RayFunctionAllocated,
-                 # TODO: can simplify this I think? # maybe not if it has to be the concrete
+                 # TODO: can simplify this I think? Maybe not if it has to be the concrete
                  # type...
                  CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}})
 
     # need to use `@eval` since `task_executor` is only defined at runtime
-    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor), Int32, arg_types)
+    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor), Int32, ($(arg_types...),))
 
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
