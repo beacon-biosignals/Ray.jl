@@ -168,7 +168,7 @@ end
 #####
 
 function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                      node_manager_port, task_executor::Function)
+                      node_manager_port, startup_token, task_executor::Function)
     # need to use `@eval` since `task_executor` is only defined at runtime
     cfunc = @eval @cfunction($(task_executor),
                             Cvoid,
@@ -193,5 +193,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     @info "cfunction generated!"
     return initialize_coreworker_worker(raylet_socket, store_socket,
                                         ray_address, node_ip_address,
-                                        node_manager_port, cfunc)
+                                        node_manager_port, startup_token,
+                                        cfunc)
+    @info "worker exiting `ray_core_worker_julia_jll.start_worker`"
 end

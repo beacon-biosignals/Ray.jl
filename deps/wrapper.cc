@@ -41,6 +41,7 @@ void initialize_coreworker_worker(
     std::string gcs_address,
     std::string node_ip_address,
     int node_manager_port,
+    int64_t startup_token,
     void *julia_task_executor) {
     // auto task_executor = jlcxx::make_function_pointer<void(
     //     RayFunction,
@@ -68,7 +69,7 @@ void initialize_coreworker_worker(
     options.node_manager_port = node_manager_port;
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
-    options.startup_token = 0;
+    options.startup_token = startup_token;
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
@@ -89,6 +90,8 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
+          RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: entered task_execution_callback...";
+
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
           auto args_ptr = static_cast<const void *>(&args);
           task_executor(ray_function, &return_vec, args_ptr);
@@ -108,9 +111,13 @@ void initialize_coreworker_worker(
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), true);
           return Status::OK();
         };
+    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
     CoreWorkerProcess::Initialize(options);
 
+    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Starting julia worker task execution loop";
     CoreWorkerProcess::RunTaskExecutionLoop();
+
+    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
 }
 
 std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_returns(void *returns) {
