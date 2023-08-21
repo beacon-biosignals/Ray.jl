@@ -4,8 +4,7 @@
     # @test all(isdigit, result)
     # @test parse(Int, result) == 5
 
-    addme(x...) = Int32(sum(x))
-    oid = submit_task(addme, 1, 2, 3)
+    oid = submit_task(Int32 ∘ sum, [1, 2, 3])
     result = take!(ray_core_worker_julia_jll.get(oid))
     @test all(isdigit, result)
     @test parse(Int, result) == 6
