@@ -117,7 +117,7 @@ end
 
 const BUFFERS = []
 
-function task_executor(ray_function, ray_objects)
+function task_executor(ray_function, returns, ray_objects)
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
     # TODO: may need to wait for function here...
@@ -139,14 +139,14 @@ function task_executor(ray_function, ray_objects)
     result = func(args...)
     @info "Result: $result"
 
-    io = IOBuffer()
-    serialize(io, result)
-    buffer_ptr = Ptr{Nothing}(pointer(io.data))
-    buffer_size = sizeof(io.data)
-    buffer = rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true)
+    buffer_data = Vector{UInt8}(sprint(serialize, result))
+    buffer_size = sizeof(buffer_data)
+    buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
     rayjll.put(buffer)
     push!(BUFFERS, buffer)
-    return buffer
+    rayjll.assign_hack(returns, buffer)
+    # push!(returns, buffer)
+    return nothing
 end
 
 #=
