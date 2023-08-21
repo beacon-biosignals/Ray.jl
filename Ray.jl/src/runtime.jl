@@ -69,6 +69,8 @@ function parse_ray_args_from_raylet_out()
         end
     end
 
+    line !== nothing || error("Unable to locate agent process information")
+
     # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
     raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
     raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
