@@ -1,7 +1,7 @@
 # NOTES:
 #
 # python function manager maintains a local table of "execution info" with a
-# "function_id" key and values taht are named tuples of name/function/max_calls.
+# "function_id" key and values that are named tuples of name/function/max_calls.
 #
 # python remote function sets a UUID4 at construction time:
 # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/remote_function.py#L128
@@ -12,7 +12,7 @@
 # later comment suggests that "ideally" they'd use the hash of the pickled
 # function:
 # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/includes/function_descriptor.pxi#L183-L186
-# 
+#
 # ...but that it's not stable for some reason.  but.....neither is a random
 # UUID?????
 #
