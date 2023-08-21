@@ -215,5 +215,4 @@ function start_worker(args=ARGS)
                                parsed_args["node_manager_port"],
                                parsed_args["startup_token"],
                                task_executor)
-
 end

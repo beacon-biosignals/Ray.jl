@@ -180,4 +180,5 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                         ray_address, node_ip_address,
                                         node_manager_port, startup_token,
                                         cfunc)
+    @info "worker exiting `ray_core_worker_julia_jll.start_worker`"
 end
