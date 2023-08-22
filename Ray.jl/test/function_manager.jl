@@ -13,7 +13,7 @@
     export_function!(fm, f, jobid)
 
     fd = function_descriptor(f)
-    @test wait_for_function(fm, fd, jobid) == :ok
+    @test wait_for_function(fm, fd, jobid; timeout_s=10) == :ok
     f2 = import_function!(fm, fd, jobid)
 
     @test f2.(1:10) == f.(1:10)
@@ -47,6 +47,23 @@
     fcd = function_descriptor(fc)
     fc2 = import_function!(fm, fcd, jobid)
     @test fc.(1:10) == fc2.(1:10) != f.(1:10)
+
+    @testset "warn/error for large functions" begin
+        bigf = let
+            x = rand(UInt8, Ray.FUNCTION_SIZE_WARN_THRESHOLD)
+            f(y) = y * sum(x)
+        end
+        @test_logs (:warn, "very large") export_function!(fm, bigf, jobid)
+        bigfd = function_descriptor(bigf)
+        bigf2 = import_function!(fm, bigfd, jobid)
+        @test bigf(100) == bigf2(100)
+
+        biggerf = let
+            x = rand(UInt8, Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
+            f(y) = y * sum(x)
+        end
+        @test_throws export_function!(fm, biggerf, jobid)
+    end
 
     # XXX: this works when run in global scope but unfortunately something about
     # the scope introduced by `@testset` causes the thunk sent as part of
