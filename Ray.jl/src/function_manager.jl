@@ -27,6 +27,32 @@
 using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get,
                                  JuliaFunctionDescriptor, function_descriptor
 
+# https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/ray_constants.py#L122-L123
+const FUNCTION_SIZE_WARN_THRESHOLD = 10_000_000  # in bytes
+const FUNCTION_SIZE_ERROR_THRESHOLD = 100_000_000  # in bytes
+
+_mib_string(len) = string(div(len, 1024 * 1024), " MiB")
+# https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/utils.py#L744-L746
+const _check_msg = "Check that its definition is not implicitly capturing a large " *
+                   "array or other object in scope. Tip: use `Ray.put()` to put large " *
+                   "objects in the Ray object store."
+
+function check_oversized_function(serialized, function_descriptor)
+    len = length(serialized)
+    if len > FUNCTION_SIZE_ERROR_THRESHOLD
+        msg = "The function $(rayjll.CallString(function_descriptor)) is too " *
+              "large ($(_mib_string(len))); FUNCTION_SIZE_ERROR_THRESHOLD=" *
+              "$(_mib_string(FUNCTION_SIZE_ERROR_THRESHOLD)). " * _check_msg
+        throw(ArgumentError(msg))
+    elseif len > FUNCTION_SIZE_WARN_THRESHOLD
+        msg = "The function $(rayjll.CallString(function_descriptor)) is very " *
+              "large ($(_mib_string(len))). " * _check_msg
+        @warn msg
+        # TODO: push warning message to driver if this is a worker
+    end
+    return nothing
+end
+
 # python uses "fun" for the namespace: https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/_private/ray_constants.py#L380
 # so "jlfun" seems reasonable
 const FUNCTION_MANAGER_NAMESPACE = "jlfun"
@@ -62,6 +88,7 @@ function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     else
         @debug "exporting function to GCS store:" fd key f
         val = base64encode(serialize, f)
+        check_oversized_function(val, fd)
         Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
     end
 end
