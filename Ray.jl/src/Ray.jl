@@ -7,7 +7,6 @@ module Ray
 
 using ArgParse
 using Base64
-using CxxWrap: CxxRef
 using Logging
 using LoggingExtras
 using Pkg

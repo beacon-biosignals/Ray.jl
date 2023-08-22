@@ -143,7 +143,7 @@ function task_executor(ray_function, returns, ray_objects)
     buffer_data = Vector{UInt8}(sprint(serialize, result))
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
-    push!(returns, CxxRef(buffer))
+    push!(returns, buffer)
     return nothing
 end
 
