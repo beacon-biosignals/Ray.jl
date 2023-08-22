@@ -51,7 +51,7 @@
     @testset "warn/error for large functions" begin
         # for some reason, using `let` to introduce local scope does not work
         # during test execution to generate a closure, even though it works
-        # locally.  so we use a factory intsead:
+        # locally, so we use a factory instead:
         function bigfactory(size)
             x = rand(UInt8, size)
             return f(y) = y * sum(x)
