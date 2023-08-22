@@ -17,7 +17,7 @@
     @test result3 != getpid()
 end
 
-@testset "RuntimeEnv" begin
+@testset "Task RuntimeEnv" begin
     @testset "project" begin
         # Project dir needs to include the current Ray.jl but have a different path than
         # the default
@@ -29,5 +29,21 @@ end
         oid = submit_task(f, (); runtime_env)
         result = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid))))
         @test result == project_dir
+    end
+
+    @testset "package_imports" begin
+        f = () -> nameof(Test)
+        runtime_env = Ray.RuntimeEnv(; package_imports=:(using Test))
+        oid = submit_task(f, (); runtime_env)
+        result = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid))))
+        @test result == :Test
+
+        # The spawned worker will fail with "ERROR: UndefVarError: `Test` not defined". For
+        # now since we have worker exception handling we'll detect this by attempting to
+        # fetch the object.
+        oid = submit_task(f, ())
+        @test_throws "C++ object of type N3ray6BufferE was deleted" begin
+            take!(ray_core_worker_julia_jll.get(oid))
+        end
     end
 end
