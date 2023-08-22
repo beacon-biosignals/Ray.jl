@@ -278,6 +278,10 @@ Status report_error(std::string *application_error,
     *application_error = err_msg;
 
     // push error to relevant driver
+    std::cerr << "jll: pushing error to driver: jobid "
+              << jobid
+              << " timestamp " << timestamp
+              << " " << err_msg << std::endl;
     return worker.PushError(jobid, "task", err_msg, timestamp);
 }
 
