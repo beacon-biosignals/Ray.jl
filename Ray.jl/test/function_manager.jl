@@ -49,19 +49,20 @@
     @test fc.(1:10) == fc2.(1:10) != f.(1:10)
 
     @testset "warn/error for large functions" begin
-        bigf = let
-            x = rand(UInt8, Ray.FUNCTION_SIZE_WARN_THRESHOLD)
-            f(y) = y * sum(x)
+        # for some reason, using `let` to introduce local scope does not work
+        # during test execution to generate a closure, even though it works
+        # locally.  so we use a factory intsead:
+        function bigfactory(size)
+            x = rand(UInt8, size)
+            return f(y) = y * sum(x)
         end
-        @test_logs (:warn, "very large") export_function!(fm, bigf, jobid)
+        bigf = bigfactory(Ray.FUNCTION_SIZE_WARN_THRESHOLD)
+        @test_logs (:warn, r"very large") export_function!(fm, bigf, jobid)
         bigfd = function_descriptor(bigf)
         bigf2 = import_function!(fm, bigfd, jobid)
         @test bigf(100) == bigf2(100)
 
-        biggerf = let
-            x = rand(UInt8, Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
-            f(y) = y * sum(x)
-        end
+        biggerf = bigfactory(Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
         @test_throws ArgumentError export_function!(fm, biggerf, jobid)
     end
 
