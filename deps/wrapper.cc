@@ -130,10 +130,6 @@ std::vector<std::shared_ptr<RayObject>> cast_args(void *args) {
     return *args_ptr;
 }
 
-void assign_hack(std::vector<std::shared_ptr<LocalMemoryBuffer>> *vec, std::shared_ptr<LocalMemoryBuffer> buf) {
-    vec->push_back(buf);
-}
-
 // TODO: probably makes more sense to have a global worker rather than calling
 // GetCoreWorker() over and over again...(here and below)
 JobID GetCurrentJobId() {
@@ -455,7 +451,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
-    mod.method("assign_hack", &assign_hack);
     mod.method("cast_returns", &cast_returns);
     mod.method("cast_args", &cast_args);
 }

@@ -115,8 +115,6 @@ function submit_task(f::Function, args...)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-const BUFFERS = []
-
 function task_executor(ray_function, returns, ray_objects)
     returns = rayjll.cast_returns(returns)
     ray_objects = rayjll.cast_args(ray_objects)
@@ -145,10 +143,7 @@ function task_executor(ray_function, returns, ray_objects)
     buffer_data = Vector{UInt8}(sprint(serialize, result))
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
-    rayjll.put(buffer)
-    push!(BUFFERS, buffer)
-    rayjll.assign_hack(returns, buffer)
-    # push!(returns, buffer)
+    push!(returns, CxxRef(buffer))
     return nothing
 end
 
