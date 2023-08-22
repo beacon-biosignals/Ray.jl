@@ -62,7 +62,7 @@
             x = rand(UInt8, Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
             f(y) = y * sum(x)
         end
-        @test_throws export_function!(fm, biggerf, jobid)
+        @test_throws ArgumentError export_function!(fm, biggerf, jobid)
     end
 
     # XXX: this works when run in global scope but unfortunately something about
