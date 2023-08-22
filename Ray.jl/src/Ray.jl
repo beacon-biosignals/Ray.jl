@@ -22,5 +22,6 @@ export start_worker, shutdown_coreworker, submit_task
 include("function_manager.jl")
 include("runtime_env.jl")
 include("runtime.jl")
+include("object_store.jl")
 
 end
