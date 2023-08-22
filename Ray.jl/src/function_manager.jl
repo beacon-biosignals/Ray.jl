@@ -42,7 +42,7 @@ function check_oversized_function(serialized, function_descriptor)
               "large ($(_mib_string(len))); FUNCTION_SIZE_ERROR_THRESHOLD=" *
               "$(_mib_string(FUNCTION_SIZE_ERROR_THRESHOLD)). " * check_msg
         throw(ArgumentError(msg))
-    elseif length(serialized) > FUNCTION_SIZE_WARN_THRESHOLD
+    elseif len > FUNCTION_SIZE_WARN_THRESHOLD
         msg = "The function $(rayjll.CallString(function_descriptor)) is very " *
               "large ($(_mib_string(len))). " * check_msg
         @warn msg
