@@ -115,9 +115,9 @@ function submit_task(f::Function, args...)
     return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
 end
 
-function task_executor(ray_function, returns, ray_objects)
-    returns = rayjll.cast_to_buffer(returns)
-    ray_objects = rayjll.cast_to_rayobject(ray_objects)
+function task_executor(ray_function, returns_ptr, task_args_ptr)
+    returns = rayjll.cast_to_returns(returns_ptr)
+    task_args = rayjll.cast_to_task_args(task_args_ptr)
 
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)
@@ -129,8 +129,8 @@ function task_executor(ray_function, returns, ray_objects)
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
     # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    args = map(ray_objects) do ray_obj
-        v = take!(rayjll.GetData(ray_obj[]))
+    args = map(task_args) do arg
+        v = take!(rayjll.GetData(arg[]))
         io = IOBuffer(v)
         return deserialize(io)
     end

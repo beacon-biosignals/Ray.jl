@@ -107,12 +107,12 @@ void initialize_coreworker_worker(
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
 }
 
-std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_buffer(void *ptr) {
+std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_returns(void *ptr) {
     auto buffer_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(ptr);
     return buffer_ptr;
 }
 
-std::vector<std::shared_ptr<RayObject>> cast_to_rayobject(void *ptr) {
+std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
     auto rayobj_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(ptr);
     return *rayobj_ptr;
 }
@@ -425,6 +425,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
-    mod.method("cast_to_buffer", &cast_to_buffer);
-    mod.method("cast_to_rayobject", &cast_to_rayobject);
+    mod.method("cast_to_returns", &cast_to_returns);
+    mod.method("cast_to_task_args", &cast_to_task_args);
 }
