@@ -1,4 +1,5 @@
 using CxxWrap
+using CxxWrap.StdLib: StdVector, SharedPtr
 using libcxxwrap_julia_jll
 
 using Serialization
@@ -142,6 +143,11 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
+# Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
+function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMemoryBuffer}
+    return push!(v, CxxRef(el))
+end
+
 # XXX: Need to convert julia vectors to StdVector. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
 function _submit_task(dir, fd, oids::AbstractVector)
@@ -166,13 +172,10 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     # obtained: Any
     # ```
     # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
-    arg_types = (RayFunctionAllocated,
-                 # TODO: can simplify this I think? Maybe not if it has to be the concrete
-                 # type...
-                 CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}})
+    arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid})
 
     # need to use `@eval` since `task_executor` is only defined at runtime
-    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor), Int32, ($(arg_types...),))
+    cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"
     result = initialize_coreworker_worker(raylet_socket, store_socket, ray_address,
