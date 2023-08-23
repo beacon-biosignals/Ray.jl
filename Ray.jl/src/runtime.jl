@@ -116,8 +116,8 @@ function submit_task(f::Function, args...)
 end
 
 function task_executor(ray_function, returns, ray_objects)
-    returns = rayjll.cast_returns(returns)
-    ray_objects = rayjll.cast_args(ray_objects)
+    returns = rayjll.cast_to_buffer(returns)
+    ray_objects = rayjll.cast_to_rayobject(ray_objects)
 
     @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
     fd = rayjll.GetFunctionDescriptor(ray_function)

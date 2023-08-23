@@ -118,14 +118,14 @@ void initialize_coreworker_worker(
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
 }
 
-std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_returns(void *returns) {
-    auto returns_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(returns);
-    return returns_ptr;
+std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_buffer(void *ptr) {
+    auto buffer_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(ptr);
+    return buffer_ptr;
 }
 
-std::vector<std::shared_ptr<RayObject>> cast_args(void *args) {
-    auto args_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(args);
-    return *args_ptr;
+std::vector<std::shared_ptr<RayObject>> cast_to_rayobject(void *ptr) {
+    auto rayobj_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(ptr);
+    return *rayobj_ptr;
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -436,6 +436,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
-    mod.method("cast_returns", &cast_returns);
-    mod.method("cast_args", &cast_args);
+    mod.method("cast_to_buffer", &cast_to_buffer);
+    mod.method("cast_to_rayobject", &cast_to_rayobject);
 }
