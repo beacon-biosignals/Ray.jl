@@ -15,5 +15,5 @@
     oid3 = submit_task(getpid)
     result3 = String(take!(ray_core_worker_julia_jll.get(oid3)))
     @test all(isdigit, result2)
-    @test parse(Int32 result2) != getpid()
+    @test parse(Int32, result2) != getpid()
 end
