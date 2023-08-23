@@ -246,9 +246,10 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID _submit_task(std::string project_dir,
-                      const ray::JuliaFunctionDescriptor &jl_func_descriptor,
-                      const std::vector<ObjectID> &object_ids) {
+ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      const std::vector<ObjectID> &object_ids,
+                      const std::string &serialize_runtime_env_info) {
+
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
@@ -259,12 +260,9 @@ ObjectID _submit_task(std::string project_dir,
         args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
     }
 
-    TaskOptions options;
-
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
-    // RuntimeEnvInfo (`options.serialized_runtime_env_info`): https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L39-L46
-    // RuntimeEnvContext (`{"serialized_runtime_env": ...}`): https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
-    options.serialized_runtime_env_info = "{\"serialized_runtime_env\": \"{\\\"env_vars\\\": {\\\"JULIA_PROJECT\\\": \\\"" + project_dir + "\\\"}}\"}";
+    TaskOptions options;
+    options.serialized_runtime_env_info = serialize_runtime_env_info;
 
     rpc::SchedulingStrategy scheduling_strategy;
     scheduling_strategy.mutable_default_scheduling_strategy();
