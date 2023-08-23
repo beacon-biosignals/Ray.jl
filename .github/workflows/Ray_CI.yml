@@ -23,23 +23,18 @@ jobs:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on:
       labels: ubuntu-20.04-16core
-    permissions:
-      id-token: write
-      contents: read
     strategy:
       fail-fast: false
       matrix:
         version:
-          - '1.8'
-          - '1.9'
+          - "1.8"  # Version used with MVP
+          - "1.9"  # Latest release
         os:
           - ubuntu-latest
         arch:
           - x64
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
       - name: Clone Ray repository
         uses: actions/checkout@v3
         with:
@@ -108,14 +103,14 @@ jobs:
           Pkg.develop(PackageSpec(; path="."))
       - uses: julia-actions/julia-buildpkg@v1
         with:
-          project: 'Ray.jl'
+          project: Ray.jl
       - uses: julia-actions/julia-runtest@v1
         with:
-          project: 'Ray.jl'
+          project: Ray.jl
           annotate: true
       - uses: julia-actions/julia-processcoverage@v1
         with:
-          directories: 'Ray.jl/src/'
+          directories: Ray.jl/src/
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
