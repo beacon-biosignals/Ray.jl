@@ -101,7 +101,7 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function, args...)
+function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEnv())
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
@@ -112,7 +112,16 @@ function submit_task(f::Function, args...)
         buffer_size = sizeof(io.data)
         return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
     end
-    return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
+
+    # Generate the JSON representation of `RuntimeEnvInfo`:
+    # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L40-L41
+    serialized_runtime_env_info = JSON3.write(
+        Dict(
+            "serialized_runtime_env" => JSON3.write(json_dict(runtime_env))::String
+        )
+    )
+
+    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr)
