@@ -115,13 +115,13 @@ function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEn
 
     # Generate the JSON representation of `RuntimeEnvInfo`:
     # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L40-L41
-    serialize_runtime_env_info = JSON3.write(
+    serialized_runtime_env_info = JSON3.write(
         Dict(
             "serialized_runtime_env" => JSON3.write(json_dict(runtime_env))::String
         )
     )
 
-    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialize_runtime_env_info)
+    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr)

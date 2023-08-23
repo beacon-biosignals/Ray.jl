@@ -248,7 +248,7 @@ bool JuliaGcsClient::Exists(const std::string &ns,
 
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<ObjectID> &object_ids,
-                      const std::string &serialize_runtime_env_info) {
+                      const std::string &serialized_runtime_env_info) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
@@ -262,7 +262,7 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
 
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
     TaskOptions options;
-    options.serialized_runtime_env_info = serialize_runtime_env_info;
+    options.serialized_runtime_env_info = serialized_runtime_env_info;
 
     rpc::SchedulingStrategy scheduling_strategy;
     scheduling_strategy.mutable_default_scheduling_strategy();
