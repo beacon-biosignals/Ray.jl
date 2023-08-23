@@ -389,8 +389,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
-    // TODO: Try parent
-    jlcxx::stl::apply_stl<std::shared_ptr<LocalMemoryBuffer>>(mod);
+    jlcxx::stl::apply_stl<std::shared_ptr<Buffer>>(mod);
 
     mod.method("put", &put);
     mod.method("get", &get);
