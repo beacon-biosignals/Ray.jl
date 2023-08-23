@@ -44,7 +44,8 @@ void initialize_coreworker_worker(
     int64_t startup_token,
     void *julia_task_executor) {
 
-    // XXX: Ideally the task_executor would take the expected callback arg types:
+    // XXX: Ideally the task_executor would use a `jlcxx::SafeCFunction` and take the expected
+    // callback arg types:
     //   std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     //   std::vector<std::shared_ptr<RayObject>>
     // But for now we just provide void pointers and cast them accordingly in the Julia function.
