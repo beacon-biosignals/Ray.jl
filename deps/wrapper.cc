@@ -87,8 +87,7 @@ void initialize_coreworker_worker(
             bool is_streaming_generator) {
 
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          auto args_ptr = static_cast<const void *>(&args);
-          task_executor(ray_function, &return_vec, args_ptr);
+          task_executor(ray_function, &return_vec, &args);  // implicity converts to void *
 
           RAY_CHECK(return_vec.size() == 1);
           RAY_CHECK(returns->size() == 1);
