@@ -168,21 +168,6 @@ end
 # CxxWrap as a direct dependency in Ray.jl
 _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
 
-const objects = []
-
-function RayObject(x)
-    io = IOBuffer()
-    serialize(io, x)
-    data_buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(io.data)), sizeof(io.data), true)
-    meta_buffer = LocalMemoryBuffer(Ptr{Nothing}(), 0, false)
-    nested_refs = StdVector{ObjectReference}()
-
-    put(data_buffer)
-
-    object = RayObject(data_buffer, meta_buffer, nested_refs, false)
-    return object
-end
-
 #####
 ##### runtime wrappers
 #####

@@ -305,7 +305,6 @@ namespace jlcxx
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
-    template<> struct DefaultConstructible<RayObject> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -414,19 +413,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
     mod.add_type<RayObject>("RayObject")
-        // .constructor<const std::shared_ptr<Buffer>&,
-        //              const std::shared_ptr<Buffer>&,
-        //              const std::vector<rpc::ObjectReference>&,
-        //              bool>()
         .method("GetData", &RayObject::GetData);
-    mod.method("RayObject", [] (
-        const std::shared_ptr<Buffer> &data,
-        const std::shared_ptr<Buffer> &metadata,
-        const std::vector<rpc::ObjectReference> &nested_refs,
-        bool copy_data = false
-    ){
-        return std::make_shared<RayObject>(data, metadata, nested_refs, copy_data);
-    });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")

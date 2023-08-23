@@ -20,8 +20,6 @@ using ray::core::CoreWorkerOptions;
 using ray::core::RayFunction;
 using ray::core::TaskOptions;
 using ray::core::WorkerType;
-using ray::RayObject;
-using ray::rpc::ObjectReference;
 
 void initialize_coreworker_driver(
     std::string raylet_socket,
