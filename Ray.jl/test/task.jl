@@ -9,4 +9,10 @@
     result2 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid2))))
     @test result2 isa UInt8
     @test result2 == 0xff
+
+    # task with no args
+    oid3 = submit_task(getpid)
+    result3 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid3))))
+    @test result3 isa Int32
+    @test result3 != getpid()
 end

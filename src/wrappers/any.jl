@@ -150,7 +150,11 @@ end
 
 # XXX: Need to convert julia vectors to StdVector. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
-_submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
+function _submit_task(dir, fd, oids::AbstractVector)
+    # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
+    args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
+    return _submit_task(dir, fd, args)
+end
 
 #####
 ##### runtime wrappers
