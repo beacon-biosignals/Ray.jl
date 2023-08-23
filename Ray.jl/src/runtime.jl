@@ -147,6 +147,7 @@ function task_executor(ray_function, returns, ray_objects)
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
     push!(returns, buffer)
+
     return nothing
 end
 
