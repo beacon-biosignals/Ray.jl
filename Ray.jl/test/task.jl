@@ -17,6 +17,19 @@
     @test result3 != getpid()
 end
 
+@testset "Task spawning a task" begin
+    # TODO: Test will need to be revised once we can run multiple tasks on the same worker.
+    # Hopefully we can access a "task ID" from within the task itself.
+    f = function ()
+        task_pid = getpid()
+        subtask_pid = Ray.get(submit_task(getpid, ()))
+        return (task_pid, subtask_pid)
+    end
+
+    task_pid, subtask_pid = Ray.get(submit_task(f, ()))
+    @test getpid() < task_pid < subtask_pid
+end
+
 @testset "RuntimeEnv" begin
     @testset "project" begin
         # Project dir needs to include the current Ray.jl but have a different path than
