@@ -1,4 +1,5 @@
 using CxxWrap
+using CxxWrap.StdLib: StdVector, SharedPtr
 using libcxxwrap_julia_jll
 
 using Serialization
@@ -142,9 +143,18 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
+# Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
+function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMemoryBuffer}
+    return push!(v, CxxRef(el))
+end
+
 # XXX: Need to convert julia vectors to StdVector. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
-_submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oids))
+function _submit_task(fd, oids::AbstractVector, serialized_runtime_env_info)
+    # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
+    args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
+    return _submit_task(fd, args, serialized_runtime_env_info)
+end
 
 #####
 ##### runtime wrappers
@@ -152,34 +162,24 @@ _submit_task(dir, fd, oids::AbstractVector) = _submit_task(dir, fd, StdVector(oi
 
 function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                       node_manager_port, startup_token, task_executor::Function)
-    # need to use `@eval` since `task_executor` is only defined at runtime
-    cfunc = @eval CxxWrap.@safe_cfunction($(task_executor),
-                                          Int32,
-                                          # Note (omus): If you are trying to figure
-                                          # out what type to pass in here I recommend
-                                          # starting with `Any`. This will cause
-                                          # failures at runtime that show up in the
-                                          # "raylet.err" logs which tell you the type:
-                                          # ```
-                                          # libc++abi: terminating due to uncaught
-                                          # exception of type std::runtime_error:
-                                          # Incorrect argument type for cfunction at
-                                          # position 1, expected: RayFunctionAllocated,
-                                          # obtained: Any
-                                          # ```
-                                          # Using `ConstCxxRef` doesn't seem supported
-                                          # (i.e. `const &`)
-                                          (RayFunctionAllocated,
-                                           # TODO: can simplify this I think?
-                                           # maybe not if it has to be the
-                                           # concrete type...
-                                           CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}},
-                                           CxxPtr{CxxWrap.StdString}))
+
+    # Note (omus): If you are trying to figure out what type to pass in here I recommend
+    # starting with `Any`. This will cause failures at runtime that show up in the
+    # "raylet.err" logs which tell you the type:
+    #```
+    # libc++abi: terminating due to uncaught exception of type std::runtime_error:
+    # Incorrect argument type for cfunction at position 1, expected: RayFunctionAllocated,
+    # obtained: Any
+    # ```
+    # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
+    arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid}, CxxPtr{CxxWrap.StdString})
+    cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"
-    return initialize_coreworker_worker(raylet_socket, store_socket,
-                                        ray_address, node_ip_address,
-                                        node_manager_port, startup_token,
-                                        cfunc)
+    result = initialize_coreworker_worker(raylet_socket, store_socket, ray_address,
+                                          node_ip_address, node_manager_port, startup_token,
+                                          cfunc)
+
     @info "worker exiting `ray_core_worker_julia_jll.start_worker`"
+    return result
 end

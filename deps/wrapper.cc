@@ -42,13 +42,16 @@ void initialize_coreworker_worker(
     std::string node_ip_address,
     int node_manager_port,
     int64_t startup_token,
-    jlcxx::SafeCFunction julia_task_executor) {
-    auto task_executor = jlcxx::make_function_pointer<int(
-        RayFunction,
-        std::vector<std::shared_ptr<RayObject>>, // args
-        std::string*                             // application_error
-        // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
-    )>(julia_task_executor);
+    void *julia_task_executor) {
+
+    // XXX: Ideally the task_executor would use a `jlcxx::SafeCFunction` and take the expected
+    // callback arg types:
+    //   std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+    //   std::vector<std::shared_ptr<RayObject>>
+    //   std::string *application_error
+    // But for now we just provide void pointers and cast them accordingly in the Julia function.
+    // Note also that std::pair is not wrapped by CxxWrap: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
+    auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*, std::string*)>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -83,13 +86,15 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
-            RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: entered task_execuation_callback...";
-          // task_executor(ray_function, returns, args);
-          int pid = task_executor(ray_function, args, application_error);
-          std::string str = std::to_string(pid);
-          auto memory_buffer = std::make_shared<LocalMemoryBuffer>(reinterpret_cast<uint8_t *>(&str[0]), str.size(), true);
-          RAY_CHECK(returns->size() == 1);
-          (*returns)[0].second = std::make_shared<RayObject>(memory_buffer, nullptr, std::vector<rpc::ObjectReference>());
+
+          std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
+          task_executor(ray_function, &return_vec, &args, application_string);  // implicity converts to void *
+
+          RAY_CHECK(return_vec.size() == 1);
+
+          // TODO: support multiple return values
+          std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
+          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
         };
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
@@ -99,6 +104,16 @@ void initialize_coreworker_worker(
     CoreWorkerProcess::RunTaskExecutionLoop();
 
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
+}
+
+std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_returns(void *ptr) {
+    auto buffer_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(ptr);
+    return buffer_ptr;
+}
+
+std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
+    auto rayobj_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(ptr);
+    return *rayobj_ptr;
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -231,9 +246,10 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-ObjectID _submit_task(std::string project_dir,
-                      const ray::JuliaFunctionDescriptor &jl_func_descriptor,
-                      const std::vector<ObjectID> &object_ids) {
+ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      const std::vector<ObjectID> &object_ids,
+                      const std::string &serialized_runtime_env_info) {
+
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
@@ -244,12 +260,9 @@ ObjectID _submit_task(std::string project_dir,
         args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
     }
 
-    TaskOptions options;
-
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
-    // RuntimeEnvInfo (`options.serialized_runtime_env_info`): https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L39-L46
-    // RuntimeEnvContext (`{"serialized_runtime_env": ...}`): https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
-    options.serialized_runtime_env_info = "{\"serialized_runtime_env\": \"{\\\"env_vars\\\": {\\\"JULIA_PROJECT\\\": \\\"" + project_dir + "\\\"}}\"}";
+    TaskOptions options;
+    options.serialized_runtime_env_info = serialized_runtime_env_info;
 
     rpc::SchedulingStrategy scheduling_strategy;
     scheduling_strategy.mutable_default_scheduling_strategy();
@@ -387,6 +400,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Size", &Buffer::Size)
         .method("OwnsData", &Buffer::OwnsData)
         .method("IsPlasmaBuffer", &Buffer::IsPlasmaBuffer);
+    jlcxx::stl::apply_stl<std::shared_ptr<Buffer>>(mod);
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>());
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
@@ -401,10 +415,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
     mod.add_type<RayObject>("RayObject")
-        .constructor<const std::shared_ptr<Buffer>&,
-                     const std::shared_ptr<Buffer>&,
-                     const std::vector<rpc::ObjectReference>&,
-                     bool>()
         .method("GetData", &RayObject::GetData);
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
@@ -429,4 +439,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
     mod.method("report_error", &report_error);
+
+    mod.method("cast_to_returns", &cast_to_returns);
+    mod.method("cast_to_task_args", &cast_to_task_args);
 }

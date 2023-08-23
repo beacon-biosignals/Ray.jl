@@ -8,6 +8,7 @@ module Ray
 using ArgParse
 using Base64
 using Dates
+using JSON3
 using Logging
 using LoggingExtras
 using Pkg
@@ -18,8 +19,9 @@ using ray_core_worker_julia_jll: shutdown_coreworker
 import ray_core_worker_julia_jll as rayjll
 
 export start_worker, shutdown_coreworker, submit_task
-include("runtime.jl")
 
 include("function_manager.jl")
+include("runtime_env.jl")
+include("runtime.jl")
 
 end

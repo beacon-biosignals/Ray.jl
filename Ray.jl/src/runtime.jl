@@ -69,6 +69,8 @@ function parse_ray_args_from_raylet_out()
         end
     end
 
+    line !== nothing || error("Unable to locate agent process information")
+
     # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
     raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
     raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
@@ -99,7 +101,7 @@ initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args
 
 project_dir() = dirname(Pkg.project().path)
 
-function submit_task(f::Function, args...)
+function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEnv())
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
@@ -110,11 +112,22 @@ function submit_task(f::Function, args...)
         buffer_size = sizeof(io.data)
         return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
     end
-    return GC.@preserve args rayjll._submit_task(project_dir(), fd, object_ids)
+
+    # Generate the JSON representation of `RuntimeEnvInfo`:
+    # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L40-L41
+    serialized_runtime_env_info = JSON3.write(
+        Dict(
+            "serialized_runtime_env" => JSON3.write(json_dict(runtime_env))::String
+        )
+    )
+
+    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
 end
 
-function task_executor(ray_function, ray_objects, application_error)
-    @show typeof(application_error)
+function task_executor(ray_function, returns_ptr, task_args_ptr, application_error)
+    returns = rayjll.cast_to_returns(returns_ptr)
+    task_args = rayjll.cast_to_task_args(task_args_ptr)
+
     try
         @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
         fd = rayjll.GetFunctionDescriptor(ray_function)
@@ -126,14 +139,16 @@ function task_executor(ray_function, ray_objects, application_error)
         # for some reason, `eval` gets shadowed by the Core (1-arg only) version
         # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
         # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-        args = map(ray_objects) do ray_obj
-            v = take!(rayjll.GetData(ray_obj[]))
+        args = map(task_args) do arg
+            v = take!(rayjll.GetData(arg[]))
             io = IOBuffer(v)
             return deserialize(io)
         end
+
         arg_string = join(string.("::", typeof.(args)), ", ")
         @info "Calling $func($arg_string)"
-        return func(args...)
+        result = func(args...)
+
     catch e
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
@@ -149,10 +164,21 @@ function task_executor(ray_function, ray_objects, application_error)
         # pointer
         status = rayjll.report_error(application_error, err_msg, timestamp)
         @debug "push error status: $status"
-        # XXX: waiting on https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/pull/31
-        # return e
-        return zero(Int32)
+
+        # TODO: wrap in something like RemoteException
+        result = e
     end
+
+    # TODO: remove - useful for now for debugging
+    @info "Result: $result"
+
+    # TODO: support multiple return values
+    buffer_data = Vector{UInt8}(sprint(serialize, result))
+    buffer_size = sizeof(buffer_data)
+    buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
+    push!(returns, buffer)
+
+    return nothing
 end
 
 #=

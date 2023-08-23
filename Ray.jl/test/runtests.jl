@@ -1,7 +1,8 @@
-using Test
-using Ray
 using Aqua
 using Distributed
+using Ray
+using Serialization
+using Test
 
 using ray_core_worker_julia_jll
 
