@@ -43,19 +43,12 @@ void initialize_coreworker_worker(
     int node_manager_port,
     int64_t startup_token,
     void *julia_task_executor) {
-    // auto task_executor = jlcxx::make_function_pointer<void(
-    //     RayFunction,
+
+    // XXX: Ideally the task_executor would take the provided callback arg types:
     //     std::vector<std::shared_ptr<LocalMemoryBuffer>>,
     //     std::vector<std::shared_ptr<RayObject>>
-    //     // XXX: std::pair not wrapped: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
-    //     // std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>>
-    // )>(julia_task_executor);
-
-    auto task_executor = reinterpret_cast<void (*)(
-        RayFunction,
-        const void*,
-        const void*
-    )>(julia_task_executor);
+    // However std::pair is not wrapped by CxxWrap https://github.com/JuliaInterop/CxxWrap.jl/issues/201
+    auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*)>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
