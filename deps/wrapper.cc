@@ -386,11 +386,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Size", &Buffer::Size)
         .method("OwnsData", &Buffer::OwnsData)
         .method("IsPlasmaBuffer", &Buffer::IsPlasmaBuffer);
+    jlcxx::stl::apply_stl<std::shared_ptr<Buffer>>(mod);
     mod.add_type<LocalMemoryBuffer>("LocalMemoryBuffer", jlcxx::julia_base_type<Buffer>());
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
-    jlcxx::stl::apply_stl<std::shared_ptr<Buffer>>(mod);
+    
 
     mod.method("put", &put);
     mod.method("get", &get);
