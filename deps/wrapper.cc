@@ -83,22 +83,15 @@ void initialize_coreworker_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator) {
+
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
           auto args_ptr = static_cast<const void *>(&args);
           task_executor(ray_function, &return_vec, args_ptr);
 
           RAY_CHECK(return_vec.size() == 1);
+          RAY_CHECK(returns->size() == 1);
 
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
-          if (buffer == nullptr) {
-            std::cout << "Buffer Size: null" << std::endl;
-          }
-          else {
-            std::cout << "Buffer Size: " << buffer->Size() << std::endl;
-          }
-          // auto memory_buffer = std::make_shared<LocalMemoryBuffer>(buffer->Data(), buffer->Size(), true);
-
-          RAY_CHECK(returns->size() == 1);
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), true);
           return Status::OK();
         };
