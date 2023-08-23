@@ -91,6 +91,7 @@ void initialize_coreworker_worker(
           RAY_CHECK(return_vec.size() == 1);
           RAY_CHECK(returns->size() == 1);
 
+          // TODO: support multiple return values
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), true);
           return Status::OK();

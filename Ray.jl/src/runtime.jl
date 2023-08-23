@@ -138,8 +138,11 @@ function task_executor(ray_function, returns, ray_objects)
     arg_string = join(string.("::", typeof.(args)), ", ")
     @info "Calling $func($arg_string)"
     result = func(args...)
+
+    # TODO: remove - useful for now for debugging
     @info "Result: $result"
 
+    # TODO: support multiple return values
     buffer_data = Vector{UInt8}(sprint(serialize, result))
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
