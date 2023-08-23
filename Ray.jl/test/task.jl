@@ -149,3 +149,21 @@ end
         end
     end
 end
+
+@testset "many tasks" begin
+    oids = map(1:20) do i
+        s = 20
+        submit_task(s, i) do s, i
+            println(stderr, "task $i running on PID $(getpid()) sleeping $s...")
+            flush(stderr)
+            sleep(s)
+            println("task $i running on PID $(getpid()) slept $s")
+            flush(stderr)
+            # need an Int32 return value for now
+            return Int32(i)
+        end
+    end
+
+    _get(x) = String(take!(ray_core_worker_julia_jll.get(x)))
+    @time map(_get, oids)
+end
