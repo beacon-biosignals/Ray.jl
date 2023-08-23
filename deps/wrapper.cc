@@ -44,11 +44,16 @@ void initialize_coreworker_worker(
     int64_t startup_token,
     void *julia_task_executor) {
 
-    // XXX: Ideally the task_executor would take the provided callback arg types:
-    //     std::vector<std::shared_ptr<LocalMemoryBuffer>>,
-    //     std::vector<std::shared_ptr<RayObject>>
-    // However std::pair is not wrapped by CxxWrap https://github.com/JuliaInterop/CxxWrap.jl/issues/201
-    auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*)>(julia_task_executor);
+    // XXX: Ideally the task_executor would take the return_args directly:
+    //     std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>>
+    // But std::pair is not wrapped by CxxWrap https://github.com/JuliaInterop/CxxWrap.jl/issues/201
+    // So we instead pass a (pointer to a) mutable vector to the Julia function which then 
+    // updates the return_args on the raylet.
+    auto task_executor = reinterpret_cast<void (*)(
+        RayFunction,                            // function to executor on the worker
+        const void*,                            // returns
+        std::vector<std::shared_ptr<RayObject>> //args
+    )>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -85,8 +90,7 @@ void initialize_coreworker_worker(
             bool is_streaming_generator) {
 
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          auto args_ptr = static_cast<const void *>(&args);
-          task_executor(ray_function, &return_vec, args_ptr);
+          task_executor(ray_function, &return_vec, args);
 
           RAY_CHECK(return_vec.size() == 1);
           RAY_CHECK(returns->size() == 1);
@@ -108,11 +112,6 @@ void initialize_coreworker_worker(
 std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_buffer(void *ptr) {
     auto buffer_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(ptr);
     return buffer_ptr;
-}
-
-std::vector<std::shared_ptr<RayObject>> cast_to_rayobject(void *ptr) {
-    auto rayobj_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(ptr);
-    return *rayobj_ptr;
 }
 
 // TODO: probably makes more sense to have a global worker rather than calling
@@ -424,5 +423,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
     mod.method("cast_to_buffer", &cast_to_buffer);
-    mod.method("cast_to_rayobject", &cast_to_rayobject);
 }

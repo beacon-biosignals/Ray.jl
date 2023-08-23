@@ -184,7 +184,7 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     # obtained: Any
     # ```
     # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
-    arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid})
+    arg_types = (RayFunctionAllocated, Ptr{Cvoid}, CxxWrap.StdLib.StdVectorAllocated{CxxWrap.StdLib.SharedPtr{RayObject}})
 
     # need to use `@eval` since `task_executor` is only defined at runtime
     cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
