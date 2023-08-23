@@ -44,10 +44,11 @@ void initialize_coreworker_worker(
     int64_t startup_token,
     void *julia_task_executor) {
 
-    // XXX: Ideally the task_executor would take the provided callback arg types:
-    //     std::vector<std::shared_ptr<LocalMemoryBuffer>>,
-    //     std::vector<std::shared_ptr<RayObject>>
-    // However std::pair is not wrapped by CxxWrap https://github.com/JuliaInterop/CxxWrap.jl/issues/201
+    // XXX: Ideally the task_executor would take the expected callback arg types:
+    //   std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
+    //   std::vector<std::shared_ptr<RayObject>>
+    // But for now we just provide void pointers and cast them accordingly in the Julia function.
+    // Note also that std::pair is not wrapped by CxxWrap: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
     auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*)>(julia_task_executor);
 
     CoreWorkerOptions options;
