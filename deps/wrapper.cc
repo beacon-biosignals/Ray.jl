@@ -95,7 +95,7 @@ void initialize_coreworker_worker(
 
           // TODO: support multiple return values
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
-          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), true);
+          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
         };
     RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
