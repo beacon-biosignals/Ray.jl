@@ -21,7 +21,7 @@ end
     @testset "project" begin
         # Project dir needs to include the current Ray.jl but have a different path than
         # the default
-        project_dir = joinpath(dirname(Pkg.project().path), "foo", "..")
+        project_dir = joinpath(Ray.project_dir(), "foo", "..")
         @test project_dir != Ray.RuntimeEnv().project
 
         f = () -> ENV["JULIA_PROJECT"]

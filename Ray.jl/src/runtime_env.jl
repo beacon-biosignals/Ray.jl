@@ -2,7 +2,7 @@ struct RuntimeEnv
     project::String
 end
 
-RuntimeEnv(; project=dirname(Pkg.project().path)) = RuntimeEnv(project)
+RuntimeEnv(; project=project_dir()) = RuntimeEnv(project)
 
 function json_dict(runtime_env::RuntimeEnv)
     # The keys of `context` must match what is supported by the Python `RuntimeEnvContext`:
@@ -11,3 +11,5 @@ function json_dict(runtime_env::RuntimeEnv)
 
     return context
 end
+
+project_dir() = dirname(Pkg.project().path)
