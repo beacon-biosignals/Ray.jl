@@ -143,23 +143,7 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     return vec
 end
 
-# Work around this:
-# ```
-# ERROR: MethodError: no method matching push_back(::CxxWrap.StdLib.StdVectorDereferenced{CxxWrap.StdLib.SharedPtr{
-# ray_core_worker_julia_jll.LocalMemoryBuffer}}, ::CxxWrap.CxxWrapCore.CxxRef{ray_core_worker_julia_jll.LocalMemory
-# Buffer})
-
-# Closest candidates are:
-#   push_back(!Matched::Union{CxxWrap.StdLib.StdVector{Any}, CxxWrap.CxxWrapCore.CxxRef{<:CxxWrap.StdLib.StdVector{
-# Any}}}, ::Any)
-#    @ CxxWrap ~/.julia/packages/CxxWrap/aXNBY/src/CxxWrap.jl:624
-#   push_back(!Matched::Union{Ptr{Nothing}, CxxWrap.CxxWrapCore.CxxPtr{<:CxxWrap.StdLib.StdVector{Any}}}, ::Any)
-#    @ CxxWrap ~/.julia/packages/CxxWrap/aXNBY/src/CxxWrap.jl:624
-#   push_back(::Union{CxxWrap.StdLib.StdVector{CxxWrap.StdLib.SharedPtr{ray_core_worker_julia_jll.LocalMemoryBuffer
-# }}, CxxWrap.CxxWrapCore.CxxRef{<:CxxWrap.StdLib.StdVector{CxxWrap.StdLib.SharedPtr{ray_core_worker_julia_jll.LocalMemoryBuffer}}}}, !Matched::Union{CxxWrap.CxxWrapCore.ConstCxxRef{<:CxxWrap.StdLib.SharedPtr{ray_core_worker_julia_jll.LocalMemoryBuffer}}, CxxWrap.CxxWrapCore.CxxRef{<:CxxWrap.StdLib.SharedPtr{ray_core_worker_julia_jll.Local
-# MemoryBuffer}}, CxxWrap.CxxWrapCore.SmartPointer{T2} where T2<:ray_core_worker_julia_jll.LocalMemoryBuffer})
-#    @ ray_core_worker_julia_jll ~/.julia/packages/CxxWrap/aXNBY/src/CxxWrap.jl:624
-# ```
+# Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
 function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMemoryBuffer}
     return push!(v, CxxRef(el))
 end
