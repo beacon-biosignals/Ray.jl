@@ -147,7 +147,7 @@ end
 function _submit_task(dir, fd, oids::AbstractVector)
     # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
     args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
-    _submit_task(dir, fd, args)
+    return _submit_task(dir, fd, args)
 end
 
 #####
