@@ -20,6 +20,7 @@ include("utils.jl")
         include("function_manager.jl")
         setup_core_worker() do
             include("task.jl")
+            include("object_store.jl")
         end
     end
 end

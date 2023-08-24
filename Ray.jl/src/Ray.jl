@@ -18,6 +18,7 @@ using ray_core_worker_julia_jll: shutdown_coreworker
 import ray_core_worker_julia_jll as rayjll
 
 export start_worker, shutdown_coreworker, submit_task
+export put, get
 
 include("function_manager.jl")
 include("runtime_env.jl")
