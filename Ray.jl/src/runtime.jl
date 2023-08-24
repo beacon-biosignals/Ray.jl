@@ -34,8 +34,8 @@ function init()
 
     job_id = rayjll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
-    initialize_coreworker_driver(args..., job_id)
-    atexit(rayjll.shutdown_coreworker)
+    rayjll.initialize_driver(args..., job_id)
+    atexit(rayjll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
 
@@ -234,11 +234,11 @@ function start_worker(args=ARGS)
 
     @info "Starting Julia worker runtime with args" parsed_args
 
-    return rayjll.start_worker(parsed_args["raylet_socket"],
-                               parsed_args["store_socket"],
-                               parsed_args["address"],
-                               parsed_args["node_ip_address"],
-                               parsed_args["node_manager_port"],
-                               parsed_args["startup_token"],
-                               task_executor)
+    return rayjll.initialize_worker(parsed_args["raylet_socket"],
+                                    parsed_args["store_socket"],
+                                    parsed_args["address"],
+                                    parsed_args["node_ip_address"],
+                                    parsed_args["node_manager_port"],
+                                    parsed_args["startup_token"],
+                                    task_executor)
 end
