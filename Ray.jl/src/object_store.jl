@@ -16,9 +16,9 @@ end
 
 """
     Ray.get(object_id::ObjectIDAllocated)
-    Ray.get(object_ids::AbstractVector)
+    Ray.get(object_ids::Union{AbstractVector, Tuple})
 
-Retrieves the data associated with the `object_id`(s) from the object store.
+Retrieves the data associated with the (collection of) `object_id`(s) from the object store.
 This method is blocking until the data is available in the local object store.
 """
 function get(oid::rayjll.ObjectIDAllocated)
@@ -26,7 +26,5 @@ function get(oid::rayjll.ObjectIDAllocated)
     return deserialize(io)
 end
 
-# TODO: support any collection? Python ray only supports lists, not tuples, don't see why not
-get(oids::AbstractVector) = map(get, oids)
-
+get(oids::Union{AbstractVector, Tuple}) = map(get, oids)
 get(x) = x
