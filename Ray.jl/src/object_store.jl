@@ -29,4 +29,4 @@ end
 # TODO: support any collection? Python ray only supports lists, not tuples, don't see why not
 get(oids::AbstractVector) = map(get, oids)
 
-# TOOD: fallback get(x) = x? Python ray errors but no good reason not to do this
+get(x) = x
