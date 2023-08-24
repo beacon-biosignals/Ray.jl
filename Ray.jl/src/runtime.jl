@@ -134,7 +134,7 @@ function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEn
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
-                       application_error)
+                       application_error, is_retryable_error)
     returns = rayjll.cast_to_returns(returns_ptr)
     task_args = rayjll.cast_to_task_args(task_args_ptr)
 
@@ -173,6 +173,9 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         # pointer
         err_msg = sprint(showerror, captured)
         status = rayjll.report_error(application_error, err_msg, timestamp)
+        # XXX: we _can_ set _this_ return pointer here for some reason, and it
+        # was _harder_ to toss it back over the fence to the wrapper C++ code
+        is_retryable_error[] = rayjll.CxxBool(false)
         @debug "push error status: $status"
 
         result = RayRemoteException(getpid(), task_name, captured)

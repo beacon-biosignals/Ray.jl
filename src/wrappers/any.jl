@@ -173,7 +173,8 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
     # ```
     # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
     arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid},
-                 CxxWrap.StdLib.StdStringAllocated, CxxPtr{CxxWrap.StdString})
+                 CxxWrap.StdLib.StdStringAllocated, CxxPtr{CxxWrap.StdString},
+                 CxxPtr{CxxBool})
     cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"

@@ -52,10 +52,11 @@ void initialize_worker(
     // But for now we just provide void pointers and cast them accordingly in the Julia function.
     // Note also that std::pair is not wrapped by CxxWrap: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
     auto task_executor = reinterpret_cast<void (*)(RayFunction,
-                                                   const void*, // returns
-                                                   const void*, // args
-                                                   std::string, // task_name
-                                                   std::string* // application_error
+                                                   const void*,  // returns
+                                                   const void*,  // args
+                                                   std::string,  // task_name
+                                                   std::string*, // application_error
+                                                   bool*         // is_retryable_error
                                                    )>(julia_task_executor);
 
     CoreWorkerOptions options;
@@ -93,7 +94,12 @@ void initialize_worker(
             bool is_streaming_generator) {
 
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          task_executor(ray_function, &return_vec, &args, task_name, application_error);  // implicity converts to void *
+          task_executor(ray_function,
+                        &return_vec, // implicity converts to void *
+                        &args,       // implicity converts to void *
+                        task_name,
+                        application_error,
+                        is_retryable_error);
 
           RAY_CHECK(return_vec.size() == 1);
 
@@ -294,6 +300,10 @@ Status report_error(std::string *application_error,
 
     // report error to coreworker
     *application_error = err_msg;
+    // XXX: for some reason, CxxWrap was mangling the argument types here making
+    // this very annoying
+    //
+    // *is_retryable_error = false;
 
     // push error to relevant driver
     std::cerr << "jll: pushing error to driver: jobid "
