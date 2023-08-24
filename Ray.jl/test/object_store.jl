@@ -1,23 +1,15 @@
 @testset "object_store.jl" begin
 
-    # Int
-    oid = put(1)
-    @test Ray.get(oid) == 1
+    @testset "Put/Get roundtrip for $(typeof(x))" for x in (
+        1, 1.23, "hello", (1, 2, 3), [1, 2, 3],
+    )
+        oid = Ray.put(x)
+        @test Ray.get(oid) == x
+    end
 
-    # Float
-    oid = put(1.23)
-    @test Ray.get(oid) == 1.23
-
-    # String
-    oid = put("hello")
-    @test Ray.get(oid) == "hello"
-
-    # Tuple
-    oid = put((1, 2, 3))
-    @test Ray.get(oid) == (1, 2, 3)
-
-    # Vector
-    oid = put([1, 2, 3])
-    @test Ray.get(oid) == [1, 2, 3]
-
+    @testset "get same object twice" begin
+        oid = Ray.put(1)
+        @test Ray.get(oid) == 1
+        @test Ray.get(oid) == 1
+    end
 end
