@@ -153,20 +153,20 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, application_err
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
         timestamp = Dates.datetime2epochms(now()) / 1000
-        bt = catch_backtrace()
-        err_msg = sprint(showerror, e, bt)
-        @error "Caught exception during task execution: $(err_msg)"
+        ce = CapturedException(e, catch_backtrace())
+        @error "Caught exception during task execution" exception=ce
         # XXX: for some reason CxxWrap does not allow this:
         # 
         # application_error[] = err_msg
         # 
         # so we use a cpp function whose only job is to assign the value to the
         # pointer
+        err_msg = sprint(showerror, ce)
         status = rayjll.report_error(application_error, err_msg, timestamp)
         @debug "push error status: $status"
 
         # TODO: wrap in something like RemoteException
-        result = e
+        result = ce
     end
 
     # TODO: remove - useful for now for debugging
