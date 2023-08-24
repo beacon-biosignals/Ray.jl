@@ -99,8 +99,6 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-project_dir() = dirname(Pkg.project().path)
-
 function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEnv())
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
