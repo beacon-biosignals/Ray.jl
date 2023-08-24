@@ -51,7 +51,12 @@ void initialize_worker(
     //   std::string *application_error
     // But for now we just provide void pointers and cast them accordingly in the Julia function.
     // Note also that std::pair is not wrapped by CxxWrap: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
-    auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*, std::string*)>(julia_task_executor);
+    auto task_executor = reinterpret_cast<void (*)(RayFunction,
+                                                   const void*, // returns
+                                                   const void*, // args
+                                                   std::string, // task_name
+                                                   std::string* // application_error
+                                                   )>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -88,7 +93,7 @@ void initialize_worker(
             bool is_streaming_generator) {
 
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          task_executor(ray_function, &return_vec, &args, application_error);  // implicity converts to void *
+          task_executor(ray_function, &return_vec, &args, task_name, application_error);  // implicity converts to void *
 
           RAY_CHECK(return_vec.size() == 1);
 

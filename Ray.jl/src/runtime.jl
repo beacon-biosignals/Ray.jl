@@ -1,3 +1,14 @@
+struct RayRemoteException <: Exception
+    pid::Int
+    task_name::String
+    captured::CapturedException
+end
+
+function Base.showerror(io::IO, re::RayRemoteException)
+    print(io, "on Ray task \"$(re.task_name)\" with PID $(re.pid): ")
+    showerror(io, re.captured)
+end
+
 """
     const GLOBAL_STATE_ACCESSOR::Ref{rayjll.GlobalStateAccessor}
 
@@ -122,7 +133,8 @@ function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEn
     return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
 end
 
-function task_executor(ray_function, returns_ptr, task_args_ptr, application_error)
+function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
+                       application_error)
     returns = rayjll.cast_to_returns(returns_ptr)
     task_args = rayjll.cast_to_task_args(task_args_ptr)
 
@@ -151,20 +163,19 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, application_err
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
         timestamp = Dates.datetime2epochms(now()) / 1000
-        ce = CapturedException(e, catch_backtrace())
-        @error "Caught exception during task execution" exception=ce
+        captured = CapturedException(e, catch_backtrace())
+        @error "Caught exception during task execution" exception=captured
         # XXX: for some reason CxxWrap does not allow this:
         # 
         # application_error[] = err_msg
         # 
         # so we use a cpp function whose only job is to assign the value to the
         # pointer
-        err_msg = sprint(showerror, ce)
+        err_msg = sprint(showerror, captured)
         status = rayjll.report_error(application_error, err_msg, timestamp)
         @debug "push error status: $status"
 
-        # TODO: wrap in something like RemoteException
-        result = ce
+        result = RayRemoteException(getpid(), task_name, captured)
     end
 
     # TODO: remove - useful for now for debugging

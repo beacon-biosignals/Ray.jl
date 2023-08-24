@@ -16,14 +16,18 @@ end
 
 """
     Ray.get(object_id::ObjectIDAllocated)
-    Ray.get(object_ids::Union{AbstractVector, Tuple})
 
-Retrieves the data associated with the (collection of) `object_id`(s) from the object store.
-This method is blocking until the data is available in the local object store.
+Retrieves the data associated with the `object_id` from the object store.  This
+method is blocking until the data is available in the local object store, even
+if run in an `@async` task.
+
+If the task that generated the `ObjectID` failed with a Julia exception, the
+captured exception will be thrown on `get`.
 """
 function get(oid::rayjll.ObjectIDAllocated)
     io = IOBuffer(take!(rayjll.get(oid)))
-    return deserialize(io)
+    result = deserialize(io)
+    result isa RayRemoteException ? throw(result) : return result
 end
 
 get(x) = x
