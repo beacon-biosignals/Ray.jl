@@ -16,7 +16,6 @@ end
 
 """
     Ray.get(object_id::ObjectIDAllocated)
-    Ray.get(object_ids::Union{AbstractVector, Tuple})
 
 Retrieves the data associated with the (collection of) `object_id`(s) from the object store.
 This method is blocking until the data is available in the local object store.
