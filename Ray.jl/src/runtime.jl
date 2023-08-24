@@ -128,7 +128,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, application_err
     returns = rayjll.cast_to_returns(returns_ptr)
     task_args = rayjll.cast_to_task_args(task_args_ptr)
 
-    try
+    result = try
         @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
         fd = rayjll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
@@ -147,8 +147,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, application_err
 
         arg_string = join(string.("::", typeof.(args)), ", ")
         @info "Calling $func($arg_string)"
-        result = func(args...)
 
+        result = func(args...)
     catch e
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time

@@ -15,6 +15,10 @@
     result3 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid3))))
     @test result3 isa Int32
     @test result3 != getpid()
+
+    # task that errors
+    oid4 = submit_task(error, ("AHHHHH",))
+    @test_throws ErrorException("AHHHHH") deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid4))))
 end
 
 @testset "RuntimeEnv" begin
