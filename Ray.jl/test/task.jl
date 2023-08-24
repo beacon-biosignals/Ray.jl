@@ -18,7 +18,8 @@
 
     # task that errors
     oid4 = submit_task(error, ("AHHHHH",))
-    @test_throws ErrorException("AHHHHH") deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid4))))
+    result4 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid4))))
+    @test result4 == ErrorException("AHHHHH")
 end
 
 @testset "RuntimeEnv" begin
