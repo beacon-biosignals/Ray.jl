@@ -19,4 +19,7 @@
         @test Ray.get([oid2, oid1]) == ["hello", 123]
     end
 
+    @testset "get fallback" begin
+        @test Ray.get(123) == 123
+    end
 end
