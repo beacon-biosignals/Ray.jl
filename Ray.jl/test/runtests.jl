@@ -5,6 +5,7 @@ using Serialization
 using Test
 
 using ray_core_worker_julia_jll
+import ray_core_worker_julia_jll as rayjll
 
 include("setup.jl")
 include("utils.jl")
@@ -20,6 +21,7 @@ include("utils.jl")
         include("function_manager.jl")
         setup_core_worker() do
             include("task.jl")
+            include("object_store.jl")
         end
     end
 end

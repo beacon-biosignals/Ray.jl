@@ -14,14 +14,13 @@ using LoggingExtras
 using Pkg
 using Serialization
 
-using ray_core_worker_julia_jll: shutdown_coreworker
-
 import ray_core_worker_julia_jll as rayjll
 
-export start_worker, shutdown_coreworker, submit_task
+export start_worker, submit_task
 
 include("function_manager.jl")
 include("runtime_env.jl")
 include("runtime.jl")
+include("object_store.jl")
 
 end
