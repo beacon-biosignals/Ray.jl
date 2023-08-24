@@ -5,6 +5,7 @@ using Serialization
 using Test
 
 using ray_core_worker_julia_jll
+import ray_core_worker_julia_jll as rayjll
 
 include("setup.jl")
 include("utils.jl")

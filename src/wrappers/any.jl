@@ -160,8 +160,8 @@ end
 ##### runtime wrappers
 #####
 
-function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                      node_manager_port, startup_token, task_executor::Function)
+function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
+                           node_manager_port, startup_token, task_executor::Function)
 
     # Note (omus): If you are trying to figure out what type to pass in here I recommend
     # starting with `Any`. This will cause failures at runtime that show up in the
@@ -178,10 +178,9 @@ function start_worker(raylet_socket, store_socket, ray_address, node_ip_address,
     cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"
-    result = initialize_coreworker_worker(raylet_socket, store_socket, ray_address,
-                                          node_ip_address, node_manager_port, startup_token,
-                                          cfunc)
+    result = initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
+                               node_manager_port, startup_token, cfunc)
 
-    @info "worker exiting `ray_core_worker_julia_jll.start_worker`"
+    @info "worker exiting `ray_core_worker_julia_jll.initialize_worker`"
     return result
 end

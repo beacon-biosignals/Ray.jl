@@ -21,15 +21,6 @@ using ray::core::RayFunction;
 using ray::core::TaskOptions;
 using ray::core::WorkerType;
 
-void initialize_coreworker_driver(
-    std::string raylet_socket,
-    std::string store_socket,
-    std::string gcs_address,
-    std::string node_ip_address,
-    int node_manager_port,
-    JobID job_id);
-
-void shutdown_coreworker();
 ObjectID put(std::shared_ptr<Buffer> buffer);
 std::shared_ptr<Buffer> get(ObjectID object_id);
 std::string ToString(ray::FunctionDescriptor function_descriptor);

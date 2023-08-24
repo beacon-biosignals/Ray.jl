@@ -1,6 +1,6 @@
 #include "wrapper.h"
 
-void initialize_coreworker_driver(
+void initialize_driver(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
@@ -28,14 +28,14 @@ void initialize_coreworker_driver(
     CoreWorkerProcess::Initialize(options);
 }
 
-void shutdown_coreworker() {
+void shutdown_driver() {
     CoreWorkerProcess::Shutdown();
 }
 
 // https://www.kdab.com/how-to-cast-a-function-pointer-to-a-void/
 // https://docs.oracle.com/cd/E19059-01/wrkshp50/805-4956/6j4mh6goi/index.html
 
-void initialize_coreworker_worker(
+void initialize_worker(
     std::string raylet_socket,
     std::string store_socket,
     std::string gcs_address,
@@ -319,11 +319,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("GetCurrentJobId", &GetCurrentJobId);
 
-    mod.method("initialize_coreworker_driver", &initialize_coreworker_driver);
-    mod.method("initialize_coreworker_worker", &initialize_coreworker_worker);
-    mod.method("shutdown_coreworker", &shutdown_coreworker);
+    mod.method("initialize_driver", &initialize_driver);
+    mod.method("shutdown_driver", &shutdown_driver);
+    mod.method("initialize_worker", &initialize_worker);
     mod.add_type<ObjectID>("ObjectID");
-
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
