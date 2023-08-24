@@ -17,6 +17,7 @@
         oid1 = Ray.put(123)
         oid2 = Ray.put("hello")
         @test Ray.get([oid2, oid1]) == ["hello", 123]
+        @test Ray.get((oid2, oid1)) == ("hello", 123)
     end
 
     @testset "get fallback" begin
