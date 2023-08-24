@@ -1,3 +1,9 @@
+"""
+    Ray.put(data) -> ObjectIDAllocated
+
+Stores `data` in the object store and returns an object reference assigned to the value that
+can used to retrieve the data with [`Ray.get`](@ref).
+"""
 function put(data)
     bytes = Vector{UInt8}()
     io = IOBuffer(bytes; write=true)
@@ -8,6 +14,12 @@ function put(data)
     return rayjll.put(buffer)
 end
 
+"""
+    Ray.get(object_id::ObjectIDAllocated)
+
+Retrieves the data associated with the `object_id` from the object store.
+This method is blocking until the data is available in the local object store.
+"""
 function get(oid::rayjll.ObjectIDAllocated)
     io = IOBuffer(take!(rayjll.get(oid)))
     return deserialize(io)
