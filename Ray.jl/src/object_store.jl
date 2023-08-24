@@ -16,11 +16,17 @@ end
 
 """
     Ray.get(object_id::ObjectIDAllocated)
+    Ray.get(object_ids::AbstractVector)
 
-Retrieves the data associated with the `object_id` from the object store.
+Retrieves the data associated with the `object_id`(s) from the object store.
 This method is blocking until the data is available in the local object store.
 """
 function get(oid::rayjll.ObjectIDAllocated)
     io = IOBuffer(take!(rayjll.get(oid)))
     return deserialize(io)
 end
+
+# TODO: support any collection? Python ray only supports lists, not tuples, don't see why not
+get(oids::AbstractVector) = map(get, oids)
+
+# TOOD: fallback get(x) = x? Python ray errors but no good reason not to do this
