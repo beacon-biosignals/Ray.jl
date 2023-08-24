@@ -26,5 +26,4 @@ function get(oid::rayjll.ObjectIDAllocated)
     return deserialize(io)
 end
 
-get(oids::Union{AbstractVector, Tuple}) = map(get, oids)
 get(x) = x
