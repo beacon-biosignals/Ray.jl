@@ -1,8 +1,8 @@
 """
     Ray.put(data) -> ObjectIDAllocated
 
-Stores `data` in the object store and returns an object reference assigned to the value that
-can used to retrieve the data with [`Ray.get`](@ref).
+Store `data` in the object store. Returns an object reference which can used to retrieve
+the `data` with [`Ray.get`](@ref).
 """
 function put(data)
     bytes = Vector{UInt8}()
