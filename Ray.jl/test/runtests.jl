@@ -1,10 +1,7 @@
-# These imports will be present locally and on Ray workers
-@ray_import begin
-    using Test
-end
-
 using Aqua
 using Ray
+using Serialization
+using Test
 
 import ray_core_worker_julia_jll as rayjll
 

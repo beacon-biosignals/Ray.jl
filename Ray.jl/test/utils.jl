@@ -22,6 +22,8 @@ function setup_core_worker(body)
     end
 end
 
+# Useful in running tests which require us to re-run `Ray.init` which currently can only be
+# once and not be reset due to using `isassigned`.
 macro process_eval(ex)
     expr = QuoteNode(ex)
     return esc(:(process_eval($expr)))
@@ -30,15 +32,33 @@ end
 function process_eval(expr::Expr; stdout=devnull)
     # Avoid returning the result with STDOUT as other output and `atexit` hooks make it
     # difficult to read the serialized result.
-    code = """
+    code = quote
         using Serialization
-        expr = deserialize(stdin)
-        result_file = deserialize(stdin)
-        result = eval(expr)
-        open(result_file, "w") do io
-            serialize(io, result)
+
+        # Evaluate each line individually (like `include_string`) to allow usage of loaded
+        # code. Additionally, this provides useful stacktraces from user code.
+        function eval_toplevel(ast::Expr)
+            line_and_ex = Expr(:toplevel, LineNumberNode(1, :unknown), nothing)
+            result = nothing
+            for ex in ast.args
+                if ex isa LineNumberNode
+                    line_and_ex.args[1] = ex
+                else
+                    line_and_ex.args[2] = ex
+                    result = eval(line_and_ex)
+                end
+            end
+            return result
         end
-        """
+
+        ast = deserialize(stdin)
+        result_file = deserialize(stdin)
+
+        open(result_file, "w") do io
+            serialize(io, eval_toplevel(ast))
+        end
+    end
+
     cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
 
     input = Pipe()
