@@ -1,20 +1,18 @@
 @testset "Submit task" begin
-    oid1 = submit_task(length, ("hello",))
-    oid2 = submit_task(max, (0x00, 0xff))
+    # single argument
+    result = Ray.get(submit_task(length, ("hello",)))
+    @test result isa Int
+    @test result == 5
 
-    result1 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid1))))
-    @test result1 isa Int
-    @test result1 == 5
+    # multiple arguments
+    result = Ray.get(submit_task(max, (0x00, 0xff)))
+    @test result isa UInt8
+    @test result == 0xff
 
-    result2 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid2))))
-    @test result2 isa UInt8
-    @test result2 == 0xff
-
-    # task with no args
-    oid3 = submit_task(getpid, ())
-    result3 = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid3))))
-    @test result3 isa Int32
-    @test result3 != getpid()
+    # no arguments
+    result = Ray.get(submit_task(getpid, ()))
+    @test result isa Int32
+    @test result > getpid()
 end
 
 @testset "RuntimeEnv" begin
@@ -26,8 +24,7 @@ end
 
         f = () -> ENV["JULIA_PROJECT"]
         runtime_env = Ray.RuntimeEnv(; project=project_dir)
-        oid = submit_task(f, (); runtime_env)
-        result = deserialize(IOBuffer(take!(ray_core_worker_julia_jll.get(oid))))
+        result = Ray.get(submit_task(f, (); runtime_env))
         @test result == project_dir
     end
 end
