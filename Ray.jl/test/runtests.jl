@@ -15,6 +15,8 @@ include("utils.jl")
         Aqua.test_all(Ray; ambiguities=false)
     end
 
+    include("runtime_env.jl")
+
     setup_ray_head_node() do
         include("function_manager.jl")
         setup_core_worker() do
