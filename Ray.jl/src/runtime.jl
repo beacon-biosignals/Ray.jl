@@ -1,7 +1,9 @@
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
 macro ray_import(ex)
-    isassigned(JOB_RUNTIME_ENV) && error("`@ray_import` can only be called once")
+    if isassigned(JOB_RUNTIME_ENV)
+        error("`@ray_import` must be used before `Ray.init` and can only be called once")
+    end
     runtime_env = RuntimeEnv(; package_imports=ex)
     JOB_RUNTIME_ENV[] = runtime_env
     return esc(ex)

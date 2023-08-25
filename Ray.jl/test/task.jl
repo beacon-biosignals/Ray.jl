@@ -70,7 +70,7 @@ end
         @test :Ray in worker_using
     end
 
-    @testset "ray_import" begin
+    @testset "@ray_import" begin
         # Excluding Ray and it's dependencies here only to make the test output cleaner
         driver_using, worker_using = @process_eval begin
             using_modules = function ()
@@ -93,5 +93,28 @@ end
         @test :Test in driver_using
         @test :Test in worker_using
         @test driver_using == worker_using
+
+        @testset "invalid use" begin
+            msg = "LoadError: `@ray_import` must be used before `Ray.init` and can " *
+                "only be called once"
+
+            # `@ray_import` used after `Ray.init`
+            @test_throws msg begin
+                @process_eval begin
+                    using Ray
+                    Ray.init()
+                    @ray_import using Test
+                end
+            end
+
+            # `@ray_import` used twice
+            @test_throws msg begin
+                @process_eval begin
+                    using Ray
+                    @ray_import using Test
+                    @ray_import using Test
+                end
+            end
+        end
     end
 end
