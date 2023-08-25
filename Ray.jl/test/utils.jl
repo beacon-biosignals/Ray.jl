@@ -23,7 +23,7 @@ function setup_core_worker(body)
 end
 
 # Useful in running tests which require us to re-run `Ray.init` which currently can only be
-# once and not be reset due to using `isassigned`.
+# called once as it is infeasible to reset global `Ref`'s using `isassigned` conditionals.
 macro process_eval(ex)
     expr = QuoteNode(ex)
     return esc(:(process_eval($expr)))

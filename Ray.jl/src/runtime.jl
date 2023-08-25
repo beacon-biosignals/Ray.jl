@@ -248,7 +248,7 @@ function start_worker(args=ARGS)
     _init_global_function_manager(parsed_args["address"])
 
     # Load top-level package loading statements (e.g. `import X` or `using X`) to ensure
-    ## tasks have access to dependencies.
+    # tasks have access to dependencies.
     if haskey(ENV, "JULIA_RAY_PACKAGE_IMPORTS")
         io = IOBuffer(ENV["JULIA_RAY_PACKAGE_IMPORTS"])
         pkg_imports = deserialize(Base64DecodePipe(io))

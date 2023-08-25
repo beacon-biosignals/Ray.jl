@@ -14,6 +14,7 @@ end
 function json_dict(runtime_env::RuntimeEnv)
     env_vars = Dict("JULIA_PROJECT" => runtime_env.project)
 
+    # Avoid including package imports if the expression is an empty block
     imports = runtime_env.package_imports
     if imports.head !== :block || !isempty(imports.args)
         env_vars["JULIA_RAY_PACKAGE_IMPORTS"] = base64encode(serialize, imports)
