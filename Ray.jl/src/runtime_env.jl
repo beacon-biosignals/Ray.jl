@@ -1,20 +1,22 @@
 struct RuntimeEnv
     project::String
     package_imports::Expr
+
+    function RuntimeEnv(project, package_imports)
+        return new(project, process_import_statements(package_imports))
+    end
 end
 
 function RuntimeEnv(; project=project_dir(), package_imports=Expr(:block))
-    # TODO: Possibly restrict `imports` to `using` or `import` expressions
     return RuntimeEnv(project, package_imports)
 end
 
 function json_dict(runtime_env::RuntimeEnv)
     env_vars = Dict("JULIA_PROJECT" => runtime_env.project)
 
-    # TODO: Error when package imports is something strange
-    ex = runtime_env.package_imports
-    if ex.head == :block && !isempty(ex.args) || ex.head in (:using, :import)
-        env_vars["JULIA_RAY_PACKAGE_IMPORTS"] = base64encode(serialize, ex)
+    imports = runtime_env.package_imports
+    if imports.head !== :block || !isempty(imports.args)
+        env_vars["JULIA_RAY_PACKAGE_IMPORTS"] = base64encode(serialize, imports)
     end
 
     # The keys of `context` must match what is supported by the Python `RuntimeEnvContext`:
@@ -56,6 +58,22 @@ end
 function _serialize(job_config::JobConfig)
     job_config_json = JSON3.write(json_dict(job_config))
     return rayjll.serialize_job_config_json(job_config_json)
+end
+
+function process_import_statements(ex::Expr)
+    if ex.head === :using || ex.head === :import
+        return ex
+    elseif ex.head === :block
+        imports = Expr(:block)
+        for arg in ex.args
+            arg isa LineNumberNode && continue
+            push!(imports.args, process_import_statements(arg))
+        end
+        return imports
+    else
+        msg = "Expected `using` or `import` statements, instead found: $(repr(ex))"
+        throw(ArgumentError(msg))
+    end
 end
 
 project_dir() = dirname(Pkg.project().path)
