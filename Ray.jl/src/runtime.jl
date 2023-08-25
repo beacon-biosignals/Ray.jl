@@ -1,3 +1,12 @@
+const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
+
+macro ray_import(ex)
+    isassigned(JOB_RUNTIME_ENV) && error("`@ray_import` can only be called once")
+    runtime_env = RuntimeEnv(; package_imports=ex)
+    JOB_RUNTIME_ENV[] = runtime_env
+    return esc(ex)
+end
+
 """
     const GLOBAL_STATE_ACCESSOR::Ref{rayjll.GlobalStateAccessor}
 
@@ -8,7 +17,7 @@ This is set during `init` and used there to get the Job ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{rayjll.GlobalStateAccessor}()
 
-function init(runtime_env::RuntimeEnv=RuntimeEnv())
+function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
     # initialization and using that as a proxy for whether it's connected or not
@@ -17,6 +26,16 @@ function init(runtime_env::RuntimeEnv=RuntimeEnv())
     if isassigned(FUNCTION_MANAGER)
         @warn "Ray already initialized, skipping..."
         return nothing
+    end
+
+    if isnothing(runtime_env)
+        # Set default for `JOB_RUNTIME_ENV` when `Ray.init` is called before `@ray_import`.
+        # This ensures a call to `@ray_import` after `Ray.init` will fail.
+        if !isassigned(JOB_RUNTIME_ENV)
+            JOB_RUNTIME_ENV[] = RuntimeEnv()
+        end
+
+        runtime_env = JOB_RUNTIME_ENV[]
     end
 
     # TODO: use something like the java config bootstrap address (?) to get this
