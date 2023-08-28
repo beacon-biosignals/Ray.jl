@@ -123,6 +123,11 @@ JobID GetCurrentJobId() {
     return driver.GetCurrentJobId();
 }
 
+TaskID GetCurrentTaskId() {
+    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    return driver.GetCurrentTaskId();
+}
+
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
@@ -313,11 +318,20 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
+    // than normal.
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
     mod.add_type<JobID>("JobID")
         .method("ToInt", &JobID::ToInt)
         .method("FromInt", &JobID::FromInt);
 
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
+    mod.add_type<TaskID>("TaskID")
+        .method("Binary", &TaskID::Binary)
+        .method("Hex", &TaskID::Hex);
+
     mod.method("GetCurrentJobId", &GetCurrentJobId);
+    mod.method("GetCurrentTaskId", &GetCurrentTaskId);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);

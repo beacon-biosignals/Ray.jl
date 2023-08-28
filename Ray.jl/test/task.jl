@@ -16,16 +16,16 @@
 end
 
 @testset "Task spawning a task" begin
-    # TODO: Test will need to be revised once we can run multiple tasks on the same worker.
-    # Hopefully we can access a "task ID" from within the task itself.
+    # As tasks may be run on the same worker it's better to use the task ID rather than the
+    # process ID.
     f = function ()
-        task_pid = getpid()
-        subtask_pid = Ray.get(submit_task(getpid, ()))
-        return (task_pid, subtask_pid)
+        task_id = Ray.get_task_id()
+        subtask_id = Ray.get(submit_task(Ray.get_task_id, ()))
+        return (task_id, subtask_id)
     end
 
-    task_pid, subtask_pid = Ray.get(submit_task(f, ()))
-    @test getpid() < task_pid < subtask_pid
+    task_id, subtask_id = Ray.get(submit_task(f, ()))
+    @test Ray.get_task_id() != task_id != subtask_id
 end
 
 @testset "RuntimeEnv" begin

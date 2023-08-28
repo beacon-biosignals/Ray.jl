@@ -46,6 +46,13 @@ end
 # keep it local
 get_current_job_id() = rayjll.ToInt(rayjll.GetCurrentJobId())
 
+"""
+    get_task_id() -> String
+
+Get the current task ID for this worker in hex format.
+"""
+get_task_id() = String(rayjll.Hex(rayjll.GetCurrentTaskId()))
+
 function parse_ray_args_from_raylet_out()
     #=
     "Starting agent process with command: ... \
