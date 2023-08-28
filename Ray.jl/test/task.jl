@@ -103,26 +103,46 @@ end
         @test driver_using == worker_using
 
         @testset "invalid use" begin
-            msg = "LoadError: `@ray_import` must be used before `Ray.init` and can " *
-                "only be called once"
+            msg = "`@ray_import` must be used before `Ray.init` and can only be called once"
 
             # `@ray_import` used after `Ray.init`
-            @test_throws msg begin
-                @process_eval begin
-                    using Ray
-                    Ray.init()
+            ex = @process_eval begin
+                using Ray
+                Ray.init()
+                try
                     @ray_import using Test
+                    nothing
+                catch e
+                    e
                 end
             end
+            @test ex isa ErrorException
+            @test ex.msg == msg
 
             # `@ray_import` used twice
-            @test_throws msg begin
-                @process_eval begin
-                    using Ray
+            ex = @process_eval begin
+                using Ray
+                @ray_import using Test
+                try
                     @ray_import using Test
-                    @ray_import using Test
+                    nothing
+                catch e
+                    e
                 end
             end
+            @test ex isa ErrorException
+            @test ex.msg == msg
+        end
+
+        # The evaluation of the expanded macro shouldn't require users to have imported the
+        # `Ray` module into their module.
+        @testset "non-import dependent" begin
+            ray_defined = @process_eval begin
+                import Ray as R
+                R.@ray_import using Test
+                isdefined(@__MODULE__, :Ray)
+            end
+            @test !ray_defined
         end
     end
 end

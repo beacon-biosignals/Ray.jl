@@ -1,12 +1,23 @@
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
 macro ray_import(ex)
+    Ray = gensym(:Ray)
+    result = quote
+        import Ray as $Ray
+        $Ray._ray_import($Ray.RuntimeEnv(; package_imports=$(QuoteNode(ex))))
+        $ex
+    end
+
+    return esc(result)
+end
+
+function _ray_import(runtime_env::RuntimeEnv)
     if isassigned(JOB_RUNTIME_ENV)
         error("`@ray_import` must be used before `Ray.init` and can only be called once")
     end
-    runtime_env = RuntimeEnv(; package_imports=ex)
+
     JOB_RUNTIME_ENV[] = runtime_env
-    return esc(ex)
+    return nothing
 end
 
 struct RayRemoteException <: Exception
