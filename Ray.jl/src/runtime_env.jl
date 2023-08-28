@@ -12,6 +12,7 @@ function RuntimeEnv(; project=project_dir(), package_imports=Expr(:block))
 end
 
 function json_dict(runtime_env::RuntimeEnv)
+    # TODO: Support user-defined environmental variables in the future
     env_vars = Dict("JULIA_PROJECT" => runtime_env.project)
 
     # Avoid including package imports if the expression is an empty block
@@ -67,6 +68,9 @@ function process_import_statements(ex::Expr)
     elseif ex.head === :block
         imports = Expr(:block)
         for arg in ex.args
+            # Avoid using `remove_linenums!` here as this function is non-mutating and
+            # removing line number information from the original expression may make it more
+            # difficult for the user to read stacktrace information due to runtime issues.
             arg isa LineNumberNode && continue
             push!(imports.args, process_import_statements(arg))
         end
