@@ -153,7 +153,7 @@ end
 @testset "many tasks" begin
     oids = map(1:20) do i
         s = 20
-        submit_task(s, i) do s, i
+        submit_task((s, i)) do s, i
             pid = getpid()
             println(stderr, "task $i running on PID $pid sleeping $s...")
             flush(stderr)
@@ -164,7 +164,6 @@ end
         end
     end
 
-    _get(x) = String(take!(ray_core_worker_julia_jll.get(x)))
-    @time pids = map(_get, oids)
+    @time pids = Ray.get.(oids)
     @test !allunique(pids)
 end
