@@ -138,7 +138,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     returns = rayjll.cast_to_returns(returns_ptr)
     task_args = rayjll.cast_to_task_args(task_args_ptr)
 
-    result = try
+    local result
+    try
         @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
         fd = rayjll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
