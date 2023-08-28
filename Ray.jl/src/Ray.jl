@@ -15,7 +15,7 @@ using Serialization
 
 import ray_core_worker_julia_jll as rayjll
 
-export start_worker, submit_task
+export start_worker, submit_task, @ray_import
 
 include("function_manager.jl")
 include("runtime_env.jl")

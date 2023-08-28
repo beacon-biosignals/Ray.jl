@@ -34,7 +34,8 @@ function setup_core_worker(body)
                       "127.0.0.1:6379",
                       "127.0.0.1",
                       node_manager_port(),
-                      FromInt(1234))
+                      FromInt(1234),
+                      "")
     try
         body()
     finally

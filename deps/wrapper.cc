@@ -6,7 +6,8 @@ void initialize_driver(
     std::string gcs_address,
     std::string node_ip_address,
     int node_manager_port,
-    JobID job_id) {
+    JobID job_id,
+    const std::string &serialized_job_config) {
     // RAY_LOG_ENABLED(DEBUG);
 
     CoreWorkerOptions options;
@@ -25,6 +26,12 @@ void initialize_driver(
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.driver_name = "julia_core_worker_test";
+
+    // `CoreWorkerProcess::Initialize` will create a `WorkerContext` (ray/core_worker/context.h) which
+    // is populated with the `JobConfig` specified here.
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.cc#L165-L172
+    options.serialized_job_config = serialized_job_config;
+
     CoreWorkerProcess::Initialize(options);
 }
 
@@ -313,6 +320,31 @@ Status report_error(std::string *application_error,
     return worker.PushError(jobid, "task", err_msg, timestamp);
 }
 
+// Serialize a JobConfig protobuf message into its serialized string equivalent by constructing it
+// via it's JSON representation of the message. Most likely there is a better way to construct
+// the protobuf message but this is works for now.
+std::string serialize_job_config_json(const std::string &job_config_json) {
+    std::shared_ptr<rpc::JobConfig> job_config = nullptr;
+    job_config.reset(new rpc::JobConfig());
+    RAY_CHECK(google::protobuf::util::JsonStringToMessage(job_config_json,
+                                                          job_config.get()).ok());
+
+    std::string serialized;
+    job_config->SerializeToString(&serialized);
+    return serialized;
+}
+
+// Investigating OverrideTaskOrActorRuntimeEnvInfo
+// Useful in validating that the `serialized_job_config` set in `initialize_driver` is set. An invalid
+// string will not be set and the returned value here will be empty.
+std::string get_job_serialized_runtime_env() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    auto &worker_context = worker.GetWorkerContext();
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.cc#L1786-L1787
+    std::string job_serialized_runtime_env = worker_context.GetCurrentJobConfig().runtime_env_info().serialized_runtime_env();
+    return job_serialized_runtime_env;
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -456,4 +488,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("cast_to_returns", &cast_to_returns);
     mod.method("cast_to_task_args", &cast_to_task_args);
+
+    mod.method("serialize_job_config_json", &serialize_job_config_json);
+    mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
 }
