@@ -43,11 +43,10 @@ end
         result = Ray.get(submit_task(f, (); runtime_env))
         @test result == :Test
 
-        # The spawned worker will fail with "ERROR: UndefVarError: `Test` not defined". For
-        # now since we have worker exception handling we'll detect this by attempting to
-        # fetch the object.
+        # The spawned worker will fail with "ERROR: UndefVarError: `Test` not defined". We
+        # can detect this failure attempting to fetch the task result.
         ref = submit_task(f, ())
-        @test_throws "C++ object of type N3ray6BufferE was deleted" begin
+        @test_throws "UndefVarError: `Test` not defined" begin
             Ray.get(ref)
         end
     end
