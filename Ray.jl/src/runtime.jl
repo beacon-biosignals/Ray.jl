@@ -162,7 +162,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     catch e
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
-        timestamp = Dates.datetime2epochms(now()) / 1000
+        timestamp = time()
         captured = CapturedException(e, catch_backtrace())
         @error "Caught exception during task execution" exception=captured
         # XXX: for some reason CxxWrap does not allow this:
