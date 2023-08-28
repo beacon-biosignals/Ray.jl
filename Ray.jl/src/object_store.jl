@@ -27,6 +27,7 @@ captured exception will be thrown on `get`.
 function get(oid::rayjll.ObjectIDAllocated)
     io = IOBuffer(take!(rayjll.get(oid)))
     result = deserialize(io)
+    # TODO: add an option to not rethrow
     result isa RayRemoteException ? throw(result) : return result
 end
 
