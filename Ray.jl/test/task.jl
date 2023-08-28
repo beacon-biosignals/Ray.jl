@@ -18,7 +18,13 @@
 
     # task that errors
     oid4 = submit_task(error, ("AHHHHH",))
-    @test_throws Ray.RayRemoteException Ray.get(oid4)
+    try
+        Ray.get(oid4)
+    catch e
+        @test e isa Ray.RayRemoteException
+        @test e.captured.ex == ErrorException("AHHHHH")
+    end
+
 end
 
 @testset "RuntimeEnv" begin
