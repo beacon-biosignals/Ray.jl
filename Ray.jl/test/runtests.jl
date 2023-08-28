@@ -1,10 +1,7 @@
 using Aqua
-using Distributed
 using Ray
-using Serialization
 using Test
 
-using ray_core_worker_julia_jll
 import ray_core_worker_julia_jll as rayjll
 
 include("setup.jl")
@@ -20,8 +17,8 @@ include("utils.jl")
     setup_ray_head_node() do
         include("function_manager.jl")
         setup_core_worker() do
-            include("task.jl")
             include("object_store.jl")
+            include("task.jl")
         end
     end
 end

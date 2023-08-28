@@ -73,6 +73,7 @@
     # reasons that are completely unrelated to the actual functionality being
     # tested).
 
+    # using Distributed
     # try
     #     worker = only(addprocs(1; exeflags="--project"))
     #     Distributed.remotecall_eval(Main, worker, quote
