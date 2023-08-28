@@ -175,6 +175,7 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
     arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid},
                  CxxWrap.StdLib.StdStringAllocated, CxxPtr{CxxWrap.StdString},
                  CxxPtr{CxxBool})
+    # need to use `@eval` since `task_executor` is only defined at runtime
     cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"
