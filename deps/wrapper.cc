@@ -327,15 +327,17 @@ namespace jlcxx
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
     // https://github.com/JuliaInterop/CxxWrap.jl/tree/main#overriding-finalization-behavior
+    /*
     template<typename T>
     struct Finalizer<T, SpecializedFinalizer>
     {
         static void finalize(T* to_delete)
         {
-            // std::cout << "calling delete on: " << to_delete << std::endl;
+            std::cout << "calling delete on: " << to_delete << std::endl;
             delete to_delete;
         }
     };
+    */
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
