@@ -46,9 +46,12 @@ end
         # The spawned worker will fail with "ERROR: UndefVarError: `Test` not defined". We
         # can detect this failure attempting to fetch the task result.
         ref = submit_task(f, ())
-        @test_throws "UndefVarError: `Test` not defined" begin
-            Ray.get(ref)
+        msg = if VERSION <= v"1.8"
+            "UndefVarError: Test not defined"
+        else
+            "UndefVarError: `Test` not defined"
         end
+        @test_throws msg Ray.get(ref)
     end
 end
 
