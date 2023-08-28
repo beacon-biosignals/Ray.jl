@@ -1,5 +1,6 @@
 using Aqua
 using Ray
+using Serialization
 using Test
 
 import ray_core_worker_julia_jll as rayjll
@@ -13,6 +14,8 @@ include("utils.jl")
     @testset "Aqua" begin
         Aqua.test_all(Ray; ambiguities=false)
     end
+
+    include("runtime_env.jl")
 
     setup_ray_head_node() do
         include("function_manager.jl")

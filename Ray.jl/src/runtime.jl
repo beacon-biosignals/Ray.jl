@@ -1,3 +1,25 @@
+const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
+
+macro ray_import(ex)
+    Ray = gensym(:Ray)
+    result = quote
+        import Ray as $Ray
+        $Ray._ray_import($Ray.RuntimeEnv(; package_imports=$(QuoteNode(ex))))
+        $ex
+    end
+
+    return esc(result)
+end
+
+function _ray_import(runtime_env::RuntimeEnv)
+    if isassigned(JOB_RUNTIME_ENV)
+        error("`@ray_import` must be used before `Ray.init` and can only be called once")
+    end
+
+    JOB_RUNTIME_ENV[] = runtime_env
+    return nothing
+end
+
 struct RayRemoteException <: Exception
     pid::Int
     task_name::String
@@ -19,7 +41,7 @@ This is set during `init` and used there to get the Job ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{rayjll.GlobalStateAccessor}()
 
-function init()
+function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
     # initialization and using that as a proxy for whether it's connected or not
@@ -28,6 +50,16 @@ function init()
     if isassigned(FUNCTION_MANAGER)
         @warn "Ray already initialized, skipping..."
         return nothing
+    end
+
+    if isnothing(runtime_env)
+        # Set default for `JOB_RUNTIME_ENV` when `Ray.init` is called before `@ray_import`.
+        # This ensures a call to `@ray_import` after `Ray.init` will fail.
+        if !isassigned(JOB_RUNTIME_ENV)
+            JOB_RUNTIME_ENV[] = RuntimeEnv()
+        end
+
+        runtime_env = JOB_RUNTIME_ENV[]
     end
 
     # TODO: use something like the java config bootstrap address (?) to get this
@@ -45,7 +77,10 @@ function init()
 
     job_id = rayjll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
-    rayjll.initialize_driver(args..., job_id)
+    job_config = JobConfig(RuntimeEnvInfo(runtime_env))
+    serialized_job_config = _serialize(job_config)
+
+    rayjll.initialize_driver(args..., job_id, serialized_job_config)
     atexit(rayjll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
@@ -111,18 +146,16 @@ end
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
-                     runtime_env::RuntimeEnv=RuntimeEnv())
+                     runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
-    # Generate the JSON representation of `RuntimeEnvInfo`:
-    # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L40-L41
-    serialized_runtime_env_info = JSON3.write(
-        Dict(
-            "serialized_runtime_env" => JSON3.write(json_dict(runtime_env))::String
-        )
-    )
+    serialized_runtime_env_info = if !isnothing(runtime_env)
+        _serialize(RuntimeEnvInfo(runtime_env))
+    else
+        ""
+    end
 
     return GC.@preserve args rayjll._submit_task(fd, arg_oids, serialized_runtime_env_info)
 end
@@ -257,6 +290,15 @@ function start_worker(args=ARGS)
     parsed_args = parse_args(args, s)
 
     _init_global_function_manager(parsed_args["address"])
+
+    # Load top-level package loading statements (e.g. `import X` or `using X`) to ensure
+    # tasks have access to dependencies.
+    if haskey(ENV, "JULIA_RAY_PACKAGE_IMPORTS")
+        io = IOBuffer(ENV["JULIA_RAY_PACKAGE_IMPORTS"])
+        pkg_imports = deserialize(Base64DecodePipe(io))
+        @info "Package loading expression:\n$pkg_imports"
+        Base.eval(Main, pkg_imports)
+    end
 
     # TODO: pass "debug mode" as a flag somehow
     ENV["JULIA_DEBUG"] = "Ray"
