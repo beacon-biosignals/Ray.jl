@@ -46,7 +46,7 @@ end
         # The spawned worker will fail with "ERROR: UndefVarError: `Test` not defined". We
         # can detect this failure attempting to fetch the task result.
         ref = submit_task(f, ())
-        msg = if VERSION <= v"1.8"
+        msg = if VERSION < v"1.9"
             "UndefVarError: Test not defined"
         else
             "UndefVarError: `Test` not defined"
