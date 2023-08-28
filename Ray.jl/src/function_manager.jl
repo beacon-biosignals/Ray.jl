@@ -123,7 +123,7 @@ function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
             f = deserialize(iob64)
             # need to handle world-age issues on remote workers when
             # deserializing the function effectively defines it
-            return (args...) -> Base.invokelatest(f, args...)
+            return (args...; kwargs...) -> Base.invokelatest(f, args...; kwargs...)
         catch e
             error("Failed to deserialize function from store: $(fd)")
         end

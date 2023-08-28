@@ -99,17 +99,10 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEnv())
+function submit_task(f::Function, args::Tuple, kwargs::NamedTuple; runtime_env::RuntimeEnv=RuntimeEnv())
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    object_ids = map(collect(args)) do arg
-        io=IOBuffer()
-        serialize(io, arg)
-        buffer_ptr = Ptr{Nothing}(pointer(io.data))
-        buffer_size = sizeof(io.data)
-        return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
-    end
+    arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
     # Generate the JSON representation of `RuntimeEnvInfo`:
     # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/runtime_env_common.proto#L40-L41
@@ -119,7 +112,7 @@ function submit_task(f::Function, args::Tuple; runtime_env::RuntimeEnv=RuntimeEn
         )
     )
 
-    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
+    return GC.@preserve args rayjll._submit_task(fd, arg_oids, serialized_runtime_env_info)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr)
@@ -136,15 +129,21 @@ function task_executor(ray_function, returns_ptr, task_args_ptr)
     # for some reason, `eval` gets shadowed by the Core (1-arg only) version
     # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
     # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    args = map(task_args) do arg
+    flattened = map(task_args) do arg
         v = take!(rayjll.GetData(arg[]))
         io = IOBuffer(v)
         return deserialize(io)
     end
+    args, kwargs = recover_args(flattened)
 
-    arg_string = join(string.("::", typeof.(args)), ", ")
-    @info "Calling $func($arg_string)"
-    result = func(args...)
+    @info begin
+        args_string = join([string("::", typeof(arg)) for arg in args], ", ")
+        kwargs_string = join([string(k, "::", typeof(v)) for (k, v) in kwargs], ", ")
+        args_signature = join([args_string, kwargs_string], "; ")
+        "Calling $func($args_signature)"
+    end
+
+    result = func(args...; kwargs...)
 
     # TODO: remove - useful for now for debugging
     @info "Result: $result"

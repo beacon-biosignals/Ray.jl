@@ -19,6 +19,7 @@ export start_worker, submit_task
 
 include("function_manager.jl")
 include("runtime_env.jl")
+include("remote_function.jl")
 include("runtime.jl")
 include("object_store.jl")
 
