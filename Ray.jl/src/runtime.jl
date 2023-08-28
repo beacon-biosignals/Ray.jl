@@ -146,8 +146,6 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         func = import_function!(FUNCTION_MANAGER[],
                                 rayjll.unwrap_function_descriptor(fd),
                                 get_current_job_id())
-        # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-        # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
         # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
         args = map(task_args) do arg
             v = take!(rayjll.GetData(arg[]))
