@@ -13,6 +13,15 @@
     result = Ray.get(submit_task(getpid, ()))
     @test result isa Int32
     @test result > getpid()
+
+    # error handling
+    oid = submit_task(error, ("AHHHHH",))
+    try
+        Ray.get(oid)
+    catch e
+        @test e isa Ray.RayRemoteException
+        @test e.captured.ex == ErrorException("AHHHHH")
+    end
 end
 
 @testset "Task spawning a task" begin

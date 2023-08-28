@@ -48,9 +48,16 @@ void initialize_worker(
     // callback arg types:
     //   std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns
     //   std::vector<std::shared_ptr<RayObject>>
+    //   std::string *application_error
     // But for now we just provide void pointers and cast them accordingly in the Julia function.
     // Note also that std::pair is not wrapped by CxxWrap: https://github.com/JuliaInterop/CxxWrap.jl/issues/201
-    auto task_executor = reinterpret_cast<void (*)(RayFunction, const void*, const void*)>(julia_task_executor);
+    auto task_executor = reinterpret_cast<void (*)(RayFunction,
+                                                   const void*,  // returns
+                                                   const void*,  // args
+                                                   std::string,  // task_name
+                                                   std::string*, // application_error
+                                                   bool*         // is_retryable_error
+                                                   )>(julia_task_executor);
 
     CoreWorkerOptions options;
     options.worker_type = WorkerType::WORKER;
@@ -87,10 +94,14 @@ void initialize_worker(
             bool is_streaming_generator) {
 
           std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
-          task_executor(ray_function, &return_vec, &args);  // implicity converts to void *
+          task_executor(ray_function,
+                        &return_vec, // implicity converts to void *
+                        &args,       // implicity converts to void *
+                        task_name,
+                        application_error,
+                        is_retryable_error);
 
           RAY_CHECK(return_vec.size() == 1);
-          RAY_CHECK(returns->size() == 1);
 
           // TODO: support multiple return values
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
@@ -286,6 +297,27 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     return ObjectRefsToIds(return_refs)[0];
 }
 
+Status report_error(std::string *application_error,
+                    const std::string &err_msg,
+                    double timestamp) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    auto const &jobid = worker.GetCurrentJobId();
+
+    // report error to coreworker
+    *application_error = err_msg;
+    // XXX: for some reason, CxxWrap was mangling the argument types here making
+    // this very annoying
+    //
+    // *is_retryable_error = false;
+
+    // push error to relevant driver
+    std::cerr << "jll: pushing error to driver: jobid "
+              << jobid
+              << " timestamp " << timestamp
+              << " " << err_msg << std::endl;
+    return worker.PushError(jobid, "task", err_msg, timestamp);
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -401,7 +433,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("LocalMemoryBuffer", [] (uint8_t *data, size_t size, bool copy_data = false) {
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
-    
 
     mod.method("put", &put);
     mod.method("get", &get);
@@ -434,6 +465,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
+
+    mod.method("report_error", &report_error);
 
     mod.method("cast_to_returns", &cast_to_returns);
     mod.method("cast_to_task_args", &cast_to_task_args);
