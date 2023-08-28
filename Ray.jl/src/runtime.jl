@@ -110,7 +110,8 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-function submit_task(f::Function, args::Tuple, kwargs::NamedTuple; runtime_env::RuntimeEnv=RuntimeEnv())
+function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
+                     runtime_env::RuntimeEnv=RuntimeEnv())
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     arg_oids = map(Ray.put, flatten_args(args, kwargs))

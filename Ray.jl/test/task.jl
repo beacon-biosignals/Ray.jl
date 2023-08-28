@@ -14,6 +14,11 @@
     @test result isa Int32
     @test result > getpid()
 
+    # keyword arguments
+    result = Ray.get(submit_task(sort, ([3, 1, 2],), (; rev=true)))
+    @test result isa Vector{Int}
+    @test result == [3, 2, 1]
+
     # error handling
     oid = submit_task(error, ("AHHHHH",))
     try
