@@ -332,7 +332,7 @@ namespace jlcxx
     {
         static void finalize(T* to_delete)
         {
-            std::cout << "calling delete on: " << to_delete << std::endl;
+            // std::cout << "calling delete on: " << to_delete << std::endl;
             delete to_delete;
         }
     };
