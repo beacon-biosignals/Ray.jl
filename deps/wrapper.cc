@@ -49,6 +49,7 @@ void initialize_worker(
     std::string node_ip_address,
     int node_manager_port,
     int64_t startup_token,
+    int64_t runtime_env_hash,
     void *julia_task_executor) {
 
     // XXX: Ideally the task_executor would use a `jlcxx::SafeCFunction` and take the expected
@@ -79,6 +80,7 @@ void initialize_worker(
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.startup_token = startup_token;
+    options.runtime_env_hash = runtime_env_hash;
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
