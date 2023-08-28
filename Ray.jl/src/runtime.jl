@@ -1,3 +1,14 @@
+struct RayRemoteException <: Exception
+    pid::Int
+    task_name::String
+    captured::CapturedException
+end
+
+function Base.showerror(io::IO, re::RayRemoteException)
+    print(io, "on Ray task \"$(re.task_name)\" with PID $(re.pid): ")
+    showerror(io, re.captured)
+end
+
 """
     const GLOBAL_STATE_ACCESSOR::Ref{rayjll.GlobalStateAccessor}
 
@@ -115,35 +126,57 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple; runtime_env::
     return GC.@preserve args rayjll._submit_task(fd, arg_oids, serialized_runtime_env_info)
 end
 
-function task_executor(ray_function, returns_ptr, task_args_ptr)
+function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
+                       application_error, is_retryable_error)
     returns = rayjll.cast_to_returns(returns_ptr)
     task_args = rayjll.cast_to_task_args(task_args_ptr)
 
-    @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
-    fd = rayjll.GetFunctionDescriptor(ray_function)
-    # TODO: may need to wait for function here...
-    @debug "task_executor: importing function" fd
-    func = import_function!(FUNCTION_MANAGER[],
-                            rayjll.unwrap_function_descriptor(fd),
-                            get_current_job_id())
-    # for some reason, `eval` gets shadowed by the Core (1-arg only) version
-    # func = Base.eval(@__MODULE__, Meta.parse(rayjll.CallString(fd)))
-    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    flattened = map(task_args) do arg
-        v = take!(rayjll.GetData(arg[]))
-        io = IOBuffer(v)
-        return deserialize(io)
-    end
-    args, kwargs = recover_args(flattened)
+    local result
+    try
+        @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
+        fd = rayjll.GetFunctionDescriptor(ray_function)
+        # TODO: may need to wait for function here...
+        @debug "task_executor: importing function" fd
+        func = import_function!(FUNCTION_MANAGER[],
+                                rayjll.unwrap_function_descriptor(fd),
+                                get_current_job_id())
+        # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
+        flattened = map(task_args) do arg
+            v = take!(rayjll.GetData(arg[]))
+            io = IOBuffer(v)
+            return deserialize(io)
+        end
+        args, kwargs = recover_args(flattened)
 
-    @info begin
-        args_string = join([string("::", typeof(arg)) for arg in args], ", ")
-        kwargs_string = join([string(k, "::", typeof(v)) for (k, v) in kwargs], ", ")
-        args_signature = join([args_string, kwargs_string], "; ")
-        "Calling $func($args_signature)"
-    end
+        @info begin
+            args_str = join([string("::", typeof(arg)) for arg in args], ", ")
+            kwargs_str = join([string(k, "::", typeof(v)) for (k, v) in kwargs], ", ")
+            args_kwargs_str = join([args_str, kwargs_str], "; ")
+            "Calling $func($args_kwargs_str)"
+        end
 
-    result = func(args...; kwargs...)
+        result = func(args...; kwargs...)
+    catch e
+        # timestamp format to match python time.time()
+        # https://docs.python.org/3/library/time.html#time.time
+        timestamp = time()
+        captured = CapturedException(e, catch_backtrace())
+        @error "Caught exception during task execution" exception=captured
+        # XXX: for some reason CxxWrap does not allow this:
+        #
+        # application_error[] = err_msg
+        #
+        # so we use a cpp function whose only job is to assign the value to the
+        # pointer
+        err_msg = sprint(showerror, captured)
+        status = rayjll.report_error(application_error, err_msg, timestamp)
+        # XXX: we _can_ set _this_ return pointer here for some reason, and it
+        # was _harder_ to toss it back over the fence to the wrapper C++ code
+        is_retryable_error[] = rayjll.CxxBool(false)
+        @debug "push error status: $status"
+
+        result = RayRemoteException(getpid(), task_name, captured)
+    end
 
     # TODO: remove - useful for now for debugging
     @info "Result: $result"
