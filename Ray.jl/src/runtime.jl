@@ -174,12 +174,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         func = import_function!(FUNCTION_MANAGER[],
                                 rayjll.unwrap_function_descriptor(fd),
                                 get_current_job_id())
-        # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-        flattened = map(task_args) do arg
-            v = take!(rayjll.GetData(arg[]))
-            io = IOBuffer(v)
-            return deserialize(io)
-        end
+
+        flattened = map(Ray.get, task_args)
         args, kwargs = recover_args(flattened)
 
         @info begin

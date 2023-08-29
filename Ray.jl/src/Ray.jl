@@ -7,6 +7,7 @@ module Ray
 
 using ArgParse
 using Base64
+using CxxWrap.StdLib: SharedPtr
 using JSON3
 using Logging
 using LoggingExtras
