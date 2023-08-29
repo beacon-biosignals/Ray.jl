@@ -386,6 +386,18 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    mod.add_type<std::unordered_map<std::string, double>>("CxxMapStringDouble");
+    mod.method("_setindex!", [](std::unordered_map<std::string, double> &map,
+                                double val,
+                                std::string key) {
+        map[key] = val;
+        return map;
+    });
+    mod.method("_getindex", [](std::unordered_map<std::string, double> &map,
+                               std::string key) {
+        return map[key];
+    });
+
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
     // than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
