@@ -152,17 +152,11 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-function submit_task(f::Function, args::Tuple; runtime_env::Union{RuntimeEnv,Nothing}=nothing)
+function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
+                     runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    object_ids = map(collect(args)) do arg
-        io=IOBuffer()
-        serialize(io, arg)
-        buffer_ptr = Ptr{Nothing}(pointer(io.data))
-        buffer_size = sizeof(io.data)
-        return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
-    end
+    arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -170,7 +164,7 @@ function submit_task(f::Function, args::Tuple; runtime_env::Union{RuntimeEnv,Not
         ""
     end
 
-    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
+    return GC.@preserve args rayjll._submit_task(fd, arg_oids, serialized_runtime_env_info)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
@@ -187,17 +181,20 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         func = import_function!(FUNCTION_MANAGER[],
                                 rayjll.unwrap_function_descriptor(fd),
                                 get_current_job_id())
-        # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-        args = map(task_args) do arg
-            v = take!(rayjll.GetData(arg[]))
-            io = IOBuffer(v)
-            return deserialize(io)
+
+        flattened = map(Ray.get, task_args)
+        args, kwargs = recover_args(flattened)
+
+        @info begin
+            param_str = join((string("::", typeof(arg)) for arg in args), ", ")
+            if !isempty(kwargs)
+                param_str *= "; "
+                param_str *= join((string(k, "::", typeof(v)) for (k, v) in kwargs), ", ")
+            end
+            "Calling $func($param_str)"
         end
 
-        arg_string = join(string.("::", typeof.(args)), ", ")
-        @info "Calling $func($arg_string)"
-
-        result = func(args...)
+        result = func(args...; kwargs...)
     catch e
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
