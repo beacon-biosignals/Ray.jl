@@ -1,14 +1,17 @@
 """
-    Ray.put(data) -> ObjectIDAllocated
+    Ray.put(data) -> ObjectRef
 
 Store `data` in the object store. Returns an object reference which can used to retrieve
 the `data` with [`Ray.get`](@ref).
 """
-put(data) = ray_jll.put(to_serialized_buffer(data))
-put(oid::ray_jll.ObjectIDAllocated) = oid
+put(data) = put(ObjectRef, data)
+put(obj_ref::ObjectRef) = obj_ref
+
+put(::Type{ray_jll.ObjectIDAllocated}, data) = ray_jll.put(to_serialized_buffer(data))
+put(::Type{ObjectRef}, data) = ObjectRef(put(ray_jll.ObjectIDAllocated, data))
 
 """
-    Ray.get(object_id::ObjectIDAllocated)
+    Ray.get(obj_ref::ObjectRef)
 
 Retrieves the data associated with the `object_id` from the object store.  This
 method is blocking until the data is available in the local object store, even
@@ -17,8 +20,8 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(oid::ray_jll.ObjectIDAllocated) = _get(ray_jll.get(oid))
-get(obj::SharedPtr{ray_jll.RayObject}) = _get(ray_jll.GetData(obj[]))
+get(obj_ref::ObjectRef) = _get(ray_jll.get(obj_ref.oid))
+get(ray_object::SharedPtr{ray_jll.RayObject}) = _get(ray_jll.GetData(ray_object[]))
 get(x) = x
 
 function _get(buffer)

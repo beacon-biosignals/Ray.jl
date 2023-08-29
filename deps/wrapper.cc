@@ -402,10 +402,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
     mod.add_type<ObjectID>("ObjectID")
-        .method("Data", &ObjectID::Data)
-        .method("Binary", &ObjectID::Binary)
         .method("Hex", &ObjectID::Hex)
-        .method("FromHex", &ObjectID::FromHex);
+        .method("FromHex", &ObjectID::FromHex)
+        .method("FromRandomObjectID", &ObjectID::FromRandom);
 
     mod.method("GetCurrentJobId", &GetCurrentJobId);
     mod.method("GetCurrentTaskId", &GetCurrentTaskId);

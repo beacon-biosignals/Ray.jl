@@ -15,6 +15,7 @@ include("utils.jl")
         Aqua.test_all(Ray; ambiguities=false)
     end
 
+    include("object_ref.jl")
     include("runtime_env.jl")
     include("remote_function.jl")
 

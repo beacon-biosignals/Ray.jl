@@ -17,13 +17,13 @@ using Serialization: Serialization, AbstractSerializer, deserialize, serialize,
 
 import ray_core_worker_julia_jll as ray_jll
 
-export start_worker, submit_task, @ray_import
+export start_worker, submit_task, @ray_import, ObjectRef
 
 include("function_manager.jl")
 include("runtime_env.jl")
 include("remote_function.jl")
 include("runtime.jl")
-include("serialization.jl")
+include("object_ref.jl")
 include("object_store.jl")
 
 end

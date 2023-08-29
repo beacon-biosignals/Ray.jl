@@ -20,13 +20,18 @@
     @test result == [3, 2, 1]
 
     # error handling
-    oid = submit_task(error, ("AHHHHH",))
+    obj_ref = submit_task(error, ("AHHHHH",))
     try
-        Ray.get(oid)
+        Ray.get(obj_ref)
     catch e
         @test e isa Ray.RayRemoteException
         @test e.captured.ex == ErrorException("AHHHHH")
     end
+
+    # returning object references
+    # obj_ref = Ray.get(submit_task(Ray.put, (1,)))
+    # @test obj_ref isa ObjectRef
+    # @test Ray.get(obj_ref) == 1
 end
 
 @testset "Task spawning a task" begin
