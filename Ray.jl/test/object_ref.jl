@@ -1,3 +1,10 @@
+function serialize_deserialize(x)
+    io = IOBuffer()
+    serialize(io, x)
+    seekstart(io)
+    return deserialize(io)
+end
+
 @testset "ObjectRef" begin
     @testset "basic" begin
         hex_str = "f" ^ (2 * 28)
