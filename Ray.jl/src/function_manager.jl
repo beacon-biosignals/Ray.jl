@@ -37,12 +37,12 @@ const _check_msg = "Check that its definition is not implicitly capturing a larg
 function check_oversized_function(serialized, function_descriptor)
     len = length(serialized)
     if len > FUNCTION_SIZE_ERROR_THRESHOLD
-        msg = "The function $(rayjll.CallString(function_descriptor)) is too " *
+        msg = "The function $(ray_jll.CallString(function_descriptor)) is too " *
               "large ($(_mib_string(len))); FUNCTION_SIZE_ERROR_THRESHOLD=" *
               "$(_mib_string(FUNCTION_SIZE_ERROR_THRESHOLD)). " * _check_msg
         throw(ArgumentError(msg))
     elseif len > FUNCTION_SIZE_WARN_THRESHOLD
-        msg = "The function $(rayjll.CallString(function_descriptor)) is very " *
+        msg = "The function $(ray_jll.CallString(function_descriptor)) is very " *
               "large ($(_mib_string(len))). " * _check_msg
         @warn msg
         # TODO: push warning message to driver if this is a worker
@@ -65,7 +65,7 @@ const FUNCTION_MANAGER = Ref{FunctionManager}()
 function _init_global_function_manager(gcs_address)
     @info "connecting function manager to GCS at $gcs_address..."
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
-    rayjll.Connect(gcs_client)
+    ray_jll.Connect(gcs_client)
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
                                          functions=Dict{String,Any}())
 end
@@ -107,7 +107,7 @@ end
 # somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function
 # store only if needed.
 # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/60
-function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
                           job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)

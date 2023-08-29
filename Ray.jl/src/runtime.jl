@@ -157,7 +157,7 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
-    fd = function_descriptor(f)
+    fd = ray_jll.function_descriptor(f)
     arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
