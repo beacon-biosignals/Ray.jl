@@ -176,3 +176,17 @@ end
     pids2 = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
     @test !isempty(intersect(pids, pids2))
 end
+
+@testset "task resource requests" begin
+    function gimme_resources()
+        resources = Ray.ray_jll.get_task_required_resources()
+        ks = Ray.ray_jll._keys(resources)
+        return Dict(String(k) => float(Ray.ray_jll._getindex(resources, k)) for k in ks)
+    end
+
+    default_resources = Ray.get(submit_task(gimme_resources, ()))
+    @test default_resources["CPU"] == 1.0
+
+    custom_resources = Ray.get(submit_task(gimme_resources, (); resources=Dict("CPU" => 0.5)))
+    @test custom_resources["CPU"] == 0.5
+end

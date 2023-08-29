@@ -356,6 +356,12 @@ std::string get_job_serialized_runtime_env() {
     return job_serialized_runtime_env;
 }
 
+std::unordered_map<std::string, double> get_task_required_resources() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    auto &worker_context = worker.GetWorkerContext();
+    return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -400,6 +406,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("_getindex", [](std::unordered_map<std::string, double> &map,
                                std::string key) {
         return map[key];
+    });
+    mod.method("_keys", [](std::unordered_map<std::string, double> &map) {
+        std::vector<std::string> keys(map.size());
+        for (auto kv : map) {
+            keys.push_back(kv.first);
+        }
+        return keys;
     });
 
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
@@ -525,4 +538,5 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("serialize_job_config_json", &serialize_job_config_json);
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
+    mod.method("get_task_required_resources", &get_task_required_resources);
 }
