@@ -225,7 +225,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     # TODO: support multiple return values
     # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
-    push!(returns, _put(result))
+    push!(returns, to_serialized_buffer(result))
 
     return nothing
 end
