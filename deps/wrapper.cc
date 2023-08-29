@@ -142,8 +142,8 @@ JobID GetCurrentJobId() {
 }
 
 TaskID GetCurrentTaskId() {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
-    return driver.GetCurrentTaskId();
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    return worker.GetCurrentTaskId();
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
