@@ -33,5 +33,6 @@ get(x) = x
 function _get(data::Vector{UInt8})
     result = deserialize(IOBuffer(data))
     # TODO: add an option to not rethrow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/58
     result isa RayRemoteException ? throw(result) : return result
 end

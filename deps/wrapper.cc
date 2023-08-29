@@ -113,6 +113,7 @@ void initialize_worker(
           RAY_CHECK(return_vec.size() == 1);
 
           // TODO: support multiple return values
+          // https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
@@ -173,6 +174,7 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
 
 // TODO: probably makes more sense to have a global worker rather than calling
 // GetCoreWorker() over and over again...(here and below)
+// https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
 JobID GetCurrentJobId() {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
     return driver.GetCurrentJobId();
