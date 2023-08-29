@@ -161,7 +161,8 @@ end
 #####
 
 function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                           node_manager_port, startup_token, task_executor::Function)
+                           node_manager_port, startup_token, runtime_env_hash,
+                           task_executor::Function)
 
     # Note (omus): If you are trying to figure out what type to pass in here I recommend
     # starting with `Any`. This will cause failures at runtime that show up in the
@@ -180,7 +181,7 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
 
     @info "cfunction generated!"
     result = initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                               node_manager_port, startup_token, cfunc)
+                               node_manager_port, startup_token, runtime_env_hash, cfunc)
 
     @info "worker exiting `ray_core_worker_julia_jll.initialize_worker`"
     return result

@@ -314,5 +314,6 @@ function start_worker(args=ARGS)
                                     parsed_args["node_ip_address"],
                                     parsed_args["node_manager_port"],
                                     parsed_args["startup_token"],
+                                    parsed_args["runtime_env_hash"],
                                     task_executor)
 end

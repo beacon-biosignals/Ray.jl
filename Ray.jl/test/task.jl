@@ -149,3 +149,12 @@ end
         end
     end
 end
+
+@testset "many tasks" begin
+    n_tasks = Sys.CPU_THREADS * 2
+    # warm up worker cache pool
+    pids = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    # run more tasks which should re-use the cpu cache
+    pids2 = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    @test !isempty(intersect(pids, pids2))
+end
