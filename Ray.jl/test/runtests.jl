@@ -16,6 +16,7 @@ include("utils.jl")
     end
 
     include("runtime_env.jl")
+    include("remote_function.jl")
 
     setup_ray_head_node() do
         include("function_manager.jl")
