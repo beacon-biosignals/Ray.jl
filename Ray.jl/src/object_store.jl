@@ -5,13 +5,15 @@ Store `data` in the object store. Returns an object reference which can used to 
 the `data` with [`Ray.get`](@ref).
 """
 function put(data)
+    buffer = _put(data)
+    return rayjll.put(buffer)
+end
+
+function _put(data)
     bytes = Vector{UInt8}()
     io = IOBuffer(bytes; write=true)
     serialize(io, data)
-    buffer_ptr = Ptr{Nothing}(pointer(bytes))
-    buffer_size = sizeof(bytes)
-    buffer = rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true)
-    return rayjll.put(buffer)
+    return rayjll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
 end
 
 """

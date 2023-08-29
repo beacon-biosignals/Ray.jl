@@ -221,10 +221,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     @info "Result: $result"
 
     # TODO: support multiple return values
-    buffer_data = Vector{UInt8}(sprint(serialize, result))
-    buffer_size = sizeof(buffer_data)
-    buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
-    push!(returns, buffer)
+    push!(returns, _put(result))
 
     return nothing
 end
