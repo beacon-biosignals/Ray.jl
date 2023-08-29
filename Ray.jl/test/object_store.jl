@@ -1,3 +1,10 @@
+function serialize_deserialize(x)
+    io = IOBuffer()
+    serialize(io, x)
+    seekstart(io)
+    return deserialize(io)
+end
+
 @testset "object_store.jl" begin
 
     @testset "Put/Get roundtrip for $(typeof(x))" for x in (
@@ -21,5 +28,12 @@
 
     @testset "get fallback" begin
         @test Ray.get(123) == 123
+    end
+
+    @testset "serialize object" begin
+        oid1 = Ray.put(123)
+        oid2 = serialize_deserialize(oid1)
+        @test oid1 != oid2
+        @test Ray.get(oid1) == Ray.get(oid2)
     end
 end
