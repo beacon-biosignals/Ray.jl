@@ -137,6 +137,43 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
     return *rayobj_ptr;
 }
 
+ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      const std::vector<ObjectID> &object_ids,
+                      const std::string &serialized_runtime_env_info,
+                      const std::unordered_map<std::string, double> &resources) {
+
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+
+    ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
+    RayFunction func(Language::JULIA, func_descriptor);
+
+    std::vector<std::unique_ptr<TaskArg>> args;
+    for (auto & obj_id : object_ids) {
+        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
+    }
+
+    // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
+    TaskOptions options;
+    options.serialized_runtime_env_info = serialized_runtime_env_info;
+    options.resources = resources;
+
+    rpc::SchedulingStrategy scheduling_strategy;
+    scheduling_strategy.mutable_default_scheduling_strategy();
+
+    // https://github.com/ray-project/ray/blob/4e9e8913a6c9cc3533fe27478f30bdee1deffaf5/src/ray/core_worker/test/core_worker_test.cc#L79
+    auto return_refs = worker.SubmitTask(
+        func,
+        args,
+        options,
+        /*max_retries=*/0,
+        /*retry_exceptions=*/false,
+        scheduling_strategy,
+        /*debugger_breakpoint=*/""
+    );
+
+    return ObjectRefsToIds(return_refs)[0];
+}
+
 // TODO: probably makes more sense to have a global worker rather than calling
 // GetCoreWorker() over and over again...(here and below)
 // https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
@@ -271,43 +308,6 @@ bool JuliaGcsClient::Exists(const std::string &ns,
         throw std::runtime_error(status.ToString());
     }
     return exists;
-}
-
-ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
-                      const std::vector<ObjectID> &object_ids,
-                      const std::string &serialized_runtime_env_info,
-                      const std::unordered_map<std::string, double> &resources) {
-
-    auto &worker = CoreWorkerProcess::GetCoreWorker();
-
-    ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
-    RayFunction func(Language::JULIA, func_descriptor);
-
-    std::vector<std::unique_ptr<TaskArg>> args;
-    for (auto & obj_id : object_ids) {
-        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
-    }
-
-    // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
-    TaskOptions options;
-    options.serialized_runtime_env_info = serialized_runtime_env_info;
-    options.resources = resources;
-
-    rpc::SchedulingStrategy scheduling_strategy;
-    scheduling_strategy.mutable_default_scheduling_strategy();
-
-    // https://github.com/ray-project/ray/blob/4e9e8913a6c9cc3533fe27478f30bdee1deffaf5/src/ray/core_worker/test/core_worker_test.cc#L79
-    auto return_refs = worker.SubmitTask(
-        func,
-        args,
-        options,
-        /*max_retries=*/0,
-        /*retry_exceptions=*/false,
-        scheduling_strategy,
-        /*debugger_breakpoint=*/""
-    );
-
-    return ObjectRefsToIds(return_refs)[0];
 }
 
 Status report_error(std::string *application_error,

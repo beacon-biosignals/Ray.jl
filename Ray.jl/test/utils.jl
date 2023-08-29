@@ -18,7 +18,7 @@ function setup_core_worker(body)
     try
         body()
     finally
-        rayjll.shutdown_driver()
+        ray_jll.shutdown_driver()
     end
 end
 
