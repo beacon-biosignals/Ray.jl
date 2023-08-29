@@ -24,14 +24,11 @@
 # gcs client
 # ~~maybe job id?~~ this is managed by the core worker process
 
-using ray_core_worker_julia_jll: JuliaGcsClient, Exists, Put, Get,
-                                 JuliaFunctionDescriptor, function_descriptor
-
 # https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/ray_constants.py#L122-L123
 const FUNCTION_SIZE_WARN_THRESHOLD = 10_000_000  # in bytes
 const FUNCTION_SIZE_ERROR_THRESHOLD = 100_000_000  # in bytes
 
-_mib_string(len) = string(div(len, 1024 * 1024), " MiB")
+_mib_string(num_bytes) = string(div(num_bytes, 1024 * 1024), " MiB")
 # https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/utils.py#L744-L746
 const _check_msg = "Check that its definition is not implicitly capturing a large " *
                    "array or other object in scope. Tip: use `Ray.put()` to put large " *
@@ -40,12 +37,12 @@ const _check_msg = "Check that its definition is not implicitly capturing a larg
 function check_oversized_function(serialized, function_descriptor)
     len = length(serialized)
     if len > FUNCTION_SIZE_ERROR_THRESHOLD
-        msg = "The function $(rayjll.CallString(function_descriptor)) is too " *
+        msg = "The function $(ray_jll.CallString(function_descriptor)) is too " *
               "large ($(_mib_string(len))); FUNCTION_SIZE_ERROR_THRESHOLD=" *
               "$(_mib_string(FUNCTION_SIZE_ERROR_THRESHOLD)). " * _check_msg
         throw(ArgumentError(msg))
     elseif len > FUNCTION_SIZE_WARN_THRESHOLD
-        msg = "The function $(rayjll.CallString(function_descriptor)) is very " *
+        msg = "The function $(ray_jll.CallString(function_descriptor)) is very " *
               "large ($(_mib_string(len))). " * _check_msg
         @warn msg
         # TODO: push warning message to driver if this is a worker
@@ -59,7 +56,7 @@ end
 const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 
 Base.@kwdef struct FunctionManager
-    gcs_client::JuliaGcsClient
+    gcs_client::ray_jll.JuliaGcsClient
     functions::Dict{String,Any}
 end
 
@@ -67,41 +64,40 @@ const FUNCTION_MANAGER = Ref{FunctionManager}()
 
 function _init_global_function_manager(gcs_address)
     @info "connecting function manager to GCS at $gcs_address..."
-    gcs_client = JuliaGcsClient(gcs_address)
-    rayjll.Connect(gcs_client)
+    gcs_client = ray_jll.JuliaGcsClient(gcs_address)
+    ray_jll.Connect(gcs_client)
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
                                          functions=Dict{String,Any}())
 end
 
-function function_key(fd::JuliaFunctionDescriptor, job_id=get_current_job_id())
+function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_current_job_id())
     return string("RemoteFunction:", job_id, ":", fd.function_hash)
 end
 
 function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
-    fd = function_descriptor(f)
+    fd = ray_jll.function_descriptor(f)
     key = function_key(fd, job_id)
     @debug "exporting function to function store:" fd key
-    if Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE,
-              deepcopy(key), # DFK: I _think_ the string memory may be mangled
-                             # if we don't copy.  not sure but it can't hurt
-              -1)
+    # DFK: I _think_ the string memory may be mangled if we don't `deepcopy`. Not sure but
+    # it can't hurt
+    if ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, deepcopy(key), -1)
         @debug "function already present in GCS store:" fd key f
     else
         @debug "exporting function to GCS store:" fd key f
         val = base64encode(serialize, f)
         check_oversized_function(val, fd)
-        Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
+        ray_jll.Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
                            job_id=get_current_job_id();
                            pollint_s=0.01, timeout_s=10)
     key = function_key(fd, job_id)
     status = timedwait(timeout_s; pollint=pollint_s) do
         # timeout the Exists query to the same timeout we use here so we don't
         # deadlock.
-        Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
     end
     return status
 end
@@ -111,12 +107,12 @@ end
 # somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function
 # store only if needed.
 # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/60
-function import_function!(fm::FunctionManager, fd::JuliaFunctionDescriptor,
+function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
                           job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
         @debug "function not found locally, retrieving from function store" fd key
-        val = Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
+        val = ray_jll.Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         try
             io = IOBuffer()
             iob64 = Base64DecodePipe(io)
