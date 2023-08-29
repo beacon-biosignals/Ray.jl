@@ -32,14 +32,14 @@ function Base.showerror(io::IO, re::RayRemoteException)
 end
 
 """
-    const GLOBAL_STATE_ACCESSOR::Ref{rayjll.GlobalStateAccessor}
+    const GLOBAL_STATE_ACCESSOR::Ref{ray_jll.GlobalStateAccessor}
 
 Global binding for GCS client interface to access global state information.
 Currently only used to get the next job ID.
 
 This is set during `init` and used there to get the Job ID for the driver.
 """
-const GLOBAL_STATE_ACCESSOR = Ref{rayjll.GlobalStateAccessor}()
+const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
 
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
@@ -69,19 +69,19 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     args = parse_ray_args_from_raylet_out()
     gcs_address = args[3]
 
-    opts = rayjll.GcsClientOptions(gcs_address)
-    GLOBAL_STATE_ACCESSOR[] = rayjll.GlobalStateAccessor(opts)
-    rayjll.Connect(GLOBAL_STATE_ACCESSOR[]) ||
+    opts = ray_jll.GcsClientOptions(gcs_address)
+    GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
+    ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) ||
         error("Failed to connect to Ray GCS at $(gcs_address)")
-    atexit(() -> rayjll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
+    atexit(() -> ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
 
-    job_id = rayjll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
+    job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
     job_config = JobConfig(RuntimeEnvInfo(runtime_env))
     serialized_job_config = _serialize(job_config)
 
-    rayjll.initialize_driver(args..., job_id, serialized_job_config)
-    atexit(rayjll.shutdown_driver)
+    ray_jll.initialize_driver(args..., job_id, serialized_job_config)
+    atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
 
@@ -90,14 +90,14 @@ end
 
 # this could go in JLL but if/when global worker is hosted here it's better to
 # keep it local
-get_current_job_id() = rayjll.ToInt(rayjll.GetCurrentJobId())
+get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId())
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(rayjll.Hex(rayjll.GetCurrentTaskId()))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
 
 function parse_ray_args_from_raylet_out()
     #=
@@ -150,7 +150,7 @@ function parse_ray_args_from_raylet_out()
     return (raylet, store, gcs_address, node_ip, node_port)
 end
 
-initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
+initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(args...)
 
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing)
@@ -164,22 +164,22 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args rayjll._submit_task(fd, arg_oids, serialized_runtime_env_info)
+    return GC.@preserve args ray_jll._submit_task(fd, arg_oids, serialized_runtime_env_info)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
                        application_error, is_retryable_error)
-    returns = rayjll.cast_to_returns(returns_ptr)
-    task_args = rayjll.cast_to_task_args(task_args_ptr)
+    returns = ray_jll.cast_to_returns(returns_ptr)
+    task_args = ray_jll.cast_to_task_args(task_args_ptr)
 
     local result
     try
-        @info "task_executor: called for JobID $(rayjll.GetCurrentJobId())"
-        fd = rayjll.GetFunctionDescriptor(ray_function)
+        @info "task_executor: called for JobID $(ray_jll.GetCurrentJobId())"
+        fd = ray_jll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
         @debug "task_executor: importing function" fd
         func = import_function!(FUNCTION_MANAGER[],
-                                rayjll.unwrap_function_descriptor(fd),
+                                ray_jll.unwrap_function_descriptor(fd),
                                 get_current_job_id())
 
         flattened = map(Ray.get, task_args)
@@ -208,10 +208,10 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         # so we use a cpp function whose only job is to assign the value to the
         # pointer
         err_msg = sprint(showerror, captured)
-        status = rayjll.report_error(application_error, err_msg, timestamp)
+        status = ray_jll.report_error(application_error, err_msg, timestamp)
         # XXX: we _can_ set _this_ return pointer here for some reason, and it
         # was _harder_ to toss it back over the fence to the wrapper C++ code
-        is_retryable_error[] = rayjll.CxxBool(false)
+        is_retryable_error[] = ray_jll.CxxBool(false)
         @debug "push error status: $status"
 
         result = RayRemoteException(getpid(), task_name, captured)
@@ -228,7 +228,7 @@ end
 
 #=
 julia -e sleep(120) -- \
-  /Users/cvogt/.julia/dev/rayjll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
+  /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
   --ray_node_manager_port=57236 \
@@ -309,7 +309,7 @@ function start_worker(args=ARGS)
 
     @info "Starting Julia worker runtime with args" parsed_args
 
-    return rayjll.initialize_worker(parsed_args["raylet_socket"],
+    return ray_jll.initialize_worker(parsed_args["raylet_socket"],
                                     parsed_args["store_socket"],
                                     parsed_args["address"],
                                     parsed_args["node_ip_address"],

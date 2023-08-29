@@ -59,7 +59,7 @@ end
 # serialization. Mostly this matters if Ray serializes the same message with both formats.
 function _serialize(job_config::JobConfig)
     job_config_json = JSON3.write(json_dict(job_config))
-    return rayjll.serialize_job_config_json(job_config_json)
+    return ray_jll.serialize_job_config_json(job_config_json)
 end
 
 function process_import_statements(ex::Expr)
