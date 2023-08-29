@@ -152,7 +152,9 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-function submit_task(f::Function, args::Tuple; runtime_env::Union{RuntimeEnv,Nothing}=nothing)
+function submit_task(f::Function, args::Tuple;
+                     runtime_env::Union{RuntimeEnv,Nothing}=nothing,
+                     resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
     # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
@@ -170,7 +172,10 @@ function submit_task(f::Function, args::Tuple; runtime_env::Union{RuntimeEnv,Not
         ""
     end
 
-    return GC.@preserve args rayjll._submit_task(fd, object_ids, serialized_runtime_env_info)
+    return GC.@preserve args rayjll._submit_task(fd,
+                                                 object_ids,
+                                                 serialized_runtime_env_info,
+                                                 resources)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,

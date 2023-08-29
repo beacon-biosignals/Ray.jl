@@ -148,12 +148,24 @@ function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMe
     return push!(v, CxxRef(el))
 end
 
-# XXX: Need to convert julia vectors to StdVector. This function helps us avoid having
+# XXX: Need to convert julia vectors to StdVector and build the
+# `std::unordered_map` for resources. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
-function _submit_task(fd, oids::AbstractVector, serialized_runtime_env_info)
+function _submit_task(fd, oids::AbstractVector, serialized_runtime_env_info, resources)
     # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
     args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
-    return _submit_task(fd, args, serialized_runtime_env_info)
+    @debug "task resources: " resources
+    resources = build_resource_requests(resources)
+    return _submit_task(fd, args, serialized_runtime_env_info, resources)
+end
+
+# work around lack of wrapped `std::unordered_map`
+function build_resource_requests(resources::Dict{<:AbstractString,<:Number})
+    cpp_resources = CxxMapStringDouble()
+    for (k, v) in pairs(resources)
+        _setindex!(cpp_resources, float(v), k)
+    end
+    return cpp_resources
 end
 
 #####
