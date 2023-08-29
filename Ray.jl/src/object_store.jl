@@ -28,6 +28,7 @@ function get(oid::rayjll.ObjectIDAllocated)
     io = IOBuffer(take!(rayjll.get(oid)))
     result = deserialize(io)
     # TODO: add an option to not rethrow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/58
     result isa RayRemoteException ? throw(result) : return result
 end
 

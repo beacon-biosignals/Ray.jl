@@ -34,6 +34,7 @@ cc_library(
 """
 
 # TODO: Will eventually use a BinaryBuilder environment to access
+# https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/62
 new_local_repository(
     name = "julia",
     path = "{{{JULIA_INCLUDE_DIR}}}",
@@ -56,6 +57,7 @@ cc_library(
 
 # TODO: Will eventually use a BinaryBuilder environment to access
 # `julia --project -e 'using CxxWrap; println(CxxWrap.prefix_path())'`
+# https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/62
 new_local_repository(
     name = "libcxxwrap_julia",
     path = "{{{CXXWRAP_PREFIX_DIR}}}",
