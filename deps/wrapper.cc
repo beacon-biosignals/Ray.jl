@@ -189,6 +189,11 @@ TaskID GetCurrentTaskId() {
     return worker.GetCurrentTaskId();
 }
 
+const rpc::Address &GetRpcAddress() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    return worker.GetRpcAddress();
+}
+
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
@@ -505,10 +510,29 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("_submit_task", &_submit_task);
 
-    // class ObjectReference
+    // message Address
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
+    mod.add_type<rpc::Address>("Address")
+        .constructor<>()
+        .method("SerializeToString", [](const rpc::Address &addr) {
+            std::string serialized;
+            addr.SerializeToString(&serialized);
+            return serialized;
+        })
+        .method("MessageToJsonString", [](const rpc::Address &addr) {
+            std::string json;
+            google::protobuf::util::MessageToJsonString(addr, &json);
+            return json;
+        });
+    mod.method("GetRpcAddress", &GetRpcAddress);
+
+    // message ObjectReference
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
     mod.add_type<rpc::ObjectReference>("ObjectReference");
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
+    // class RayObject
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
         .method("GetData", &RayObject::GetData);
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
