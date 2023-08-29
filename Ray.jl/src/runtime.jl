@@ -63,6 +63,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     end
 
     # TODO: use something like the java config bootstrap address (?) to get this
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/52
     # information instead of parsing logs?  I can't quite tell where it's coming
     # from (set from a `ray.address` config option):
     # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
@@ -145,6 +146,7 @@ function parse_ray_args_from_raylet_out()
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
     # TODO: downgrade to debug
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
     return (raylet, store, gcs_address, node_ip, node_port)
@@ -218,9 +220,11 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     end
 
     # TODO: remove - useful for now for debugging
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     @info "Result: $result"
 
     # TODO: support multiple return values
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
     buffer_data = Vector{UInt8}(sprint(serialize, result))
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
@@ -306,6 +310,7 @@ function start_worker(args=ARGS)
     end
 
     # TODO: pass "debug mode" as a flag somehow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))
