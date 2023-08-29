@@ -63,6 +63,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     end
 
     # TODO: use something like the java config bootstrap address (?) to get this
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/52
     # information instead of parsing logs?  I can't quite tell where it's coming
     # from (set from a `ray.address` config option):
     # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
@@ -145,6 +146,7 @@ function parse_ray_args_from_raylet_out()
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
     # TODO: downgrade to debug
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
     return (raylet, store, gcs_address, node_ip, node_port)
@@ -152,19 +154,12 @@ end
 
 initialize_coreworker_driver(args...) = rayjll.initialize_coreworker_driver(args...)
 
-function submit_task(f::Function, args::Tuple;
+function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = function_descriptor(f)
-    # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-    object_ids = map(collect(args)) do arg
-        io=IOBuffer()
-        serialize(io, arg)
-        buffer_ptr = Ptr{Nothing}(pointer(io.data))
-        buffer_size = sizeof(io.data)
-        return rayjll.put(rayjll.LocalMemoryBuffer(buffer_ptr, buffer_size, true))
-    end
+    arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -173,7 +168,7 @@ function submit_task(f::Function, args::Tuple;
     end
 
     return GC.@preserve args rayjll._submit_task(fd,
-                                                 object_ids,
+                                                 arg_oids,
                                                  serialized_runtime_env_info,
                                                  resources)
 end
@@ -192,17 +187,20 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         func = import_function!(FUNCTION_MANAGER[],
                                 rayjll.unwrap_function_descriptor(fd),
                                 get_current_job_id())
-        # TODO: write generic Ray.put and Ray.get functions and abstract over this buffer stuff
-        args = map(task_args) do arg
-            v = take!(rayjll.GetData(arg[]))
-            io = IOBuffer(v)
-            return deserialize(io)
+
+        flattened = map(Ray.get, task_args)
+        args, kwargs = recover_args(flattened)
+
+        @info begin
+            param_str = join((string("::", typeof(arg)) for arg in args), ", ")
+            if !isempty(kwargs)
+                param_str *= "; "
+                param_str *= join((string(k, "::", typeof(v)) for (k, v) in kwargs), ", ")
+            end
+            "Calling $func($param_str)"
         end
 
-        arg_string = join(string.("::", typeof.(args)), ", ")
-        @info "Calling $func($arg_string)"
-
-        result = func(args...)
+        result = func(args...; kwargs...)
     catch e
         # timestamp format to match python time.time()
         # https://docs.python.org/3/library/time.html#time.time
@@ -226,9 +224,11 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     end
 
     # TODO: remove - useful for now for debugging
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     @info "Result: $result"
 
     # TODO: support multiple return values
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
     buffer_data = Vector{UInt8}(sprint(serialize, result))
     buffer_size = sizeof(buffer_data)
     buffer = rayjll.LocalMemoryBuffer(buffer_data, buffer_size, true)
@@ -314,6 +314,7 @@ function start_worker(args=ARGS)
     end
 
     # TODO: pass "debug mode" as a flag somehow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))

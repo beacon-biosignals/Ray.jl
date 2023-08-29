@@ -7,6 +7,7 @@ module Ray
 
 using ArgParse
 using Base64
+using CxxWrap.StdLib: SharedPtr
 using JSON3
 using Logging
 using LoggingExtras
@@ -19,6 +20,7 @@ export start_worker, submit_task, @ray_import
 
 include("function_manager.jl")
 include("runtime_env.jl")
+include("remote_function.jl")
 include("runtime.jl")
 include("object_store.jl")
 

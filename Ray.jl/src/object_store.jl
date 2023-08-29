@@ -24,11 +24,13 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-function get(oid::rayjll.ObjectIDAllocated)
-    io = IOBuffer(take!(rayjll.get(oid)))
-    result = deserialize(io)
+get(oid::rayjll.ObjectIDAllocated) = _get(take!(rayjll.get(oid)))
+get(obj::SharedPtr{rayjll.RayObject}) = _get(take!(rayjll.GetData(obj[])))
+get(x) = x
+
+function _get(data::Vector{UInt8})
+    result = deserialize(IOBuffer(data))
     # TODO: add an option to not rethrow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/58
     result isa RayRemoteException ? throw(result) : return result
 end
-
-get(x) = x
