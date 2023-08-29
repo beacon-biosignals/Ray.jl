@@ -36,4 +36,11 @@ end
         @test oid1 != oid2
         @test Ray.get(oid1) == Ray.get(oid2)
     end
+
+    @testset "put object" begin
+        oid1 = Ray.put(123)
+        oid2 = Ray.put(oid1)
+        @test oid1 === oid2
+        @test Ray.get(oid1) == Ray.get(oid2)
+    end
 end

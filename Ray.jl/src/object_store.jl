@@ -5,6 +5,7 @@ Store `data` in the object store. Returns an object reference which can used to 
 the `data` with [`Ray.get`](@ref).
 """
 put(data) = ray_jll.put(to_serialized_buffer(data))
+put(oid::ray_jll.ObjectIDAllocated) = oid
 
 """
     Ray.get(object_id::ObjectIDAllocated)
