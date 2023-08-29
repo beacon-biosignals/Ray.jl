@@ -186,8 +186,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         args, kwargs = recover_args(flattened)
 
         @info begin
-            args_str = join([string("::", typeof(arg)) for arg in args], ", ")
-            kwargs_str = join([string(k, "::", typeof(v)) for (k, v) in kwargs], ", ")
+            args_str = join((string("::", typeof(arg)) for arg in args), ", ")
+            kwargs_str = join((string(k, "::", typeof(v)) for (k, v) in kwargs), ", ")
             args_kwargs_str = join([args_str, kwargs_str], "; ")
             "Calling $func($args_kwargs_str)"
         end
