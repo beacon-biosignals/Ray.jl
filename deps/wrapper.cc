@@ -49,6 +49,7 @@ void initialize_worker(
     std::string node_ip_address,
     int node_manager_port,
     int64_t startup_token,
+    int64_t runtime_env_hash,
     void *julia_task_executor) {
 
     // XXX: Ideally the task_executor would use a `jlcxx::SafeCFunction` and take the expected
@@ -79,6 +80,7 @@ void initialize_worker(
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.startup_token = startup_token;
+    options.runtime_env_hash = runtime_env_hash;
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
@@ -139,6 +141,11 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 JobID GetCurrentJobId() {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
     return driver.GetCurrentJobId();
+}
+
+TaskID GetCurrentTaskId() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    return worker.GetCurrentTaskId();
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
@@ -359,6 +366,7 @@ namespace jlcxx
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
     // https://github.com/JuliaInterop/CxxWrap.jl/tree/main#overriding-finalization-behavior
+    /*
     template<typename T>
     struct Finalizer<T, SpecializedFinalizer>
     {
@@ -368,6 +376,7 @@ namespace jlcxx
             delete to_delete;
         }
     };
+    */
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
@@ -377,11 +386,20 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
+    // than normal.
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
     mod.add_type<JobID>("JobID")
         .method("ToInt", &JobID::ToInt)
         .method("FromInt", &JobID::FromInt);
 
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
+    mod.add_type<TaskID>("TaskID")
+        .method("Binary", &TaskID::Binary)
+        .method("Hex", &TaskID::Hex);
+
     mod.method("GetCurrentJobId", &GetCurrentJobId);
+    mod.method("GetCurrentTaskId", &GetCurrentTaskId);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);

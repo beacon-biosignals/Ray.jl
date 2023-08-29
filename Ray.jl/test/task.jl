@@ -29,6 +29,19 @@
     end
 end
 
+@testset "Task spawning a task" begin
+    # As tasks may be run on the same worker it's better to use the task ID rather than the
+    # process ID.
+    f = function ()
+        task_id = Ray.get_task_id()
+        subtask_id = Ray.get(submit_task(Ray.get_task_id, ()))
+        return (task_id, subtask_id)
+    end
+
+    task_id, subtask_id = Ray.get(submit_task(f, ()))
+    @test Ray.get_task_id() != task_id != subtask_id
+end
+
 @testset "task runtime environment" begin
     @testset "project dir" begin
         # Project dir needs to include the current Ray.jl but have a different path than
@@ -153,4 +166,13 @@ end
             @test !ray_defined
         end
     end
+end
+
+@testset "many tasks" begin
+    n_tasks = Sys.CPU_THREADS * 2
+    # warm up worker cache pool
+    pids = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    # run more tasks which should re-use the cpu cache
+    pids2 = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    @test !isempty(intersect(pids, pids2))
 end
