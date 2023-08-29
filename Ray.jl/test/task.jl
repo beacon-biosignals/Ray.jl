@@ -151,19 +151,10 @@ end
 end
 
 @testset "many tasks" begin
-    oids = map(1:20) do i
-        s = 20
-        submit_task((s, i)) do s, i
-            pid = getpid()
-            println(stderr, "task $i running on PID $pid sleeping $s...")
-            flush(stderr)
-            sleep(s)
-            println("task $i running on PID $pid slept $s")
-            flush(stderr)
-            return pid
-        end
-    end
-
-    @time pids = Ray.get.(oids)
-    @test !allunique(pids)
+    n_tasks = Sys.CPU_THREADS * 2
+    # warm up worker cache pool
+    pids = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    # run more tasks which should re-use the cpu cache
+    pids2 = Ray.get.([submit_task(getpid, ()) for _ in 1:n_tasks])
+    @test !isempty(intersect(pids, pids2))
 end
