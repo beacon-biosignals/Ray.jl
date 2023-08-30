@@ -139,7 +139,8 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<ObjectID> &object_ids,
-                      const std::string &serialized_runtime_env_info) {
+                      const std::string &serialized_runtime_env_info,
+                      const std::unordered_map<std::string, double> &resources) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
@@ -154,6 +155,7 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
     TaskOptions options;
     options.serialized_runtime_env_info = serialized_runtime_env_info;
+    options.resources = resources;
 
     rpc::SchedulingStrategy scheduling_strategy;
     scheduling_strategy.mutable_default_scheduling_strategy();
@@ -354,6 +356,12 @@ std::string get_job_serialized_runtime_env() {
     return job_serialized_runtime_env;
 }
 
+std::unordered_map<std::string, double> get_task_required_resources() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    auto &worker_context = worker.GetWorkerContext();
+    return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -387,6 +395,25 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // You must register all function arguments and return types with jlcxx prior to registering
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
+
+    mod.add_type<std::unordered_map<std::string, double>>("CxxMapStringDouble");
+    mod.method("_setindex!", [](std::unordered_map<std::string, double> &map,
+                                double val,
+                                std::string key) {
+        map[key] = val;
+        return map;
+    });
+    mod.method("_getindex", [](std::unordered_map<std::string, double> &map,
+                               std::string key) {
+        return map[key];
+    });
+    mod.method("_keys", [](std::unordered_map<std::string, double> &map) {
+        std::vector<std::string> keys(map.size());
+        for (auto kv : map) {
+            keys.push_back(kv.first);
+        }
+        return keys;
+    });
 
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
     // than normal.
@@ -511,4 +538,5 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("serialize_job_config_json", &serialize_job_config_json);
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
+    mod.method("get_task_required_resources", &get_task_required_resources);
 }

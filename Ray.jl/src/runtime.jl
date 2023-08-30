@@ -155,7 +155,8 @@ end
 initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(args...)
 
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
-                     runtime_env::Union{RuntimeEnv,Nothing}=nothing)
+                     runtime_env::Union{RuntimeEnv,Nothing}=nothing,
+                     resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = ray_jll.function_descriptor(f)
     arg_oids = map(Ray.put, flatten_args(args, kwargs))
@@ -166,7 +167,10 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args ray_jll._submit_task(fd, arg_oids, serialized_runtime_env_info)
+    return GC.@preserve args ray_jll._submit_task(fd,
+                                                  arg_oids,
+                                                  serialized_runtime_env_info,
+                                                  resources)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
