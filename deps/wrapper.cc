@@ -541,4 +541,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("serialize_job_config_json", &serialize_job_config_json);
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
     mod.method("get_task_required_resources", &get_task_required_resources);
+
+    mod.add_type<RayConfig>("RayConfig")
+        .method("RayConfigInstance", &RayConfig::instance)
+        .method("max_direct_call_object_size", [](RayConfig &config) {
+            return config.max_direct_call_object_size();
+        })
+        .method("task_rpc_inlined_bytes_limit", [](RayConfig &config) {
+            return config.task_rpc_inlined_bytes_limit();
+        });
 }
