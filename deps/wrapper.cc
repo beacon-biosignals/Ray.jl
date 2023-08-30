@@ -20,7 +20,7 @@ void initialize_driver(
     // get next job id instead
     options.job_id = job_id;
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
-    options.enable_logging = logs_dir.empty();
+    options.enable_logging = !logs_dir.empty();
     options.log_dir = logs_dir;
     // options.install_failure_signal_handler = true;
     options.node_ip_address = node_ip_address;

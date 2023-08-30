@@ -60,7 +60,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     # resolve symlink
     session_dir = realpath(session_dir)
-    log_to_stderr = get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+    log_to_stderr = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
     logs_dir = log_to_stderr ? "" : joinpath(session_dir, "logs")
 
     if isnothing(runtime_env)
