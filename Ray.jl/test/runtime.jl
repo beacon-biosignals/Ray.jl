@@ -1,0 +1,39 @@
+@testest "control logs_dir" begin
+    @testest "defaul logs_dir" begin
+        # we're running this after `init` has been called, so logs should exist already:
+        logs = readdir("/tmp/ray/session_latest/logs"; join=true)
+        @test any(contains("julia-core-driver"), logs)
+    end
+
+    @testset "custom logs_dir" begin
+        mktempdir() do logs_dir
+            cp("/tmp/ray/session_latest/logs/raylet.out", joinpath(logs_dir, "raylet.out"))
+            code = quote
+                using Ray
+                Ray.init(; logs_dir=$logs_dir)
+            end
+            cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
+            run(cmd)
+
+            logs = readdir(logs_dir; join=true)
+            @test count(contains("julia-core-driver"), logs) == 1
+
+            logs = read(only(filter(contains("julia-core-driver"), logs)), String)
+            @test !isempty(logs)
+            @test contains(logs, "Constructing CoreWorkerProcess")
+        end
+    end
+
+    @testset "log to stderr" begin
+        code = quote
+            using Ray
+            Ray.init(; logs_dir="")
+        end
+        cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
+        out = IOBuffer()
+        err = IOBuffer()
+        run(pipeline(cmd; stdout=out, stderr=err))
+        logs = String(take!(err))
+        @test contains(logs, "Constructing CoreWorkerProcess")
+    end
+end

@@ -59,10 +59,6 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         return nothing
     end
 
-    # resolve symlink
-    log_to_stderr = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
-    logs_dir = log_to_stderr ? "" : logs_dir
-
     if isnothing(runtime_env)
         # Set default for `JOB_RUNTIME_ENV` when `Ray.init` is called before `@ray_import`.
         # This ensures a call to `@ray_import` after `Ray.init` will fail.
@@ -79,7 +75,9 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     # from (set from a `ray.address` config option):
     # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
 
-    args = parse_ray_args_from_raylet_out(logs_dir)
+    # we use session_dir here instead of logs_dir since logs_dir can be set to
+    # "" to disable file logging without using env var
+    args = parse_ray_args_from_raylet_out(session_dir)
     gcs_address = args[3]
 
     opts = ray_jll.GcsClientOptions(gcs_address)
@@ -93,6 +91,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env))
     serialized_job_config = _serialize(job_config)
 
+    log_to_stderr = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+    logs_dir = log_to_stderr ? "" : logs_dir
     ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
     atexit(ray_jll.shutdown_driver)
 
@@ -112,7 +112,7 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
 
-function parse_ray_args_from_raylet_out(logs_dir)
+function parse_ray_args_from_raylet_out(session_dir)
     #=
     "Starting agent process with command: ... \
     --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493 \
@@ -126,7 +126,7 @@ function parse_ray_args_from_raylet_out(logs_dir)
     --session-name=session_2023-08-14_14-54-36_055139_41385 \
     --gcs-address=127.0.0.1:6379 --minimal --agent-id 470211272"
     =#
-    line = open(joinpath(logs_dir, "raylet.out")) do io
+    line = open(joinpath(session_dir, "logs", "raylet.out")) do io
         while !eof(io)
             line = readline(io)
             if contains(line, "Starting agent process")
