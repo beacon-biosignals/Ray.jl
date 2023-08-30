@@ -63,7 +63,7 @@ end
 const FUNCTION_MANAGER = Ref{FunctionManager}()
 
 function _init_global_function_manager(gcs_address)
-    @info "connecting function manager to GCS at $gcs_address..."
+    @info "Connecting function manager to GCS at $gcs_address..."
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
     ray_jll.Connect(gcs_client)
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
@@ -77,13 +77,13 @@ end
 function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     fd = ray_jll.function_descriptor(f)
     key = function_key(fd, job_id)
-    @debug "exporting function to function store:" fd key
+    @debug "Exporting function to function store:" fd key
     # DFK: I _think_ the string memory may be mangled if we don't `deepcopy`. Not sure but
     # it can't hurt
     if ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, deepcopy(key), -1)
-        @debug "function already present in GCS store:" fd key f
+        @debug "Function already present in GCS store:" fd key f
     else
-        @debug "exporting function to GCS store:" fd key f
+        @debug "Exporting function to GCS store:" fd key f
         val = base64encode(serialize, f)
         check_oversized_function(val, fd)
         ray_jll.Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
@@ -111,7 +111,7 @@ function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescript
                           job_id=get_current_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
-        @debug "function not found locally, retrieving from function store" fd key
+        @debug "Function not found locally, retrieving from function store" fd key
         val = ray_jll.Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
         try
             io = IOBuffer()
