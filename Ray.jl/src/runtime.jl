@@ -178,7 +178,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = ray_jll.function_descriptor(f)
-    arg_oids = map(Ray.put, flatten_args(args, kwargs))
+    task_args = prepare_task_args(flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -187,7 +187,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     end
 
     return GC.@preserve args ray_jll._submit_task(fd,
-                                                  arg_oids,
+                                                  task_args,
                                                   serialized_runtime_env_info,
                                                   resources)
 end
@@ -199,19 +199,24 @@ function byte_serialize(data)
     return bytes
 end
 
+#=
+using Ray; import ray_core_worker_julia_jll as ray_jll
+Ray.prepare_task_args([1,2,3])
+=#
+
 # TODO: be smarter about handling flattened args
 # Adapted from `prepare_args_internal`:
 # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L673
 function prepare_task_args(args)
     ray_config = ray_jll.RayConfigInstance()
     put_threshold = ray_jll.max_direct_call_object_size(ray_config)
+    total_inlined = 0
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
-    core_worker = ray_jll.GetCoreWorker()
-    rpc_address = ray_jll.GetRpcAddress(core_worker)
+    # core_worker = ray_jll.GetCoreWorker()
+    rpc_address = ray_jll.GetRpcAddress()
 
     # TODO: put_arg_call_site
 
-    #=
     task_args = []
     for arg in args
         # if arg isa ObjectRef
@@ -231,23 +236,15 @@ function prepare_task_args(args)
 
         if serialized_arg_size <= put_threshold && serialized_arg_size + total_inlined <= rpc_inline_threshold
             buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
-            push!(task_args, TaskArgByValue(serialized_arg))
+            push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
         else
-            push!(task_args, TaskArgByReference(put_id, rpc_address, nullptr))
-
-
-        to_serialized_buffer
-
-        if
-
-
-
-
+            error("not implemented")
+            # push!(task_args, TaskArgByReference(put_id, rpc_address, nullptr))
+        end
     end
-    =#
 
-
+    return task_args
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,

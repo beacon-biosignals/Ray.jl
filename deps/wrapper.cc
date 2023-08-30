@@ -373,6 +373,11 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
+std::vector<std::unique_ptr<TaskArg>> &task_arg_vector() {
+    std::vector<std::unique_ptr<TaskArg>> vec;
+    return vec;
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -387,6 +392,8 @@ namespace jlcxx
     template<> struct DefaultConstructible<RayObject> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
     template<> struct DefaultConstructible<TaskArg> : std::false_type {};
+    template<> struct DefaultConstructible<TaskArgByReference> : std::false_type {};
+    template<> struct DefaultConstructible<TaskArgByValue> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -603,14 +610,23 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h
     mod.add_type<TaskArg>("TaskArg");
         // .method("ToProto", &TaskArg::ToProto);
+    jlcxx::stl::apply_stl<std::unique_ptr<TaskArg>>(mod);
 
-    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
-        .constructor<const ObjectID &/*object_id*/,
-                     const rpc::Address &/*owner_address*/,
-                     const std::string &/*call_site*/>();
+    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>());
+    mod.method("TaskArgByReference", [] (
+        const ObjectID &object_id,
+        const rpc::Address &owner_address,
+        const std::string &call_site) {
+
+        return std::make_unique<TaskArgByReference>(object_id, owner_address, call_site);
+    });
     // jlcxx::stl::apply_stl<TaskArgByReference>(mod);
 
-    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
-        .constructor<const std::shared_ptr<RayObject> &/*value*/>();
+    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>());
+    mod.method("TaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
+        return std::make_unique<TaskArgByValue>(value);
+    });
     // jlcxx::stl::apply_stl<TaskArgByValue>(mod);
+
+    mod.method("task_arg_vector", &task_arg_vector);
 }
