@@ -380,6 +380,7 @@ namespace jlcxx
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
+    template<> struct DefaultConstructible<RayObject> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
     template<> struct DefaultConstructible<TaskArg> : std::false_type {};
 
@@ -538,6 +539,19 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
         .method("GetData", &RayObject::GetData);
+
+    // Julia RayObject constructors make shared_ptrs
+    mod.method("RayObject", [] (
+        const std::shared_ptr<Buffer> &data,
+        const std::shared_ptr<Buffer> &metadata,
+        const std::vector<rpc::ObjectReference> &nested_refs,
+        bool copy_data = false) {
+
+        return std::make_shared<RayObject>(data, metadata, nested_refs, copy_data);
+    });
+    mod.method("RayObject", [] (const std::shared_ptr<Buffer> &data) {
+        return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
+    });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")
