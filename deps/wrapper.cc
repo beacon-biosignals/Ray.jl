@@ -176,6 +176,10 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     return ObjectRefsToIds(return_refs)[0];
 }
 
+ray::core::CoreWorker &GetCoreWorker() {
+    return CoreWorkerProcess::GetCoreWorker();
+}
+
 // TODO: probably makes more sense to have a global worker rather than calling
 // GetCoreWorker() over and over again...(here and below)
 // https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
@@ -425,6 +429,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         }
         return keys;
     });
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker");
+    mod.method("GetCoreWorker", &GetCoreWorker);
 
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
     // than normal.
