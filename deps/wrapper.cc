@@ -374,11 +374,14 @@ namespace jlcxx
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
     template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
+    template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
+    template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
+    template<> struct DefaultConstructible<TaskArg> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -574,4 +577,18 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("task_rpc_inlined_bytes_limit", [](RayConfig &config) {
             return config.task_rpc_inlined_bytes_limit();
         });
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h
+    mod.add_type<TaskArg>("TaskArg");
+        // .method("ToProto", &TaskArg::ToProto);
+
+    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const ObjectID &/*object_id*/,
+                     const rpc::Address &/*owner_address*/,
+                     const std::string &/*call_site*/>();
+    // jlcxx::stl::apply_stl<TaskArgByReference>(mod);
+
+    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const std::shared_ptr<RayObject> &/*value*/>();
+    // jlcxx::stl::apply_stl<TaskArgByValue>(mod);
 }
