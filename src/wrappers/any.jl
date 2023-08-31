@@ -148,6 +148,13 @@ function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMe
     return push!(v, CxxRef(el))
 end
 
+# Work around CxxWrap's `push!` always dereferencing our value via `@cxxdereference`
+# https://github.com/JuliaInterop/CxxWrap.jl/blob/0de5fbc5673367adc7e725cfc6e1fc6a8f9240a0/src/StdLib.jl#L78-L81
+function Base.push!(v::StdVector{CxxPtr{TaskArg}}, el::CxxRef{<:TaskArg})
+    _push_back(v, el)
+    return v
+end
+
 # XXX: Need to convert julia vectors to StdVector and build the
 # `std::unordered_map` for resources. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl

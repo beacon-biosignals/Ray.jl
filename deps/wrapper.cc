@@ -383,7 +383,7 @@ size_t demo(const std::vector<TaskArg *> &vector) {
     return args.size();
 }
 
-void _push(std::vector<TaskArg *> &vector, TaskArg &el) {
+void _push_back(std::vector<TaskArg *> &vector, TaskArg &el) {
     vector.push_back(&el);
 }
 
@@ -655,5 +655,5 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("_submit_task", &_submit_task);
 
     mod.method("demo", &demo);
-    // mod.method("_push", &_push);
+    mod.method("_push_back", &_push_back);
 }

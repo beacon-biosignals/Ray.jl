@@ -238,12 +238,12 @@ function prepare_task_args(args)
         if (serialized_arg_size <= put_threshold &&
             serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
-            push!(task_args, ray_jll.SharedPtrTaskArgByValue(ray_jll.RayObject(buffer)))
+            push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
         else
             oid = ray_jll.put(buffer)
             call_site = ""
-            push!(task_args, ray_jll.SharedPtrTaskArgByReference(oid, rpc_address, call_site))
+            push!(task_args, ray_jll.TaskArgByReference(oid, rpc_address, call_site))
         end
     end
 
