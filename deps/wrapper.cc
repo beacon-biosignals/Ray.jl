@@ -603,6 +603,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         })
         .method("task_rpc_inlined_bytes_limit", [](RayConfig &config) {
             return config.task_rpc_inlined_bytes_limit();
+        })
+        .method("record_ref_creation_sites", [](RayConfig &config) {
+            return config.record_ref_creation_sites();
         });
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h

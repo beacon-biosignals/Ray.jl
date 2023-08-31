@@ -199,31 +199,25 @@ end
 function prepare_task_args(args)
     ray_config = ray_jll.RayConfigInstance()
     put_threshold = ray_jll.max_direct_call_object_size(ray_config)
-    total_inlined = 0
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
-    # core_worker = ray_jll.GetCoreWorker()
+    record_call_site = ray_jll.record_ref_creation_sites(ray_config)
+
+    core_worker = ray_jll.GetCoreWorker()
     rpc_address = ray_jll.GetRpcAddress()
 
-    # TODO: put_arg_call_site
-
+    total_inlined = 0
     task_args = StdVector{CxxPtr{ray_jll.TaskArg}}()
     for arg in args
-        # if arg isa ObjectRef
-        #     oid = arg.oid
-        #     op_status = ray_jll.GetOwnerAddress(core_worker, oid, owner_address)
-        #             c_arg, &c_owner_address)
-        #     check_status(op_status)
-        #     push!(task_args,
-        #         unique_ptr[CTaskArg](new CTaskArgByReference(
-        #             c_arg,
-        #             c_owner_address,
-        #             arg.call_site())))
-        # end
+        # Note: The Python `prepare_args_internal` function checks if the `arg` is an
+        # `ObjectRef` and in that case uses the object ID to directly make a
+        # `TaskArgByReference`. However, the `arg` here will always be a `Pair`
+        # (or a list in Python) so I expect this special case is never used.
 
         serialized_arg = serialize_to_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
 
+        # Inline arguments which are small and if there is room
         task_arg = if (serialized_arg_size <= put_threshold &&
             serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
@@ -231,7 +225,8 @@ function prepare_task_args(args)
             ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
         else
             oid = ray_jll.put(buffer)
-            call_site = ""
+            # TODO: Add test for populating `call_site`
+            call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
             ray_jll.TaskArgByReference(oid, rpc_address, call_site)
         end
 
