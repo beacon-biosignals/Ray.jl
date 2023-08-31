@@ -13,14 +13,18 @@
                 Ray.init(; logs_dir=$logs_dir)
             end
             cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
-            run(cmd)
+            err = IOBuffer()
+            run(pipeline(cmd; stderr=err))
 
-            logs = readdir(logs_dir; join=true)
-            @test count(contains("julia-core-driver"), logs) == 1
+            logfiles = readdir(logs_dir; join=true)
+            @test count(contains("julia-core-driver"), logfiles) == 1
 
-            logs = read(only(filter(contains("julia-core-driver"), logs)), String)
+            logs = read(only(filter(contains("julia-core-driver"), logfiles)), String)
             @test !isempty(logs)
             @test contains(logs, "Constructing CoreWorkerProcess")
+
+            stderr_logs = String(take!(err))
+            @test !contains(stderr_logs, "Constructing CoreWorkerProcess")
         end
     end
 
