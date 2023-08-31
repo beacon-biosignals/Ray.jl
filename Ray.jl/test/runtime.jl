@@ -40,4 +40,19 @@
         logs = String(take!(err))
         @test contains(logs, "Constructing CoreWorkerProcess")
     end
+
+    @testset "log to stderr: env var" begin
+        code = quote
+            using Ray
+            ENV[Ray.LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE] = "1"
+            Ray.init()
+        end
+        cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
+        out = IOBuffer()
+        err = IOBuffer()
+        run(pipeline(cmd; stdout=out, stderr=err))
+        logs = String(take!(err))
+        @test contains(logs, "Constructing CoreWorkerProcess")
+    end
+
 end
