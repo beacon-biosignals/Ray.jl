@@ -40,6 +40,7 @@ Currently only used to get the next job ID.
 This is set during `init` and used there to get the Job ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
+const CORE_WORKER = Ref{CxxRef{ray_jll.CoreWorker}}()
 
 # env var to control whether logs are sent do stderr or to file.  if "1", sent
 # to stderr; otherwise, will be sent to files in `/tmp/ray/session_latest/logs/`
@@ -104,20 +105,21 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
+    CORE_WORKER[] = ray_jll.GetCoreWorker()
 
     return nothing
 end
 
 # this could go in JLL but if/when global worker is hosted here it's better to
 # keep it local
-get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId())
+get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(CORE_WORKER[]))
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(CORE_WORKER[])))
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
