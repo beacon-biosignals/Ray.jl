@@ -180,6 +180,11 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     fd = ray_jll.function_descriptor(f)
     task_args = prepare_task_args(flatten_args(args, kwargs))
 
+    task_args_alt = StdVector{CxxPtr{ray_jll.TaskArg}}()
+    for task_arg in task_args
+        ray_jll._push(task_args_alt, CxxRef(task_arg))
+    end
+
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
     else
@@ -187,7 +192,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     end
 
     return GC.@preserve args ray_jll._submit_task(fd,
-                                                  task_args,
+                                                  task_args_alt,
                                                   serialized_runtime_env_info,
                                                   resources)
 end

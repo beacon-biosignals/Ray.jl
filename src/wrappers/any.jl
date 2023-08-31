@@ -151,9 +151,7 @@ end
 # XXX: Need to convert julia vectors to StdVector and build the
 # `std::unordered_map` for resources. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
-function _submit_task(fd, oids::AbstractVector, serialized_runtime_env_info, resources)
-    # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
-    args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
+function _submit_task(fd, args, serialized_runtime_env_info, resources::AbstractDict)
     @debug "task resources: " resources
     resources = build_resource_requests(resources)
     return _submit_task(fd, args, serialized_runtime_env_info, resources)

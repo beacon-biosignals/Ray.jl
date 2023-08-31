@@ -140,8 +140,7 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 }
 
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
-                      // const std::vector<TaskArg> &task_args,
-                      const std::vector<ObjectID> &object_ids,
+                      const std::vector<TaskArg *> &task_args,
                       const std::string &serialized_runtime_env_info,
                       const std::unordered_map<std::string, double> &resources) {
 
@@ -150,16 +149,11 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
-    // // TODO: Passing in a `std::vector<std::unique_ptr<TaskArg>>` from Julia appears to be impossible as this fails:
-    // // `jlcxx::stl::apply_stl<std::unique_ptr<TaskArg>>(mod)`
-    // std::vector<std::unique_ptr<TaskArg>> args;
-    // for (auto &task_arg : task_args) {
-    //     args.emplace_back(task_arg);
-    // }
-
+    // TODO: Passing in a `std::vector<std::unique_ptr<TaskArg>>` from Julia may currently be impossible due to:
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/370
     std::vector<std::unique_ptr<TaskArg>> args;
-    for (auto & obj_id : object_ids) {
-        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
+    for (auto &task_arg : task_args) {
+        args.emplace_back(task_arg);
     }
 
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
@@ -695,7 +689,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // // mod.method("task_arg_vector2", &task_arg_vector2);
     // mod.method("_push", &_push);
 
-    // mod.method("_submit_task", &_submit_task);
+    mod.method("_submit_task", &_submit_task);
 
     // mod.method("variadic", &variadic);
 
