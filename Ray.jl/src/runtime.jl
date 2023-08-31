@@ -173,6 +173,7 @@ end
 
 initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(args...)
 
+# TODO: Move task related code into a "task.jl" file
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
@@ -190,13 +191,6 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                                                   task_args,
                                                   serialized_runtime_env_info,
                                                   resources)
-end
-
-function serialize_as_bytes(data)
-    bytes = Vector{UInt8}()
-    io = IOBuffer(bytes; write=true)
-    serialize(io, data)
-    return bytes
 end
 
 # TODO: be smarter about handling flattened args
@@ -226,7 +220,7 @@ function prepare_task_args(args)
         #             arg.call_site())))
         # end
 
-        serialized_arg = serialize_as_bytes(arg)
+        serialized_arg = serialize_to_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
 
@@ -303,7 +297,9 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     # TODO: support multiple return values
     # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
-    push!(returns, to_serialized_buffer(result))
+    bytes = serialize_to_bytes(result)
+    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
+    push!(returns, buffer)
 
     return nothing
 end
