@@ -51,8 +51,8 @@
         out = IOBuffer()
         err = IOBuffer()
         run(pipeline(cmd; stdout=out, stderr=err))
-        logs = String(take!(err))
-        @test contains(logs, "Constructing CoreWorkerProcess")
+        stderr_logs = String(take!(err))
+        @test contains(stderr_logs, "Constructing CoreWorkerProcess")
     end
 
     @testset "kwarg takes precedence over env var" begin
