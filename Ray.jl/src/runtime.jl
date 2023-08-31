@@ -110,9 +110,16 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     return nothing
 end
 
-# this could go in JLL but if/when global worker is hosted here it's better to
-# keep it local
-get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(CORE_WORKER[]))
+# TODO: Python Ray returns a string:
+# https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_context.RuntimeContext.get_job_id.html
+
+"""
+    get_job_id() -> UInt32
+
+Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
+create tasks.
+"""
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(CORE_WORKER[]))
 
 """
     get_task_id() -> String
@@ -178,7 +185,7 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
-    export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
+    export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
     arg_oids = map(Ray.put, flatten_args(args, kwargs))
 
@@ -207,7 +214,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         @debug "task_executor: importing function" fd
         func = import_function!(FUNCTION_MANAGER[],
                                 ray_jll.unwrap_function_descriptor(fd),
-                                get_current_job_id())
+                                get_job_id())
 
         flattened = map(Ray.get, task_args)
         args, kwargs = recover_args(flattened)
