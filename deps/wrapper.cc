@@ -375,53 +375,11 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
-// std::vector<std::string> &task_arg_vector() {
-//     std::vector<std::string> vec;
-//     return vec;
-// }
-
-// std::vector<std::unique_ptr<TaskArg>> *task_arg_vector2() {
-//     auto vec = new std::vector<std::unique_ptr<TaskArg>>;
-//     return vec;
-// }
-
-// void _push(std::vector<std::string> *vec, const std::string &str) {
-//     vec->emplace_back(str);
-// }
-
-// std::vector<std::unique_ptr<std::string>> *demo(std::vector<std::string> *generic_vec) {
-//     std::vector<std::unique_ptr<TaskArg>> args;
-//     for (auto el : generic_vec) {
-//         args.emplace_back(&el);
-//     }
-//     return args;
-// }
-
-
-// https://github.com/JuliaInterop/CxxWrap.jl/issues/370
-// demo(const TaskArg &task_arg...) {
-//     va_list args;
-//     va_start(args, task_arg);
-//     for
-// }
-
-// void variadic(const std::string fmt, const std::string...)
-// {
-//     va_list args;
-//     va_start(args, fmt);
-//     vprintf(fmt, args);
-//     va_end(args);
-// }
-
-// size_t demo(const std::vector<std::string> &vector) {
-//     return vector.size();
-// }
-
 size_t demo(const std::vector<TaskArg *> &vector) {
     std::vector<std::unique_ptr<TaskArg>> args;
     for (auto arg : vector) {
         args.emplace_back(arg);
-    }    
+    }
     return args.size();
 }
 
@@ -685,13 +643,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // });
     // jlcxx::stl::apply_stl<TaskArgByValue>(mod);
 
-    // mod.method("task_arg_vector", &task_arg_vector);
-    // // mod.method("task_arg_vector2", &task_arg_vector2);
-    // mod.method("_push", &_push);
-
     mod.method("_submit_task", &_submit_task);
-
-    // mod.method("variadic", &variadic);
 
     mod.method("demo", &demo);
     mod.method("_push", &_push);

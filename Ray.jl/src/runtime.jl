@@ -197,17 +197,12 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                                                   resources)
 end
 
-function byte_serialize(data)
+function serialize_as_bytes(data)
     bytes = Vector{UInt8}()
     io = IOBuffer(bytes; write=true)
     serialize(io, data)
     return bytes
 end
-
-#=
-using Ray; import ray_core_worker_julia_jll as ray_jll
-Ray.prepare_task_args([1,2,3])
-=#
 
 # TODO: be smarter about handling flattened args
 # Adapted from `prepare_args_internal`:
@@ -236,11 +231,13 @@ function prepare_task_args(args)
         #             arg.call_site())))
         # end
 
-        serialized_arg = byte_serialize(arg)
+        serialized_arg = serialize_as_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
-        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
+        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, ser_arg_size, true)
 
-        if serialized_arg_size <= put_threshold && serialized_arg_size + total_inlined <= rpc_inline_threshold
+        if (serialized_arg_size <= put_threshold &&
+            serialized_arg_size + total_inlined <= rpc_inline_threshold)
+
             push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
         else
