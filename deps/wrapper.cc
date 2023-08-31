@@ -140,6 +140,7 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 }
 
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+                      // const std::vector<TaskArg> &task_args,
                       const std::vector<ObjectID> &object_ids,
                       const std::string &serialized_runtime_env_info,
                       const std::unordered_map<std::string, double> &resources) {
@@ -148,6 +149,13 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
+
+    // // TODO: Passing in a `std::vector<std::unique_ptr<TaskArg>>` from Julia appears to be impossible as this fails:
+    // // `jlcxx::stl::apply_stl<std::unique_ptr<TaskArg>>(mod)`
+    // std::vector<std::unique_ptr<TaskArg>> args;
+    // for (auto &task_arg : task_args) {
+    //     args.emplace_back(task_arg);
+    // }
 
     std::vector<std::unique_ptr<TaskArg>> args;
     for (auto & obj_id : object_ids) {
@@ -373,10 +381,60 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
-std::vector<std::unique_ptr<TaskArg>> &task_arg_vector() {
-    std::vector<std::unique_ptr<TaskArg>> vec;
-    return vec;
+// std::vector<std::string> &task_arg_vector() {
+//     std::vector<std::string> vec;
+//     return vec;
+// }
+
+// std::vector<std::unique_ptr<TaskArg>> *task_arg_vector2() {
+//     auto vec = new std::vector<std::unique_ptr<TaskArg>>;
+//     return vec;
+// }
+
+// void _push(std::vector<std::string> *vec, const std::string &str) {
+//     vec->emplace_back(str);
+// }
+
+// std::vector<std::unique_ptr<std::string>> *demo(std::vector<std::string> *generic_vec) {
+//     std::vector<std::unique_ptr<TaskArg>> args;
+//     for (auto el : generic_vec) {
+//         args.emplace_back(&el);
+//     }
+//     return args;
+// }
+
+
+// https://github.com/JuliaInterop/CxxWrap.jl/issues/370
+// demo(const TaskArg &task_arg...) {
+//     va_list args;
+//     va_start(args, task_arg);
+//     for
+// }
+
+// void variadic(const std::string fmt, const std::string...)
+// {
+//     va_list args;
+//     va_start(args, fmt);
+//     vprintf(fmt, args);
+//     va_end(args);
+// }
+
+// size_t demo(const std::vector<std::string> &vector) {
+//     return vector.size();
+// }
+
+size_t demo(const std::vector<TaskArg *> &vector) {
+    std::vector<std::unique_ptr<TaskArg>> args;
+    for (auto arg : vector) {
+        args.emplace_back(arg);
+    }    
+    return args.size();
 }
+
+void _push(std::vector<TaskArg *> &vector, TaskArg &el) {
+    vector.push_back(&el);
+}
+
 
 namespace jlcxx
 {
@@ -392,8 +450,8 @@ namespace jlcxx
     template<> struct DefaultConstructible<RayObject> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
     template<> struct DefaultConstructible<TaskArg> : std::false_type {};
-    template<> struct DefaultConstructible<TaskArgByReference> : std::false_type {};
-    template<> struct DefaultConstructible<TaskArgByValue> : std::false_type {};
+    // template<> struct DefaultConstructible<TaskArgByReference> : std::false_type {};
+    // template<> struct DefaultConstructible<TaskArgByValue> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -527,7 +585,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
-    mod.method("_submit_task", &_submit_task);
 
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
@@ -610,23 +667,38 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h
     mod.add_type<TaskArg>("TaskArg");
         // .method("ToProto", &TaskArg::ToProto);
-    jlcxx::stl::apply_stl<std::unique_ptr<TaskArg>>(mod);
+    // jlcxx::stl::apply_stl<TaskArg>(mod);
+    // jlcxx::stl::apply_stl<std::shared_ptr<TaskArg>>(mod);
+    // jlcxx::stl::apply_stl<std::unique_ptr<std::string>>(mod);
 
-    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>());
-    mod.method("TaskArgByReference", [] (
-        const ObjectID &object_id,
-        const rpc::Address &owner_address,
-        const std::string &call_site) {
+    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const ObjectID &/*object_id*/,
+                     const rpc::Address &/*owner_address*/,
+                     const std::string &/*call_site*/>();
+    // mod.method("TaskArgByReference", [] (
+    //     const ObjectID &object_id,
+    //     const rpc::Address &owner_address,
+    //     const std::string &call_site) {
 
-        return std::make_unique<TaskArgByReference>(object_id, owner_address, call_site);
-    });
+    //     return std::make_unique<TaskArgByReference>(object_id, owner_address, call_site);
+    // });
     // jlcxx::stl::apply_stl<TaskArgByReference>(mod);
 
-    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>());
-    mod.method("TaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
-        return std::make_unique<TaskArgByValue>(value);
-    });
+    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const std::shared_ptr<RayObject> &/*value*/>();
+    // mod.method("TaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
+    //     return std::make_unique<TaskArgByValue>(value);
+    // });
     // jlcxx::stl::apply_stl<TaskArgByValue>(mod);
 
-    mod.method("task_arg_vector", &task_arg_vector);
+    // mod.method("task_arg_vector", &task_arg_vector);
+    // // mod.method("task_arg_vector2", &task_arg_vector2);
+    // mod.method("_push", &_push);
+
+    // mod.method("_submit_task", &_submit_task);
+
+    // mod.method("variadic", &variadic);
+
+    mod.method("demo", &demo);
+    mod.method("_push", &_push);
 }
