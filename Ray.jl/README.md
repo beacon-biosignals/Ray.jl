@@ -76,9 +76,15 @@ shutdown/reboot):
 ray start --head
 ```
 
-Now you should be able to do
+Now you should be able to (from the cloned git repo):
 
 ```julia
+] dev .
+] dev ./Ray.jl
 using Ray
 Ray.init()
 ```
+
+Note that it's important to actually `] dev` _both_ the jll (first) and Ray.jl
+(second); otherwise, Ray.jl will try to install the jll and complain it's not
+registered.
