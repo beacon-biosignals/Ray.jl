@@ -238,14 +238,15 @@ function prepare_task_args(args)
 
         serialized_arg = byte_serialize(arg)
         serialized_arg_size = sizeof(serialized_arg)
+        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
 
         if serialized_arg_size <= put_threshold && serialized_arg_size + total_inlined <= rpc_inline_threshold
-            buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
             push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
         else
-            error("not implemented")
-            # push!(task_args, TaskArgByReference(put_id, rpc_address, nullptr))
+            oid = ray_jll.put(buffer)
+            call_site = ""
+            push!(task_args, ray_jll.TaskArgByReference(oid, rpc_address, call_site))
         end
     end
 
