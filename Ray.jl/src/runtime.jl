@@ -48,6 +48,10 @@ const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
 
 function default_log_dir(session_dir)
     redirect_logs = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+    # realpath() resolves relative paths and symlinks, including the default
+    # `/tmp/ray/session_latest/`.  this is defense against folks potentially
+    # starting multiple ray sessions locally, which could cause the logs path to
+    # change out from under us if we use the symlink directly.
     return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
 end
 
