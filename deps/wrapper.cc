@@ -668,7 +668,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
         .constructor<const ObjectID &/*object_id*/,
                      const rpc::Address &/*owner_address*/,
-                     const std::string &/*call_site*/>();
+                     const std::string &/*call_site*/>(false);
     // mod.method("TaskArgByReference", [] (
     //     const ObjectID &object_id,
     //     const rpc::Address &owner_address,
@@ -679,7 +679,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // jlcxx::stl::apply_stl<TaskArgByReference>(mod);
 
     mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
-        .constructor<const std::shared_ptr<RayObject> &/*value*/>();
+        .constructor<const std::shared_ptr<RayObject> &/*value*/>(false);
     // mod.method("TaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
     //     return std::make_unique<TaskArgByValue>(value);
     // });
