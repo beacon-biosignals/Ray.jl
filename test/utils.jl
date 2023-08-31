@@ -35,6 +35,7 @@ function setup_core_worker(body)
                       "127.0.0.1",
                       node_manager_port(),
                       FromInt(1234),
+                      "/tmp/ray/session_latest/logs/",
                       "")
     try
         body()
