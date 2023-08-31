@@ -182,7 +182,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
 
     task_args_alt = StdVector{CxxPtr{ray_jll.TaskArg}}()
     for task_arg in task_args
-        ray_jll._push(task_args_alt, CxxRef(task_arg))
+        push!(task_args_alt, CxxRef(task_arg))
     end
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
@@ -233,17 +233,17 @@ function prepare_task_args(args)
 
         serialized_arg = serialize_as_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
-        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, ser_arg_size, true)
+        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
 
         if (serialized_arg_size <= put_threshold &&
             serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
-            push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
+            push!(task_args, ray_jll.SharedPtrTaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
         else
             oid = ray_jll.put(buffer)
             call_site = ""
-            push!(task_args, ray_jll.TaskArgByReference(oid, rpc_address, call_site))
+            push!(task_args, ray_jll.SharedPtrTaskArgByReference(oid, rpc_address, call_site))
         end
     end
 
