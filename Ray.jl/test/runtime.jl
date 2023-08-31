@@ -55,4 +55,28 @@
         @test contains(logs, "Constructing CoreWorkerProcess")
     end
 
+    @testset "kwarg takes precedence over env var" begin
+        mktempdir() do logs_dir
+            code = quote
+                using Ray
+                ENV[Ray.LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE] = "1"
+                Ray.init(; logs_dir=$logs_dir)
+            end
+            cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
+            out = IOBuffer()
+            err = IOBuffer()
+            run(pipeline(cmd; stdout=out, stderr=err))
+
+            logfiles = readdir(logs_dir; join=true)
+            @test count(contains("julia-core-driver"), logfiles) == 1
+
+            logs = read(only(filter(contains("julia-core-driver"), logfiles)), String)
+            @test !isempty(logs)
+            @test contains(logs, "Constructing CoreWorkerProcess")
+
+            stderr_logs = String(take!(err))
+            @test !contains(stderr_logs, "Constructing CoreWorkerProcess")
+        end
+    end
+
 end

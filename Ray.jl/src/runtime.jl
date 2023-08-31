@@ -46,9 +46,14 @@ const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
 # https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
 const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
 
+function default_log_dir(session_dir)
+    redirect_logs = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+    return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
+end
+
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
               session_dir="/tmp/ray/session_latest",
-              logs_dir=joinpath(realpath(session_dir), "logs"))
+              logs_dir=default_log_dir(session_dir))
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
     # initialization and using that as a proxy for whether it's connected or not
@@ -91,8 +96,6 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env))
     serialized_job_config = _serialize(job_config)
 
-    log_to_stderr = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
-    logs_dir = log_to_stderr ? "" : logs_dir
     ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
     atexit(ray_jll.shutdown_driver)
 
