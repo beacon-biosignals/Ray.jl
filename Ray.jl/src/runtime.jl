@@ -41,7 +41,23 @@ This is set during `init` and used there to get the Job ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
 
-function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
+# env var to control whether logs are sent do stderr or to file.  if "1", sent
+# to stderr; otherwise, will be sent to files in `/tmp/ray/session_latest/logs/`
+# https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
+const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
+
+function default_log_dir(session_dir)
+    redirect_logs = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+    # realpath() resolves relative paths and symlinks, including the default
+    # `/tmp/ray/session_latest/`.  this is defense against folks potentially
+    # starting multiple ray sessions locally, which could cause the logs path to
+    # change out from under us if we use the symlink directly.
+    return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
+end
+
+function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
+              session_dir="/tmp/ray/session_latest",
+              logs_dir=default_log_dir(session_dir))
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
     # initialization and using that as a proxy for whether it's connected or not
@@ -67,7 +83,10 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     # information instead of parsing logs?  I can't quite tell where it's coming
     # from (set from a `ray.address` config option):
     # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-    args = parse_ray_args_from_raylet_out()
+
+    # we use session_dir here instead of logs_dir since logs_dir can be set to
+    # "" to disable file logging without using env var
+    args = parse_ray_args_from_raylet_out(session_dir)
     gcs_address = args[3]
 
     opts = ray_jll.GcsClientOptions(gcs_address)
@@ -81,7 +100,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing)
     job_config = JobConfig(RuntimeEnvInfo(runtime_env))
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(args..., job_id, serialized_job_config)
+    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
@@ -100,7 +119,7 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
 
-function parse_ray_args_from_raylet_out()
+function parse_ray_args_from_raylet_out(session_dir)
     #=
     "Starting agent process with command: ... \
     --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493 \
@@ -114,7 +133,7 @@ function parse_ray_args_from_raylet_out()
     --session-name=session_2023-08-14_14-54-36_055139_41385 \
     --gcs-address=127.0.0.1:6379 --minimal --agent-id 470211272"
     =#
-    line = open("/tmp/ray/session_latest/logs/raylet.out") do io
+    line = open(joinpath(session_dir, "logs", "raylet.out")) do io
         while !eof(io)
             line = readline(io)
             if contains(line, "Starting agent process")
