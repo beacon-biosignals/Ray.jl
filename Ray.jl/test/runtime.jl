@@ -1,5 +1,5 @@
 @testset "control logs_dir" begin
-    @testset "defaul logs_dir" begin
+    @testset "default logs_dir" begin
         # we're running this after `init` has been called, so logs should exist already:
         logs = readdir("/tmp/ray/session_latest/logs"; join=true)
         @test any(contains("julia-core-driver"), logs)
