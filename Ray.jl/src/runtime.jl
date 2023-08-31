@@ -180,11 +180,6 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     fd = ray_jll.function_descriptor(f)
     task_args = prepare_task_args(flatten_args(args, kwargs))
 
-    task_args_alt = StdVector{CxxPtr{ray_jll.TaskArg}}()
-    for task_arg in task_args
-        push!(task_args_alt, CxxRef(task_arg))
-    end
-
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
     else
@@ -192,7 +187,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     end
 
     return GC.@preserve args ray_jll._submit_task(fd,
-                                                  task_args_alt,
+                                                  task_args,
                                                   serialized_runtime_env_info,
                                                   resources)
 end
@@ -217,7 +212,7 @@ function prepare_task_args(args)
 
     # TODO: put_arg_call_site
 
-    task_args = []
+    task_args = StdVector{CxxPtr{ray_jll.TaskArg}}()
     for arg in args
         # if arg isa ObjectRef
         #     oid = arg.oid
@@ -235,16 +230,18 @@ function prepare_task_args(args)
         serialized_arg_size = sizeof(serialized_arg)
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
 
-        if (serialized_arg_size <= put_threshold &&
+        task_arg = if (serialized_arg_size <= put_threshold &&
             serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
-            push!(task_args, ray_jll.TaskArgByValue(ray_jll.RayObject(buffer)))
             total_inlined += serialized_arg_size
+            ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
         else
             oid = ray_jll.put(buffer)
             call_site = ""
-            push!(task_args, ray_jll.TaskArgByReference(oid, rpc_address, call_site))
+            ray_jll.TaskArgByReference(oid, rpc_address, call_site)
         end
+
+        push!(task_args, CxxRef(task_arg))
     end
 
     return task_args

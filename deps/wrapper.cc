@@ -375,18 +375,9 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
-size_t demo(const std::vector<TaskArg *> &vector) {
-    std::vector<std::unique_ptr<TaskArg>> args;
-    for (auto arg : vector) {
-        args.emplace_back(arg);
-    }
-    return args.size();
-}
-
 void _push_back(std::vector<TaskArg *> &vector, TaskArg &el) {
     vector.push_back(&el);
 }
-
 
 namespace jlcxx
 {
@@ -402,8 +393,6 @@ namespace jlcxx
     template<> struct DefaultConstructible<RayObject> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
     template<> struct DefaultConstructible<TaskArg> : std::false_type {};
-    // template<> struct DefaultConstructible<TaskArgByReference> : std::false_type {};
-    // template<> struct DefaultConstructible<TaskArgByValue> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -618,42 +607,24 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h
     mod.add_type<TaskArg>("TaskArg");
-        // .method("ToProto", &TaskArg::ToProto);
-    jlcxx::stl::apply_stl<std::shared_ptr<TaskArg>>(mod);
-    // jlcxx::stl::apply_stl<std::unique_ptr<std::string>>(mod);
+    mod.method("_push_back", &_push_back);
+
+    // The Julia types `TaskArgByReference` and `TaskArgByValue` have their default finalizers
+    // disabled as these will later be used as `std::unique_ptr`. If these finalizers were enabled
+    // we would see segmentation faults due to double deallocations.
+    //
+    // Note: It is possible to create `std::unique_ptr`s in C++ and return them to Julia however
+    // CxxWrap is unable to compile any wrapped functions using `std::vector<std::unique_ptr<TaskArg>>`.
+    // We're working around this by using `std::vector<TaskArg *>`.
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/370
 
     mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
         .constructor<const ObjectID &/*object_id*/,
                      const rpc::Address &/*owner_address*/,
-                     const std::string &/*call_site*/>();
-    mod.method("SharedPtrTaskArgByReference", [] (
-        const ObjectID &object_id,
-        const rpc::Address &owner_address,
-        const std::string &call_site) {
-
-        return std::make_shared<TaskArgByReference>(object_id, owner_address, call_site);
-    });
-    // mod.method("TaskArgByReference", [] (
-    //     const ObjectID &object_id,
-    //     const rpc::Address &owner_address,
-    //     const std::string &call_site) {
-
-    //     return std::make_unique<TaskArgByReference>(object_id, owner_address, call_site);
-    // });
-    // jlcxx::stl::apply_stl<TaskArgByReference>(mod);
+                     const std::string &/*call_site*/>(false);
 
     mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
-        .constructor<const std::shared_ptr<RayObject> &/*value*/>();
-    mod.method("SharedPtrTaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
-        return std::make_shared<TaskArgByValue>(value);
-    });
-    // mod.method("TaskArgByValue", [] (const std::shared_ptr<RayObject> &value) {
-    //     return std::make_unique<TaskArgByValue>(value);
-    // });
-    // jlcxx::stl::apply_stl<TaskArgByValue>(mod);
+        .constructor<const std::shared_ptr<RayObject> &/*value*/>(false);
 
     mod.method("_submit_task", &_submit_task);
-
-    mod.method("demo", &demo);
-    mod.method("_push_back", &_push_back);
 }
