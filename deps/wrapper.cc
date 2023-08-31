@@ -180,30 +180,22 @@ ray::core::CoreWorker &GetCoreWorker() {
     return CoreWorkerProcess::GetCoreWorker();
 }
 
-// TODO: probably makes more sense to have a global worker rather than calling
-// GetCoreWorker() over and over again...(here and below)
-// https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
-
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(std::shared_ptr<Buffer> buffer) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
-
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+ObjectID put(ray::core::CoreWorker &worker, std::shared_ptr<Buffer> buffer) {
     // Store our string in the object store
     ObjectID object_id;
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
+    RAY_CHECK_OK(worker.Put(ray_obj, {}, &object_id));
 
     return object_id;
 }
 
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<Buffer> get(ObjectID object_id) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
-
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+std::shared_ptr<Buffer> get(ray::core::CoreWorker &worker, ObjectID object_id) {
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    RAY_CHECK_OK(driver.Get(get_obj_ids, -1, &results));
+    RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &results));
 
     std::shared_ptr<RayObject> result = results[0];
     if (result == nullptr) {

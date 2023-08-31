@@ -131,8 +131,8 @@ Base.show(io::IO, jobid::JobID) = print(io, Int(ToInt(jobid)))
 #####
 
 # Works around what appears to be a CxxWrap issue
-function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
-    return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
+function put(worker::CxxRef{CoreWorker}, buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
+    return put(worker, CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
 end
 
 function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
