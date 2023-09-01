@@ -179,9 +179,9 @@ end
 
 @testset "task resource requests" begin
     function gimme_resources()
-        resources = Ray.ray_jll.get_task_required_resources()
-        ks = Ray.ray_jll._keys(resources)
-        return Dict(String(k) => float(Ray.ray_jll._getindex(resources, k)) for k in ks)
+        resources = ray_jll.get_task_required_resources()
+        ks = ray_jll._keys(resources)
+        return Dict(String(k) => float(ray_jll._getindex(resources, k)) for k in ks)
     end
 
     default_resources = Ray.get(submit_task(gimme_resources, ()))
