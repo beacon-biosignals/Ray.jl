@@ -13,14 +13,14 @@
     export_function!(fm, f, jobid)
 
     fd = function_descriptor(f)
-    @test wait_for_function(fm, fd, jobid; timeout=10) == :ok
+    @test wait_for_function(fm, fd, jobid; timeout_s=10) == :ok
     f2 = import_function!(fm, fd, jobid)
 
     @test f2.(1:10) == f.(1:10)
 
     mfd = function_descriptor(MyMod.f)
     @test_throws ErrorException import_function!(fm, mfd, jobid)
-    @test wait_for_function(fm, mfd, jobid; timeout=1) == :timed_out
+    @test wait_for_function(fm, mfd, jobid; timeout_s=1) == :timed_out
     export_function!(fm, MyMod.f, jobid)
 
     # can import the function even when it's aliased in another module:
