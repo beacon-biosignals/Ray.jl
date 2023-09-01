@@ -91,13 +91,17 @@ function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
 end
 
 function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                           job_id=get_current_job_id();
-                           pollint_s=0.01, timeout_s=10)
+                           job_id=get_current_job_id(); timeout=10)
     key = function_key(fd, job_id)
-    status = timedwait(timeout_s; pollint=pollint_s) do
-        # Set Exists to not block by using a negative timeout. If we set a non-negative
-        # timeout then this function can throw "Deadline Exceeded" exceptions.
-        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
+    status = try
+        exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout)
+        exists ? :ok : :timed_out
+    catch e
+        if e isa ErrorException && contains(e.msg, "Deadline Exceeded")
+            return :timed_out
+        else
+            rethrow()
+        end
     end
     return status
 end
