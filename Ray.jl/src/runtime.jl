@@ -208,7 +208,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     local result
     try
-        @info "task_executor: called for JobID $(ray_jll.GetCurrentJobId())"
+        @info "task_executor: called for JobID $(get_job_id())"
         fd = ray_jll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
         @debug "task_executor: importing function" fd
