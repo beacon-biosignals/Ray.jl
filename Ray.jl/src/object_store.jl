@@ -4,7 +4,7 @@
 Store `data` in the object store. Returns an object reference which can used to retrieve
 the `data` with [`Ray.get`](@ref).
 """
-put(data) = ray_jll.put(GetCoreWorker(), to_serialized_buffer(data))
+put(data) = ray_jll.put(to_serialized_buffer(data))
 
 """
     Ray.get(object_id::ObjectIDAllocated)
@@ -16,7 +16,7 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(oid::ray_jll.ObjectIDAllocated) = _get(ray_jll.get(GetCoreWorker(), oid))
+get(oid::ray_jll.ObjectIDAllocated) = _get(ray_jll.get(oid))
 get(obj::SharedPtr{ray_jll.RayObject}) = _get(ray_jll.GetData(obj[]))
 get(x) = x
 

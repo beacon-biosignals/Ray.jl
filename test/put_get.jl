@@ -2,11 +2,8 @@ using ray_core_worker_julia_jll: put, get
 
 @testset "put / get" begin
     @testset "roundtrip vector" begin
-        worker = ray_jll.GetCoreWorker()
-
         data = UInt16[1:3;]
-        buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-        obj_ref = put(worker, buffer)
+        obj_ref = put(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true))
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
@@ -23,13 +20,10 @@ using ray_core_worker_julia_jll: put, get
     end
 
     @testset "roundtrip string" begin
-        worker = ray_jll.GetCoreWorker()
-
         data = "Greetings from Julia!"
-        buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-        obj_ref = put(worker, buffer)
+        obj_ref = put(LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true))
 
-        buffer = get(worker, obj_ref)
+        buffer = get(obj_ref)
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
         v = Vector{UInt8}(undef, buffer_size)

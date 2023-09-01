@@ -181,7 +181,9 @@ ray::core::CoreWorker &GetCoreWorker() {
 }
 
 // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(ray::core::CoreWorker &worker, std::shared_ptr<Buffer> buffer) {
+ObjectID put(std::shared_ptr<Buffer> buffer) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+
     // Store our string in the object store
     ObjectID object_id;
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
@@ -191,7 +193,9 @@ ObjectID put(ray::core::CoreWorker &worker, std::shared_ptr<Buffer> buffer) {
 }
 
 // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<Buffer> get(ray::core::CoreWorker &worker, ObjectID object_id) {
+std::shared_ptr<Buffer> get(ObjectID object_id) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
     std::vector<ObjectID> get_obj_ids = {object_id};
