@@ -416,6 +416,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
 
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId);
+    mod.method("GetCoreWorker", &GetCoreWorker);
+
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
@@ -485,15 +491,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
+    mod.method("put", &put);
+    mod.method("get", &get);
     mod.method("_submit_task", &_submit_task);
-
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
-    mod.add_type<ray::core::CoreWorker>("CoreWorker")
-        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
-        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("put", &put)
-        .method("get", &get);
-    mod.method("GetCoreWorker", &GetCoreWorker);
 
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
