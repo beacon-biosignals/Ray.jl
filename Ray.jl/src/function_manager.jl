@@ -95,9 +95,9 @@ function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescrip
                            pollint_s=0.01, timeout_s=10)
     key = function_key(fd, job_id)
     status = timedwait(timeout_s; pollint=pollint_s) do
-        # timeout the Exists query to the same timeout we use here so we don't
-        # deadlock.
-        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+        # Set Exists to not block by using a negative timeout. If we set a non-negative
+        # timeout then this function can throw "Deadline Exceeded" exceptions.
+        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
     end
     return status
 end
