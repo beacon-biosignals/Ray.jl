@@ -22,7 +22,7 @@ using ray::core::TaskOptions;
 using ray::core::WorkerType;
 
 ObjectID put(std::shared_ptr<Buffer> buffer);
-std::shared_ptr<Buffer> get(ObjectID object_id);
+std::shared_ptr<Buffer> get(ObjectID object_id, int64_t timeout_ms);
 std::string ToString(ray::FunctionDescriptor function_descriptor);
 
 // a wrapper class to manage the IO service + thread that the GcsClient needs.

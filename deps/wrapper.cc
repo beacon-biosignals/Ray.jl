@@ -202,13 +202,16 @@ ObjectID put(std::shared_ptr<Buffer> buffer) {
 }
 
 // https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<Buffer> get(ObjectID object_id) {
+std::shared_ptr<Buffer> get(ObjectID object_id, int64_t timeout_ms) {
     auto &driver = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    RAY_CHECK_OK(driver.Get(get_obj_ids, -1, &results));
+    auto status = driver.Get(get_obj_ids, timeout_ms, &results);
+    if (!status.ok()) {
+        return nullptr;
+    }
 
     std::shared_ptr<RayObject> result = results[0];
     if (result == nullptr) {
