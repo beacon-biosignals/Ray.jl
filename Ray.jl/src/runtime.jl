@@ -202,11 +202,10 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args ray_jll.submit_task(GetCoreWorker(),
-                                                 fd,
-                                                 arg_oids,
-                                                 serialized_runtime_env_info,
-                                                 resources)
+    return GC.@preserve args ray_jll._submit_task(fd,
+                                                  arg_oids,
+                                                  serialized_runtime_env_info,
+                                                  resources)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,

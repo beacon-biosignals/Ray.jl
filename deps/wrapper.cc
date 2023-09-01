@@ -139,11 +139,12 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
     return *rayobj_ptr;
 }
 
-ObjectID submit_task(ray::core::CoreWorker &worker,
-                      const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<ObjectID> &object_ids,
                       const std::string &serialized_runtime_env_info,
                       const std::unordered_map<std::string, double> &resources) {
+
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
@@ -484,13 +485,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
+    mod.method("_submit_task", &_submit_task);
+
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
         .method("put", &put)
-        .method("get", &get)
-        .method("submit_task", &submit_task);
+        .method("get", &get);
     mod.method("GetCoreWorker", &GetCoreWorker);
 
     // message ObjectReference
