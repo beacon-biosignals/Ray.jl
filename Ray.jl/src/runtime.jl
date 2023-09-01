@@ -114,7 +114,7 @@ function GetCoreWorker()
     if !isassigned(CORE_WORKER)
         CORE_WORKER[] = ray_jll.GetCoreWorker()[]
     end
-    return CxxRef(CORE_WORKER[])
+    return CORE_WORKER[]
 end
 
 # TODO: Python Ray returns a string:
