@@ -111,10 +111,11 @@ end
 const CORE_WORKER = Ref{CxxRef{ray_jll.CoreWorker}}()
 
 function GetCoreWorker()
-    if !isassigned(CORE_WORKER)
-        CORE_WORKER[] = ray_jll.GetCoreWorker()
-    end
-    return CORE_WORKER[]
+    return ray_jll.GetCoreWorker()
+    # if !isassigned(CORE_WORKER)
+    #     CORE_WORKER[] = ray_jll.GetCoreWorker()
+    # end
+    # return CORE_WORKER[]
 end
 
 # TODO: Python Ray returns a string:
