@@ -90,7 +90,7 @@ function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
+function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
                            job_id=get_current_job_id(); timeout_s=10)
     key = function_key(fd, job_id)
     status = try
