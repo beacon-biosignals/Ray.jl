@@ -298,10 +298,10 @@ bool JuliaGcsClient::Exists(const std::string &ns,
     return exists;
 }
 
-Status report_error(ray::core::CoreWorker &worker,
-                    std::string *application_error,
+Status report_error(std::string *application_error,
                     const std::string &err_msg,
                     double timestamp) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
     auto const &jobid = worker.GetCurrentJobId();
 
     // report error to coreworker
@@ -336,14 +336,16 @@ std::string serialize_job_config_json(const std::string &job_config_json) {
 // Investigating OverrideTaskOrActorRuntimeEnvInfo
 // Useful in validating that the `serialized_job_config` set in `initialize_driver` is set. An invalid
 // string will not be set and the returned value here will be empty.
-std::string get_job_serialized_runtime_env(ray::core::CoreWorker &worker) {
+std::string get_job_serialized_runtime_env() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
     auto &worker_context = worker.GetWorkerContext();
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.cc#L1786-L1787
     std::string job_serialized_runtime_env = worker_context.GetCurrentJobConfig().runtime_env_info().serialized_runtime_env();
     return job_serialized_runtime_env;
 }
 
-std::unordered_map<std::string, double> get_task_required_resources(ray::core::CoreWorker &worker) {
+std::unordered_map<std::string, double> get_task_required_resources() {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
     auto &worker_context = worker.GetWorkerContext();
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
@@ -482,6 +484,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("put", &put)
+        .method("get", &get)
+        .method("submit_task", &submit_task);
+    mod.method("GetCoreWorker", &GetCoreWorker);
+
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
     mod.add_type<rpc::ObjectReference>("ObjectReference");
@@ -511,20 +522,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
         .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
-    mod.add_type<ray::core::CoreWorker>("CoreWorker")
-        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
-        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("put", &put)
-        .method("get", &get)
-        .method("submit_task", &submit_task)
-        .method("report_error", &report_error)
-        .method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env)
-        .method("get_task_required_resources", &get_task_required_resources);
-    mod.method("GetCoreWorker", &GetCoreWorker);
+    mod.method("report_error", &report_error);
 
     mod.method("cast_to_returns", &cast_to_returns);
     mod.method("cast_to_task_args", &cast_to_task_args);
 
     mod.method("serialize_job_config_json", &serialize_job_config_json);
+    mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
+    mod.method("get_task_required_resources", &get_task_required_resources);
 }

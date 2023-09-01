@@ -250,8 +250,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         # so we use a cpp function whose only job is to assign the value to the
         # pointer
         err_msg = sprint(showerror, captured)
-        status = ray_jll.report_error(GetCoreWorker(), application_error, err_msg,
-                                      timestamp)
+        status = ray_jll.report_error(application_error, err_msg, timestamp)
         # XXX: we _can_ set _this_ return pointer here for some reason, and it
         # was _harder_ to toss it back over the fence to the wrapper C++ code
         is_retryable_error[] = ray_jll.CxxBool(false)

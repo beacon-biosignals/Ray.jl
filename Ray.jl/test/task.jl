@@ -179,7 +179,7 @@ end
 
 @testset "task resource requests" begin
     function gimme_resources()
-        resources = ray_jll.get_task_required_resources(ray_jll.GetCoreWorker())
+        resources = ray_jll.get_task_required_resources()
         ks = ray_jll._keys(resources)
         return Dict(String(k) => float(ray_jll._getindex(resources, k)) for k in ks)
     end
