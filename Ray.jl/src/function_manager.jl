@@ -90,14 +90,18 @@ function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                           job_id=get_job_id();
-                           pollint_s=0.01, timeout_s=10)
+function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
+                                job_id=get_job_id(); timeout_s=10)
     key = function_key(fd, job_id)
-    status = timedwait(timeout_s; pollint=pollint_s) do
-        # timeout the Exists query to the same timeout we use here so we don't
-        # deadlock.
-        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+    status = try
+        exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+        exists ? :ok : :timed_out
+    catch e
+        if e isa ErrorException && contains(e.msg, "Deadline Exceeded")
+            return :timed_out
+        else
+            rethrow()
+        end
     end
     return status
 end
