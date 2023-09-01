@@ -108,14 +108,13 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     return nothing
 end
 
-const CORE_WORKER = Ref{CxxRef{ray_jll.CoreWorker}}()
+const CORE_WORKER = Ref{ray_jll.CoreWorker}()
 
 function GetCoreWorker()
-    return ray_jll.GetCoreWorker()
-    # if !isassigned(CORE_WORKER)
-    #     CORE_WORKER[] = ray_jll.GetCoreWorker()
-    # end
-    # return CORE_WORKER[]
+    if !isassigned(CORE_WORKER)
+        CORE_WORKER[] = ray_jll.GetCoreWorker()[]
+    end
+    return CxxRef(CORE_WORKER[])
 end
 
 # TODO: Python Ray returns a string:
