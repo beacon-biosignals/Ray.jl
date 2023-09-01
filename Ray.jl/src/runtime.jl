@@ -179,7 +179,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
     fd = ray_jll.function_descriptor(f)
-    task_args = prepare_task_args(flatten_args(args, kwargs))
+    task_args = serialize_args(flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -187,31 +187,32 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args ray_jll._submit_task(fd,
-                                                  task_args,
-                                                  serialized_runtime_env_info,
-                                                  resources)
+    GC.@preserve task_args begin
+        return ray_jll._submit_task(fd,
+                                    transform_task_args(task_args),
+                                    serialized_runtime_env_info,
+                                    resources)
+    end
 end
 
-# TODO: be smarter about handling flattened args
 # Adapted from `prepare_args_internal`:
 # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L673
-function prepare_task_args(args)
+function serialize_args(args)
     ray_config = ray_jll.RayConfigInstance()
     put_threshold = ray_jll.max_direct_call_object_size(ray_config)
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
     record_call_site = ray_jll.record_ref_creation_sites(ray_config)
 
-    core_worker = ray_jll.GetCoreWorker()
     rpc_address = ray_jll.GetRpcAddress()
 
     total_inlined = 0
-    task_args = StdVector{CxxPtr{ray_jll.TaskArg}}()
+    task_args = Any[]
     for arg in args
         # Note: The Python `prepare_args_internal` function checks if the `arg` is an
         # `ObjectRef` and in that case uses the object ID to directly make a
-        # `TaskArgByReference`. However, the `arg` here will always be a `Pair`
-        # (or a list in Python) so I expect this special case is never used.
+        # `TaskArgByReference`. However, as the `args` here are flattened the `arg` will
+        # always be a `Pair` (or a list in Python). I suspect this Python code path just
+        # dead code so we'll exclude it from ours.
 
         serialized_arg = serialize_to_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
@@ -224,16 +225,24 @@ function prepare_task_args(args)
             total_inlined += serialized_arg_size
             ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
         else
-            oid = ray_jll.put(buffer)
+            oid = ray_jll.put(worker, buffer)
             # TODO: Add test for populating `call_site`
             call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
             ray_jll.TaskArgByReference(oid, rpc_address, call_site)
         end
 
-        push!(task_args, CxxRef(task_arg))
+        push!(task_args, task_arg)
     end
 
     return task_args
+end
+
+function transform_task_args(task_args)
+    task_arg_ptrs = StdVector{CxxPtr{ray_jll.TaskArg}}()
+    for task_arg in task_args
+        push!(task_arg_ptrs, CxxRef(task_arg))
+    end
+    return task_arg_ptrs
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,

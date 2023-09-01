@@ -78,5 +78,41 @@
             @test !contains(stderr_logs, "Constructing CoreWorkerProcess")
         end
     end
+end
 
+@testset "serialize_args" begin
+    ray_config = ray_jll.RayConfigInstance()
+    put_threshold = ray_jll.max_direct_call_object_size(ray_config)
+    rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
+    serialization_overhead = begin
+        sizeof(Ray.serialize_to_bytes(:_ => zeros(UInt8, put_threshold))) - put_threshold
+    end
+
+    @testset "put threshold" begin
+        a = :_ => zeros(UInt8, put_threshold - serialization_overhead)
+        b = :_ => zeros(UInt8, put_threshold - serialization_overhead + 1)
+        task_args = Ray.serialize_args([a, b])
+        @test length(task_args) == 2
+        @test task_args[1] isa ray_jll.TaskArgByValue
+        @test task_args[2] isa ray_jll.TaskArgByReference
+
+        task_args = Ray.serialize_args([b, a])
+        @test length(task_args) == 2
+        @test task_args[1] isa ray_jll.TaskArgByReference
+        @test task_args[2] isa ray_jll.TaskArgByValue
+    end
+
+    @testset "inline threshold" begin
+        a = :_ => zeros(UInt8, put_threshold - serialization_overhead)
+        args = fill(a, rpc_inline_threshold ÷ put_threshold + 1)
+        task_args = Ray.serialize_args(args)
+        @test all(t -> t isa ray_jll.TaskArgByValue, task_args[1:(end - 1)])
+        @test task_args[end] isa ray_jll.TaskArgByReference
+    end
+end
+
+@testset "transform_task_args" begin
+    task_args = Ray.serialize_args(Ray.flatten_args([1, 2, 3], (;)))
+    result = Ray.transform_task_args(task_args)
+    @test result isa StdVector{CxxPtr{ray_jll.TaskArg}}
 end

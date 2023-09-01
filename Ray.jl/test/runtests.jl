@@ -1,4 +1,5 @@
 using Aqua
+using CxxWrap: CxxPtr, StdVector
 using Ray
 using Serialization
 using Test
