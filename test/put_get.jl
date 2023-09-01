@@ -7,7 +7,7 @@ using ray_core_worker_julia_jll: put, get
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
-        buffer = get(worker, obj_ref)
+        buffer = get(obj_ref)
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
         T = eltype(data)
