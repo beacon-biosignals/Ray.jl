@@ -176,7 +176,7 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     return ObjectRefsToIds(return_refs)[0];
 }
 
-ray::core::CoreWorker &GetCoreWorker() {
+ray::core::CoreWorker &_GetCoreWorker() {
     return CoreWorkerProcess::GetCoreWorker();
 }
 
@@ -424,7 +424,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId);
-    mod.method("GetCoreWorker", &GetCoreWorker);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);

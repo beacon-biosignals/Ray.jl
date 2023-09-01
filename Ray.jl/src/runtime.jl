@@ -108,15 +108,6 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     return nothing
 end
 
-const CORE_WORKER = Ref{ray_jll.CoreWorker}()
-
-function GetCoreWorker()
-    if !isassigned(CORE_WORKER)
-        CORE_WORKER[] = ray_jll.GetCoreWorker()[]
-    end
-    return CORE_WORKER[]
-end
-
 # TODO: Python Ray returns a string:
 # https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_context.RuntimeContext.get_job_id.html
 
@@ -126,14 +117,14 @@ end
 Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
 create tasks.
 """
-get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(GetCoreWorker()))
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(GetCoreWorker())))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
