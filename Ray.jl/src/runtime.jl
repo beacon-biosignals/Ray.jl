@@ -40,7 +40,6 @@ Currently only used to get the next job ID.
 This is set during `init` and used there to get the Job ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
-const CORE_WORKER = Ref{CxxRef{ray_jll.CoreWorker}}()
 
 # env var to control whether logs are sent do stderr or to file.  if "1", sent
 # to stderr; otherwise, will be sent to files in `/tmp/ray/session_latest/logs/`
@@ -105,9 +104,17 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
-    CORE_WORKER[] = ray_jll.GetCoreWorker()
 
     return nothing
+end
+
+const CORE_WORKER = Ref{CxxRef{ray_jll.CoreWorker}}()
+
+function GetCoreWorker()
+    if !isassigned(CORE_WORKER)
+        CORE_WORKER[] = ray_jll.GetCoreWorker()
+    end
+    return CORE_WORKER[]
 end
 
 # TODO: Python Ray returns a string:
@@ -119,14 +126,14 @@ end
 Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
 create tasks.
 """
-get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(CORE_WORKER[]))
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(GetCoreWorker()))
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(CORE_WORKER[])))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(GetCoreWorker())))
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
