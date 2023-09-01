@@ -3,6 +3,8 @@ using Test
 using ray_core_worker_julia_jll: JuliaFunctionDescriptor, function_descriptor
 using ray_core_worker_julia_jll: get, put
 
+import ray_core_worker_julia_jll as ray_jll
+
 include("utils.jl")
 
 module M
