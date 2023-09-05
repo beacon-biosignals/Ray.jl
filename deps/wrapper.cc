@@ -182,7 +182,7 @@ ray::core::CoreWorker &_GetCoreWorker() {
     return CoreWorkerProcess::GetCoreWorker();
 }
 
-// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+// Example of using `CoreWorker::Put`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 void put(const std::shared_ptr<RayObject> object,
          const std::vector<ObjectID> &contained_object_ids,
          ObjectID *object_id) {
@@ -191,7 +191,7 @@ void put(const std::shared_ptr<RayObject> object,
     RAY_CHECK_OK(worker.Put(*object, contained_object_ids, object_id));
 }
 
-// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+// Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
 std::shared_ptr<RayObject> get(const ObjectID object_id) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
