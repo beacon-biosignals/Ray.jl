@@ -143,6 +143,16 @@ FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
 FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
 
 #####
+##### TaskArg
+#####
+
+function CxxWrap.StdLib.UniquePtr(ptr::Union{Ptr{Nothing},
+                                             CxxPtr{<:TaskArgByReference},
+                                             CxxPtr{<:TaskArgByValue}})
+    return unique_ptr(ptr)
+end
+
+#####
 ##### Upstream fixes
 #####
 
@@ -164,12 +174,17 @@ function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMe
     return push!(v, CxxRef(el))
 end
 
+# Work around CxxWrap's `push!` always dereferencing our value via `@cxxdereference`
+# https://github.com/JuliaInterop/CxxWrap.jl/blob/0de5fbc5673367adc7e725cfc6e1fc6a8f9240a0/src/StdLib.jl#L78-L81
+function Base.push!(v::StdVector{CxxPtr{TaskArg}}, el::CxxPtr{<:TaskArg})
+    _push_back(v, el)
+    return v
+end
+
 # XXX: Need to convert julia vectors to StdVector and build the
 # `std::unordered_map` for resources. This function helps us avoid having
 # CxxWrap as a direct dependency in Ray.jl
-function _submit_task(fd, oids::AbstractVector, serialized_runtime_env_info, resources)
-    # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
-    args = isempty(oids) ? StdVector{ObjectID}() : StdVector(oids)
+function _submit_task(fd, args, serialized_runtime_env_info, resources::AbstractDict)
     @debug "task resources: " resources
     resources = build_resource_requests(resources)
     return _submit_task(fd, args, serialized_runtime_env_info, resources)
