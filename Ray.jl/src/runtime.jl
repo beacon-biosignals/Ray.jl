@@ -108,16 +108,23 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     return nothing
 end
 
-# this could go in JLL but if/when global worker is hosted here it's better to
-# keep it local
-get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId())
+# TODO: Python Ray returns a string:
+# https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_context.RuntimeContext.get_job_id.html
+
+"""
+    get_job_id() -> UInt32
+
+Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
+create tasks.
+"""
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
@@ -177,7 +184,7 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
-    export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
+    export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
     task_args = serialize_args(flatten_args(args, kwargs))
 
@@ -203,7 +210,8 @@ function serialize_args(args)
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
     record_call_site = ray_jll.record_ref_creation_sites(ray_config)
 
-    rpc_address = ray_jll.GetRpcAddress()
+    worker = ray_jll.GetCoreWorker()
+    rpc_address = ray_jll.GetRpcAddress(worker)
 
     total_inlined = 0
 
@@ -255,13 +263,13 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     local result
     try
-        @info "task_executor: called for JobID $(ray_jll.GetCurrentJobId())"
+        @info "task_executor: called for JobID $(get_job_id())"
         fd = ray_jll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
         @debug "task_executor: importing function" fd
         func = import_function!(FUNCTION_MANAGER[],
                                 ray_jll.unwrap_function_descriptor(fd),
-                                get_current_job_id())
+                                get_job_id())
 
         flattened = map(Ray.get, task_args)
         args, kwargs = recover_args(flattened)

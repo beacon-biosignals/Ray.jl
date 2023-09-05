@@ -70,11 +70,11 @@ function _init_global_function_manager(gcs_address)
                                          functions=Dict{String,Any}())
 end
 
-function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_current_job_id())
+function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_job_id())
     return string("RemoteFunction:", job_id, ":", fd.function_hash)
 end
 
-function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
+function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     fd = ray_jll.function_descriptor(f)
     key = function_key(fd, job_id)
     @debug "Exporting function to function store:" fd key
@@ -90,14 +90,18 @@ function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
     end
 end
 
-function wait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                           job_id=get_current_job_id();
-                           pollint_s=0.01, timeout_s=10)
+function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
+                                job_id=get_job_id(); timeout_s=10)
     key = function_key(fd, job_id)
-    status = timedwait(timeout_s; pollint=pollint_s) do
-        # timeout the Exists query to the same timeout we use here so we don't
-        # deadlock.
-        ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+    status = try
+        exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
+        exists ? :ok : :timed_out
+    catch e
+        if e isa ErrorException && contains(e.msg, "Deadline Exceeded")
+            return :timed_out
+        else
+            rethrow()
+        end
     end
     return status
 end
@@ -108,7 +112,7 @@ end
 # store only if needed.
 # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/60
 function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                          job_id=get_current_job_id())
+                          job_id=get_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
         @debug "Function not found locally, retrieving from function store" fd key

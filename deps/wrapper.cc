@@ -178,44 +178,30 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     return ObjectRefsToIds(return_refs)[0];
 }
 
-// TODO: probably makes more sense to have a global worker rather than calling
-// GetCoreWorker() over and over again...(here and below)
-// https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
-JobID GetCurrentJobId() {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
-    return driver.GetCurrentJobId();
+ray::core::CoreWorker &_GetCoreWorker() {
+    return CoreWorkerProcess::GetCoreWorker();
 }
 
-TaskID GetCurrentTaskId() {
-    auto &worker = CoreWorkerProcess::GetCoreWorker();
-    return worker.GetCurrentTaskId();
-}
-
-const rpc::Address &GetRpcAddress() {
-    auto &worker = CoreWorkerProcess::GetCoreWorker();
-    return worker.GetRpcAddress();
-}
-
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
     ObjectID object_id;
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
+    RAY_CHECK_OK(worker.Put(ray_obj, {}, &object_id));
 
     return object_id;
 }
 
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
 std::shared_ptr<Buffer> get(ObjectID object_id) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    RAY_CHECK_OK(driver.Get(get_obj_ids, -1, &results));
+    RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &results));
 
     std::shared_ptr<RayObject> result = results[0];
     if (result == nullptr) {
@@ -444,9 +430,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
 
-    mod.method("GetCurrentJobId", &GetCurrentJobId);
-    mod.method("GetCurrentTaskId", &GetCurrentTaskId);
-
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
@@ -533,7 +516,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             google::protobuf::util::MessageToJsonString(addr, &json);
             return json;
         });
-    mod.method("GetRpcAddress", &GetRpcAddress);
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500

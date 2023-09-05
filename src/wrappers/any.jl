@@ -126,6 +126,15 @@ end
 Base.show(io::IO, status::Status) = print(io, ToString(status))
 Base.show(io::IO, jobid::JobID) = print(io, Int(ToInt(jobid)))
 
+const CORE_WORKER = Ref{CoreWorker}()
+
+function GetCoreWorker()
+    if !isassigned(CORE_WORKER)
+        CORE_WORKER[] = _GetCoreWorker()[]
+    end
+    return CORE_WORKER[]
+end
+
 #####
 ##### TaskArg
 #####
