@@ -195,7 +195,7 @@ ObjectID put(std::shared_ptr<Buffer> buffer) {
 }
 
 // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<Buffer> get(ObjectID object_id) {
+std::shared_ptr<RayObject> get(ObjectID object_id) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
@@ -204,11 +204,7 @@ std::shared_ptr<Buffer> get(ObjectID object_id) {
     RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &results));
 
     std::shared_ptr<RayObject> result = results[0];
-    if (result == nullptr) {
-        return nullptr;
-    }
-
-    return result->GetData();
+    return result;
 }
 
 std::string ToString(ray::FunctionDescriptor function_descriptor)
@@ -499,9 +495,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
-    mod.method("put", &put);
-    mod.method("get", &get);
-
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
     mod.add_type<rpc::Address>("Address")
@@ -547,6 +540,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
     });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
+
+    mod.method("put", &put);
+    mod.method("get", &get);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)

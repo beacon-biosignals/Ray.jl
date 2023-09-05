@@ -20,8 +20,8 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(oid::ray_jll.ObjectIDAllocated) = _get(take!(ray_jll.get(oid)))
-get(obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(obj[])))
+get(oid::ray_jll.ObjectIDAllocated) = get(ray_jll.get(oid))
+get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
 get(x) = x
 
 function _get(bytes)
