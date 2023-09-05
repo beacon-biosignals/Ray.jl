@@ -136,6 +136,13 @@ function GetCoreWorker()
 end
 
 #####
+##### ObjectID
+#####
+
+FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
+FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
+
+#####
 ##### Upstream fixes
 #####
 

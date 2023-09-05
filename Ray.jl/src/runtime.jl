@@ -185,7 +185,9 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
     export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
-    arg_oids = map(Ray.put, flatten_args(args, kwargs))
+    arg_oids = map(flatten_args(args, kwargs)) do arg
+        ray_jll.put(to_serialized_buffer(arg))
+    end
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -193,10 +195,13 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args ray_jll._submit_task(fd,
-                                                  arg_oids,
-                                                  serialized_runtime_env_info,
-                                                  resources)
+    oid = GC.@preserve args begin
+        ray_jll._submit_task(fd,
+                             arg_oids,
+                             serialized_runtime_env_info,
+                             resources)
+    end
+    return ObjectRef(oid)
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
