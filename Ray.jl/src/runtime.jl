@@ -206,6 +206,9 @@ function serialize_args(args)
     rpc_address = ray_jll.GetRpcAddress()
 
     total_inlined = 0
+
+    # TODO: Ideally would be `ray_jll.TaskArg[]`:
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/79
     task_args = Any[]
     for arg in args
         # Note: The Python `prepare_args_internal` function checks if the `arg` is an
