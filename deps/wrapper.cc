@@ -196,12 +196,12 @@ std::shared_ptr<RayObject> get(const ObjectID object_id) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
-    std::vector<std::shared_ptr<RayObject>> results;
+    std::vector<std::shared_ptr<RayObject>> objects;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &results));
+    RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &objects));
 
-    std::shared_ptr<RayObject> result = results[0];
-    return result;
+    RAY_CHECK(objects.size() == 1);
+    return objects[0];
 }
 
 std::string ToString(ray::FunctionDescriptor function_descriptor)
