@@ -23,4 +23,11 @@
     @testset "get fallback" begin
         @test Ray.get(123) == 123
     end
+
+    @testset "put object reference" begin
+        obj_ref1 = Ray.put(123)
+        obj_ref2 = Ray.put(obj_ref1)
+        @test obj_ref1 === obj_ref2
+        @test Ray.get(obj_ref1) == Ray.get(obj_ref2)
+    end
 end
