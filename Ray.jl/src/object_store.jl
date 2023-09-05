@@ -8,7 +8,7 @@ function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     ray_obj = ray_jll.RayObject(buffer)
-    return ray_jll.put(ray_obj)
+    return ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}())
 end
 
 """
