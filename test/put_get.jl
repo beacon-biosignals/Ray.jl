@@ -6,11 +6,11 @@ using ray_core_worker_julia_jll: RayObject, GetData
     @testset "roundtrip vector" begin
         data = UInt16[1:3;]
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-        obj_ref = put(RayObject(buffer))
+        oid = put(RayObject(buffer))
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
-        ray_obj = get(obj_ref)
+        ray_obj = get(oid)
         buffer = GetData(ray_obj[])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
@@ -26,9 +26,9 @@ using ray_core_worker_julia_jll: RayObject, GetData
     @testset "roundtrip string" begin
         data = "Greetings from Julia!"
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-        obj_ref = put(RayObject(buffer))
+        oid = put(RayObject(buffer))
 
-        ray_obj = get(obj_ref)
+        ray_obj = get(oid)
         buffer = GetData(ray_obj[])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
