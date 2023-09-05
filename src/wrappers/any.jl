@@ -169,7 +169,7 @@ end
 
 # Work around CxxWrap's `push!` always dereferencing our value via `@cxxdereference`
 # https://github.com/JuliaInterop/CxxWrap.jl/blob/0de5fbc5673367adc7e725cfc6e1fc6a8f9240a0/src/StdLib.jl#L78-L81
-function Base.push!(v::StdVector{CxxPtr{TaskArg}}, el::CxxRef{<:TaskArg})
+function Base.push!(v::StdVector{CxxPtr{TaskArg}}, el::CxxPtr{<:TaskArg})
     _push_back(v, el)
     return v
 end

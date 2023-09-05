@@ -251,7 +251,7 @@ end
 function transform_task_args(task_args)
     task_arg_ptrs = StdVector{CxxPtr{ray_jll.TaskArg}}()
     for task_arg in task_args
-        push!(task_arg_ptrs, CxxRef(task_arg))
+        push!(task_arg_ptrs, CxxPtr(task_arg))
     end
     return task_arg_ptrs
 end

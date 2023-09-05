@@ -357,8 +357,8 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
-void _push_back(std::vector<TaskArg *> &vector, TaskArg &el) {
-    vector.push_back(&el);
+void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
+    vector.push_back(el);
 }
 
 namespace jlcxx
