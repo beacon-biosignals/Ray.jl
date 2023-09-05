@@ -7,7 +7,8 @@ the `data` with [`Ray.get`](@ref).
 function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    return ray_jll.put(buffer)
+    ray_obj = ray_jll.RayObject(buffer)
+    return ray_jll.put(ray_obj)
 end
 
 """
