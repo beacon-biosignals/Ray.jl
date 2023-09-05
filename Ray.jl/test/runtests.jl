@@ -1,5 +1,6 @@
 using Aqua
 using CxxWrap: CxxPtr, StdVector
+using CxxWrap.StdLib: UniquePtr
 using Ray
 using Serialization
 using Test

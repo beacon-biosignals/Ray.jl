@@ -127,6 +127,16 @@ Base.show(io::IO, status::Status) = print(io, ToString(status))
 Base.show(io::IO, jobid::JobID) = print(io, Int(ToInt(jobid)))
 
 #####
+##### TaskArg
+#####
+
+function CxxWrap.StdLib.UniquePtr(ptr::Union{Ptr{Nothing},
+                                             CxxPtr{<:TaskArgByReference},
+                                             CxxPtr{<:TaskArgByValue}})
+    return unique_ptr(ptr)
+end
+
+#####
 ##### Upstream fixes
 #####
 
