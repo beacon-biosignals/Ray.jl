@@ -577,6 +577,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
     mod.method("get_task_required_resources", &get_task_required_resources);
 
+    // class RayConfig
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_config.h#L60
+    //
+    // Lambdas required here as otherwise we see the following error:
+    // "error: call to non-static member function without an object argument"
     mod.add_type<RayConfig>("RayConfig")
         .method("RayConfigInstance", &RayConfig::instance)
         .method("max_direct_call_object_size", [](RayConfig &config) {
