@@ -10,5 +10,3 @@ function Base.show(io::IO, obj_ref::ObjectRef)
     write(io, "ObjectRef(\"", hex_identifier(obj_ref), "\")")
     return nothing
 end
-
-Base.convert(::Type{ray_jll.ObjectID}, obj_ref::ObjectRef) = obj_ref.oid
