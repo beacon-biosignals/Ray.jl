@@ -522,7 +522,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress);
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
+        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
     mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     // message ObjectReference

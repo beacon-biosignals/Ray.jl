@@ -235,6 +235,8 @@ function serialize_args(args)
         task_arg = if (serialized_arg_size <= put_threshold &&
                        serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
+            # ray_jll.GetObjectRefs(convert)
+
             total_inlined += serialized_arg_size
             ray_jll.TaskArgByValue(ray_obj)
         else

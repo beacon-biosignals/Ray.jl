@@ -25,6 +25,7 @@ include("runtime_env.jl")
 include("remote_function.jl")
 include("runtime.jl")
 include("object_ref.jl")
+include("serialize.jl")
 include("object_store.jl")
 
 end
