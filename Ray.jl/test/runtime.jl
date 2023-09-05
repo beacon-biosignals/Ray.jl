@@ -84,6 +84,8 @@ end
     ray_config = ray_jll.RayConfigInstance()
     put_threshold = ray_jll.max_direct_call_object_size(ray_config)
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
+
+    # The `flatten_args` function uses `:_` as the key for positional arguments.
     serialization_overhead = begin
         sizeof(Ray.serialize_to_bytes(:_ => zeros(UInt8, put_threshold))) - put_threshold
     end
