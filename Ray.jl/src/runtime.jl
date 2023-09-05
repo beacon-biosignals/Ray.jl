@@ -237,7 +237,8 @@ function serialize_args(args)
             total_inlined += serialized_arg_size
             ray_jll.TaskArgByValue(ray_obj)
         else
-            oid = ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}())
+            oid = ray_jll.ObjectID()
+            ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}(), CxxPtr(oid))
             # TODO: Add test for populating `call_site`
             call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
             ray_jll.TaskArgByReference(oid, rpc_address, call_site)
