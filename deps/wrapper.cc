@@ -183,16 +183,16 @@ ray::core::CoreWorker &_GetCoreWorker() {
 }
 
 // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-void put(std::shared_ptr<RayObject> ray_obj,
-         std::vector<ObjectID> &contained_object_ids,
+void put(const std::shared_ptr<RayObject> object,
+         const std::vector<ObjectID> &contained_object_ids,
          ObjectID *object_id) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
-    RAY_CHECK_OK(worker.Put(*ray_obj, contained_object_ids, object_id));
+    RAY_CHECK_OK(worker.Put(*object, contained_object_ids, object_id));
 }
 
 // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<RayObject> get(ObjectID object_id) {
+std::shared_ptr<RayObject> get(const ObjectID object_id) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
