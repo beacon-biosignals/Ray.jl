@@ -384,6 +384,12 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
+    # TODO: pass "debug mode" as a flag somehow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
+    ENV["JULIA_DEBUG"] = "Ray"
+    logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
+    global_logger(FileLogger(logfile; append=true, always_flush=true))
+
     _init_global_function_manager(parsed_args["address"])
 
     # Load top-level package loading statements (e.g. `import X` or `using X`) to ensure
@@ -394,12 +400,6 @@ function start_worker(args=ARGS)
         @info "Package loading expression:\n$pkg_imports"
         Base.eval(Main, pkg_imports)
     end
-
-    # TODO: pass "debug mode" as a flag somehow
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
-    ENV["JULIA_DEBUG"] = "Ray"
-    logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
-    global_logger(FileLogger(logfile; append=true, always_flush=true))
 
     @info "Starting Julia worker runtime with args" parsed_args
 
