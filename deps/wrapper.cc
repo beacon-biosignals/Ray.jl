@@ -140,7 +140,7 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 }
 
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
-                      const std::vector<ObjectID> &object_ids,
+                      const std::vector<TaskArg *> &task_args,
                       const std::string &serialized_runtime_env_info,
                       const std::unordered_map<std::string, double> &resources) {
 
@@ -149,9 +149,11 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     ray::FunctionDescriptor func_descriptor = std::make_shared<ray::JuliaFunctionDescriptor>(jl_func_descriptor);
     RayFunction func(Language::JULIA, func_descriptor);
 
+    // TODO: Passing in a `std::vector<std::unique_ptr<TaskArg>>` from Julia may currently be impossible due to:
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/370
     std::vector<std::unique_ptr<TaskArg>> args;
-    for (auto & obj_id : object_ids) {
-        args.emplace_back(new TaskArgByReference(obj_id, worker.GetRpcAddress(), /*call-site*/""));
+    for (auto &task_arg : task_args) {
+        args.emplace_back(task_arg);
     }
 
     // TaskOptions: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L62-L87
@@ -176,39 +178,30 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
     return ObjectRefsToIds(return_refs)[0];
 }
 
-// TODO: probably makes more sense to have a global worker rather than calling
-// GetCoreWorker() over and over again...(here and below)
-// https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/61
-JobID GetCurrentJobId() {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
-    return driver.GetCurrentJobId();
+ray::core::CoreWorker &_GetCoreWorker() {
+    return CoreWorkerProcess::GetCoreWorker();
 }
 
-TaskID GetCurrentTaskId() {
-    auto &worker = CoreWorkerProcess::GetCoreWorker();
-    return worker.GetCurrentTaskId();
-}
-
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 ObjectID put(std::shared_ptr<Buffer> buffer) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Store our string in the object store
     ObjectID object_id;
     RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    RAY_CHECK_OK(driver.Put(ray_obj, {}, &object_id));
+    RAY_CHECK_OK(worker.Put(ray_obj, {}, &object_id));
 
     return object_id;
 }
 
-// https://github.com/ray-project/ray/blob/a4a8389a3053b9ef0e8409a55e2fae618bfca2be/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
 std::shared_ptr<Buffer> get(ObjectID object_id, int64_t timeout_ms) {
-    auto &driver = CoreWorkerProcess::GetCoreWorker();
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> results;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    auto status = driver.Get(get_obj_ids, timeout_ms, &results);
+    auto status = worker.Get(get_obj_ids, timeout_ms, &results);
     if (!status.ok()) {
         return nullptr;
     }
@@ -367,16 +360,24 @@ std::unordered_map<std::string, double> get_task_required_resources() {
     return worker_context.GetCurrentTask()->GetRequiredResources().GetResourceUnorderedMap();
 }
 
+void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
+    vector.push_back(el);
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
     template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
+    template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
+    template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
     // Disable generated constructors
     // https://github.com/JuliaInterop/CxxWrap.jl/issues/141#issuecomment-491373720
     template<> struct DefaultConstructible<LocalMemoryBuffer> : std::false_type {};
+    template<> struct DefaultConstructible<RayObject> : std::false_type {};
     // template<> struct DefaultConstructible<JuliaFunctionDescriptor> : std::false_type {};
+    template<> struct DefaultConstructible<TaskArg> : std::false_type {};
 
     // Custom finalizer to show what is being deleted. Can be useful in tracking down
     // segmentation faults due to double deallocations
@@ -431,9 +432,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<TaskID>("TaskID")
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
-
-    mod.method("GetCurrentJobId", &GetCurrentJobId);
-    mod.method("GetCurrentTaskId", &GetCurrentTaskId);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);
@@ -506,14 +504,51 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
-    mod.method("_submit_task", &_submit_task);
 
-    // class ObjectReference
+    // message Address
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
+    mod.add_type<rpc::Address>("Address")
+        .constructor<>()
+        .method("SerializeToString", [](const rpc::Address &addr) {
+            std::string serialized;
+            addr.SerializeToString(&serialized);
+            return serialized;
+        })
+        .method("MessageToJsonString", [](const rpc::Address &addr) {
+            std::string json;
+            google::protobuf::util::MessageToJsonString(addr, &json);
+            return json;
+        });
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
+
+    // message ObjectReference
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
     mod.add_type<rpc::ObjectReference>("ObjectReference");
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
+    // class RayObject
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
         .method("GetData", &RayObject::GetData);
+
+    // Julia RayObject constructors make shared_ptrs
+    mod.method("RayObject", [] (
+        const std::shared_ptr<Buffer> &data,
+        const std::shared_ptr<Buffer> &metadata,
+        const std::vector<rpc::ObjectReference> &nested_refs,
+        bool copy_data = false) {
+
+        return std::make_shared<RayObject>(data, metadata, nested_refs, copy_data);
+    });
+    mod.method("RayObject", [] (const std::shared_ptr<Buffer> &data) {
+        return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
+    });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
     mod.add_type<Status>("Status")
@@ -544,4 +579,50 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("serialize_job_config_json", &serialize_job_config_json);
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
     mod.method("get_task_required_resources", &get_task_required_resources);
+
+    // class RayConfig
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_config.h#L60
+    //
+    // Lambdas required here as otherwise we see the following error:
+    // "error: call to non-static member function without an object argument"
+    mod.add_type<RayConfig>("RayConfig")
+        .method("RayConfigInstance", &RayConfig::instance)
+        .method("max_direct_call_object_size", [](RayConfig &config) {
+            return config.max_direct_call_object_size();
+        })
+        .method("task_rpc_inlined_bytes_limit", [](RayConfig &config) {
+            return config.task_rpc_inlined_bytes_limit();
+        })
+        .method("record_ref_creation_sites", [](RayConfig &config) {
+            return config.record_ref_creation_sites();
+        });
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/task/task_util.h
+    mod.add_type<TaskArg>("TaskArg");
+    mod.method("_push_back", &_push_back);
+
+    // The Julia types `TaskArgByReference` and `TaskArgByValue` have their default finalizers
+    // disabled as these will later be used as `std::unique_ptr`. If these finalizers were enabled
+    // we would see segmentation faults due to double deallocations.
+    //
+    // Note: It is possible to create `std::unique_ptr`s in C++ and return them to Julia however
+    // CxxWrap is unable to compile any wrapped functions using `std::vector<std::unique_ptr<TaskArg>>`.
+    // We're working around this by using `std::vector<TaskArg *>`.
+    // https://github.com/JuliaInterop/CxxWrap.jl/issues/370
+
+    mod.add_type<TaskArgByReference>("TaskArgByReference", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const ObjectID &/*object_id*/,
+                     const rpc::Address &/*owner_address*/,
+                     const std::string &/*call_site*/>(false)
+        .method("unique_ptr", [](TaskArgByReference *t) {
+            return std::unique_ptr<TaskArgByReference>(t);
+        });
+
+    mod.add_type<TaskArgByValue>("TaskArgByValue", jlcxx::julia_base_type<TaskArg>())
+        .constructor<const std::shared_ptr<RayObject> &/*value*/>(false)
+        .method("unique_ptr", [](TaskArgByValue *t) {
+            return std::unique_ptr<TaskArgByValue>(t);
+        });
+
+    mod.method("_submit_task", &_submit_task);
 }

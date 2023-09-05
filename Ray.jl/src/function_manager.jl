@@ -70,11 +70,11 @@ function _init_global_function_manager(gcs_address)
                                          functions=Dict{String,Any}())
 end
 
-function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_current_job_id())
+function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_job_id())
     return string("RemoteFunction:", job_id, ":", fd.function_hash)
 end
 
-function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
+function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     fd = ray_jll.function_descriptor(f)
     key = function_key(fd, job_id)
     @debug "Exporting function to function store:" fd key
@@ -91,7 +91,7 @@ function export_function!(fm::FunctionManager, f, job_id=get_current_job_id())
 end
 
 function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                           job_id=get_current_job_id(); timeout_s=10)
+                                job_id=get_job_id(); timeout_s=10)
     key = function_key(fd, job_id)
     status = try
         exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
@@ -112,7 +112,7 @@ end
 # store only if needed.
 # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/60
 function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                          job_id=get_current_job_id())
+                          job_id=get_job_id())
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
         @debug "Function not found locally, retrieving from function store" fd key

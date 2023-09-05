@@ -108,16 +108,23 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     return nothing
 end
 
-# this could go in JLL but if/when global worker is hosted here it's better to
-# keep it local
-get_current_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId())
+# TODO: Python Ray returns a string:
+# https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_context.RuntimeContext.get_job_id.html
+
+"""
+    get_job_id() -> UInt32
+
+Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
+create tasks.
+"""
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))
 
 """
     get_task_id() -> String
 
 Get the current task ID for this worker in hex format.
 """
-get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId()))
+get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
@@ -173,12 +180,13 @@ end
 
 initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(args...)
 
+# TODO: Move task related code into a "task.jl" file
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0))
-    export_function!(FUNCTION_MANAGER[], f, get_current_job_id())
+    export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
-    arg_oids = map(Ray.put, flatten_args(args, kwargs))
+    task_args = serialize_args(flatten_args(args, kwargs))
 
     serialized_runtime_env_info = if !isnothing(runtime_env)
         _serialize(RuntimeEnvInfo(runtime_env))
@@ -186,10 +194,66 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    return GC.@preserve args ray_jll._submit_task(fd,
-                                                  arg_oids,
-                                                  serialized_runtime_env_info,
-                                                  resources)
+    GC.@preserve task_args begin
+        return ray_jll._submit_task(fd,
+                                    transform_task_args(task_args),
+                                    serialized_runtime_env_info,
+                                    resources)
+    end
+end
+
+# Adapted from `prepare_args_internal`:
+# https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L673
+function serialize_args(args)
+    ray_config = ray_jll.RayConfigInstance()
+    put_threshold = ray_jll.max_direct_call_object_size(ray_config)
+    rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
+    record_call_site = ray_jll.record_ref_creation_sites(ray_config)
+
+    worker = ray_jll.GetCoreWorker()
+    rpc_address = ray_jll.GetRpcAddress(worker)
+
+    total_inlined = 0
+
+    # TODO: Ideally would be `ray_jll.TaskArg[]`:
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/79
+    task_args = Any[]
+    for arg in args
+        # Note: The Python `prepare_args_internal` function checks if the `arg` is an
+        # `ObjectRef` and in that case uses the object ID to directly make a
+        # `TaskArgByReference`. However, as the `args` here are flattened the `arg` will
+        # always be a `Pair` (or a list in Python). I suspect this Python code path just
+        # dead code so we'll exclude it from ours.
+
+        serialized_arg = serialize_to_bytes(arg)
+        serialized_arg_size = sizeof(serialized_arg)
+        buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
+
+        # Inline arguments which are small and if there is room
+        task_arg = if (serialized_arg_size <= put_threshold &&
+                       serialized_arg_size + total_inlined <= rpc_inline_threshold)
+
+            total_inlined += serialized_arg_size
+            ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
+        else
+            oid = ray_jll.put(buffer)
+            # TODO: Add test for populating `call_site`
+            call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
+            ray_jll.TaskArgByReference(oid, rpc_address, call_site)
+        end
+
+        push!(task_args, task_arg)
+    end
+
+    return task_args
+end
+
+function transform_task_args(task_args)
+    task_arg_ptrs = StdVector{CxxPtr{ray_jll.TaskArg}}()
+    for task_arg in task_args
+        push!(task_arg_ptrs, CxxPtr(task_arg))
+    end
+    return task_arg_ptrs
 end
 
 function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
@@ -199,13 +263,13 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     local result
     try
-        @info "task_executor: called for JobID $(ray_jll.GetCurrentJobId())"
+        @info "task_executor: called for JobID $(get_job_id())"
         fd = ray_jll.GetFunctionDescriptor(ray_function)
         # TODO: may need to wait for function here...
         @debug "task_executor: importing function" fd
         func = import_function!(FUNCTION_MANAGER[],
                                 ray_jll.unwrap_function_descriptor(fd),
-                                get_current_job_id())
+                                get_job_id())
 
         flattened = map(Ray.get, task_args)
         args, kwargs = recover_args(flattened)
@@ -248,7 +312,9 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     # TODO: support multiple return values
     # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
-    push!(returns, to_serialized_buffer(result))
+    bytes = serialize_to_bytes(result)
+    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
+    push!(returns, buffer)
 
     return nothing
 end
@@ -318,6 +384,12 @@ function start_worker(args=ARGS)
 
     parsed_args = parse_args(args, s)
 
+    # TODO: pass "debug mode" as a flag somehow
+    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
+    ENV["JULIA_DEBUG"] = "Ray"
+    logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
+    global_logger(FileLogger(logfile; append=true, always_flush=true))
+
     _init_global_function_manager(parsed_args["address"])
 
     # Load top-level package loading statements (e.g. `import X` or `using X`) to ensure
@@ -328,12 +400,6 @@ function start_worker(args=ARGS)
         @info "Package loading expression:\n$pkg_imports"
         Base.eval(Main, pkg_imports)
     end
-
-    # TODO: pass "debug mode" as a flag somehow
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
-    ENV["JULIA_DEBUG"] = "Ray"
-    logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
-    global_logger(FileLogger(logfile; append=true, always_flush=true))
 
     @info "Starting Julia worker runtime with args" parsed_args
 
