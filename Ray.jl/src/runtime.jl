@@ -231,7 +231,7 @@ function serialize_args(args)
 
         # Inline arguments which are small and if there is room
         task_arg = if (serialized_arg_size <= put_threshold &&
-            serialized_arg_size + total_inlined <= rpc_inline_threshold)
+                       serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
             total_inlined += serialized_arg_size
             ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
