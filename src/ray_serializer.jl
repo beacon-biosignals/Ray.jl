@@ -45,6 +45,4 @@ function serialize_to_bytes(x)
     return bytes
 end
 
-function deserialize_from_bytes(bytes::Vector{UInt8})
-    return deserialize(Serializer(IOBuffer(bytes)))
-end
+deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(bytes)))
