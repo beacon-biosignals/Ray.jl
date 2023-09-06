@@ -228,6 +228,7 @@ function serialize_args(args)
 
         serialized_arg = Vector{UInt8}()
         serializer = RaySerializer(serialized_arg)
+        writeheader(serializer)
         serialize(serializer, arg)
         serialized_arg_size = sizeof(serialized_arg)
 

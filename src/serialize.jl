@@ -43,7 +43,9 @@ end
 function serialize_to_bytes(S::Type{<:AbstractSerializer}, x)
     bytes = Vector{UInt8}()
     io = IOBuffer(bytes; write=true)
-    serialize(S(io), x)
+    s = S(io)
+    writeheader(s)
+    serialize(s, x)
     return bytes
 end
 
