@@ -115,7 +115,7 @@ void initialize_worker(
           RAY_CHECK(return_vec.size() == 1);
 
           // TODO: support multiple return values
-          // https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
+          // https://github.com/beacon-biosignals/Ray.jl/issues/54
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();

@@ -12,7 +12,7 @@ DocMeta.setdocmeta!(Ray, :DocTestSetup, :(using Ray);
 
 if get(ENV, "CI", "false") == "true" || success(`git diff --quiet`)
     if ismissing(get(ENV, "AWS_PROFILE", missing))
-        @warn """You may need to set `ENV["AWS_PROFILE"] = ray_core_worker_julia_jll-ci` in order to successfully run the doctests"""
+        @warn """You may need to set `ENV["AWS_PROFILE"] = Ray-ci` in order to successfully run the doctests"""
     end
     doctest(Ray; fix=true)
 else

@@ -21,7 +21,7 @@ using ray_core_worker_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlas
     # TODO: Using `sizeof` is probably wrong for `pointer_from_objref` as there is probably
     # additional Julia type metadata not being accounted for. This may be why we see a
     # segfault when trying to use `pointer_from_objref`.
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
+    # https://github.com/beacon-biosignals/Ray.jl/issues/55
     @testset "copied object reference" begin
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), true)
         @test Data(buffer[]) != pointer_from_objref(data)

@@ -46,7 +46,7 @@ function check_oversized_function(serialized, function_descriptor)
               "large ($(_mib_string(len))). " * _check_msg
         @warn msg
         # TODO: push warning message to driver if this is a worker
-        # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/59
+        # https://github.com/beacon-biosignals/Ray.jl/issues/59
     end
     return nothing
 end
@@ -110,7 +110,7 @@ end
 # TODO: consider _trying_ to resolve the function descriptor locally (i.e.,
 # somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function
 # store only if needed.
-# https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/60
+# https://github.com/beacon-biosignals/Ray.jl/issues/60
 function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
                           job_id=get_job_id())
     return get!(fm.functions, fd.function_hash) do

@@ -1,4 +1,4 @@
-# `ray_core_worker_julia_jll.jl`
+# Ray.jl
 
 The `ray_core_worker_julia_jll` is the Julia C++ wrapper that interfaces with the Ray.io project's shared core worker library. 
 

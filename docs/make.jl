@@ -7,7 +7,7 @@ makedocs(; modules=[Ray],
          pages=["API Documentation" => "index.md"],
          strict=true)
 
-deploydocs(; repo="github.com/beacon-biosignals/ray_core_worker_julia_jll.jl.git", push_preview=true,
-           devbranch="main", dirname="Ray",
+deploydocs(; repo="github.com/beacon-biosignals/Ray.jl.git", push_preview=true,
+           devbranch="main",
            versions=["stable" => "Ray-v^", "Ray-v#.#",
                      "dev" => "dev"])
