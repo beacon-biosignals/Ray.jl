@@ -13,8 +13,8 @@ using JSON3
 using Logging
 using LoggingExtras
 using Pkg
-using Serialization: Serialization, AbstractSerializer, deserialize, serialize,
-    serialize_type
+using Serialization: Serialization, AbstractSerializer, Serializer, deserialize, serialize,
+    serialize_type, writeheader
 
 import ray_julia_jll as ray_jll
 

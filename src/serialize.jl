@@ -1,11 +1,11 @@
-using Serialization: Serializer, writeheader, serialize
-
 mutable struct RaySerializer{I<:IO} <: AbstractSerializer
+    # Fields required by all AbstractSerializers
     io::I
     counter::Int
     table::IdDict{Any,Any}
     pending_refs::Vector{Int}
 
+    # Inlined object references encountered during serializing
     object_refs::Set{ObjectRef}
 
     function RaySerializer{I}(io::I) where I<:IO
@@ -45,18 +45,17 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     return ObjectRef(hex_str)
 end
 
-function serialize_to_bytes(S::Type{<:AbstractSerializer}, x)
+# As we are just throwing away the Serializer we can just avoid collecting the inlined
+# object references
+function serialize_to_bytes(x)
     bytes = Vector{UInt8}()
     io = IOBuffer(bytes; write=true)
-    s = S(io)
+    s = Serializer(io)
     writeheader(s)
     serialize(s, x)
     return bytes
 end
 
-function deserialize_from_bytes(S::Type{<:AbstractSerializer}, bytes)
-    return deserialize(S(IOBuffer(bytes)))
+function deserialize_from_bytes(bytes::Vector{UInt8})
+    return deserialize(Serializer(IOBuffer(bytes)))
 end
-
-serialize_to_bytes(x) = serialize_to_bytes(Serializer, x)
-deserialize_from_bytes(bytes) = deserialize_from_bytes(Serializer, bytes)
