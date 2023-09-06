@@ -433,7 +433,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
-    mod.add_type<ObjectID>("ObjectID");
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.add_type<ObjectID>("ObjectID")
+        .method("ObjectIDFromHex", &ObjectID::FromHex)
+        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("Hex", &ObjectID::Hex);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
