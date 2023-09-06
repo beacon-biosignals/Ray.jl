@@ -1,4 +1,4 @@
-using Serialization: writeheader, serialize
+using Serialization: Serializer, writeheader, serialize
 
 mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     io::I
@@ -9,11 +9,20 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     object_refs::Set{ObjectRef}
 
     function RaySerializer{I}(io::I) where I<:IO
-        return new(io, 0, IdDict(), Int[], ObjectRef[])
+        return new(io, 0, IdDict(), Int[], Set{ObjectRef}())
     end
 end
 
 RaySerializer(io::IO) = RaySerializer{typeof(io)}(io)
+RaySerializer(bytes::Vector{UInt8}) = RaySerializer{IOBuffer}(IOBuffer(bytes; write=true))
+
+function Base.getproperty(s::RaySerializer, f::Symbol)
+    if f === :object_ids
+        return getproperty.(s.object_refs, :oid)
+    else
+        return getfield(s, f)
+    end
+end
 
 function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     push!(s.object_refs, obj_ref)
