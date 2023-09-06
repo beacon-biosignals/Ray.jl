@@ -14,13 +14,12 @@ end
 put(obj_ref::ObjectRef) = obj_ref
 
 """
-    Ray.get(object_id::ObjectIDAllocated)
+    Ray.get(obj_ref::ObjectRef)
 
-Retrieves the data associated with the `object_id` from the object store.  This
-method is blocking until the data is available in the local object store, even
-if run in an `@async` task.
+Retrieves the data associated with the object reference from the object store. This method
+is blocking until the data is available in the local object store.
 
-If the task that generated the `ObjectID` failed with a Julia exception, the
+If the task that generated the `ObjectRef` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
 get(obj_ref::ObjectRef) = get(obj_ref.oid)
