@@ -24,6 +24,11 @@ function Base.getproperty(s::RaySerializer, f::Symbol)
     end
 end
 
+function Serialization.reset_state(s::RaySerializer)
+    empty!(s.object_refs)
+    return invoke(reset_state, Tuple{AbstractSerializer}, s)
+end
+
 function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     push!(s.object_refs, obj_ref)
     return invoke(serialize, Tuple{AbstractSerializer, ObjectRef}, s, obj_ref)
