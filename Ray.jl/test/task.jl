@@ -1,28 +1,33 @@
 @testset "Submit task" begin
     # single argument
-    result = Ray.get(submit_task(length, ("hello",)))
-    @test result isa Int
-    @test result == 5
+    result = submit_task(length, ("hello",))
+    @test result isa ObjectRef
+    @test Ray.get(result) isa Int
+    @test Ray.get(result) == 5
 
     # multiple arguments
-    result = Ray.get(submit_task(max, (0x00, 0xff)))
-    @test result isa UInt8
-    @test result == 0xff
+    result = submit_task(max, (0x00, 0xff))
+    @test result isa ObjectRef
+    @test Ray.get(result) isa UInt8
+    @test Ray.get(result) == 0xff
 
     # no arguments
-    result = Ray.get(submit_task(getpid, ()))
-    @test result isa Int32
-    @test result > getpid()
+    result = submit_task(getpid, ())
+    @test result isa ObjectRef
+    @test Ray.get(result) isa Int32
+    @test Ray.get(result) > getpid()
 
     # keyword arguments
-    result = Ray.get(submit_task(sort, ([3, 1, 2],), (; rev=true)))
-    @test result isa Vector{Int}
-    @test result == [3, 2, 1]
+    result = submit_task(sort, ([3, 1, 2],), (; rev=true))
+    @test result isa ObjectRef
+    @test Ray.get(result) isa Vector{Int}
+    @test Ray.get(result) == [3, 2, 1]
 
     # error handling
-    obj_ref = submit_task(error, ("AHHHHH",))
+    result = submit_task(error, ("AHHHHH",))
+    @test result isa ObjectRef
     try
-        Ray.get(obj_ref)
+        Ray.get(result)
     catch e
         @test e isa Ray.RayRemoteException
         @test e.captured.ex == ErrorException("AHHHHH")
