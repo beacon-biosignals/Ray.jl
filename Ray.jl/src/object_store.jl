@@ -24,6 +24,7 @@ If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
 get(obj_ref::ObjectRef; pollint_seconds=0.1) = get(obj_ref.oid; pollint_seconds)
+
 function get(oid::ray_jll.ObjectIDAllocated; pollint_seconds=0.1)
     # we poll here with a 0 timeout in order to provide immediate return and
     # create a yield point so this is `@async` friendly
@@ -35,7 +36,15 @@ function get(oid::ray_jll.ObjectIDAllocated; pollint_seconds=0.1)
     end
     return result
 end
-get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
+
+function get(ray_obj::SharedPtr{ray_jll.RayObject})
+    if isnull(ray_obj[])
+        return nothing
+    else
+        return _get(take!(ray_jll.GetData(ray_obj[])))
+    end
+end
+
 get(x; kwargs...) = x
 
 function _get(bytes)
@@ -53,4 +62,3 @@ function serialize_to_bytes(x)
 end
 
 deserialize_from_bytes(bytes) = deserialize(IOBuffer(bytes))
-deserialize_from_bytes(::Nothing) = nothing
