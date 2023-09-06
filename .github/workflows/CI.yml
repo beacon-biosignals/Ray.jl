@@ -1,4 +1,4 @@
-name: Ray.jl - CI
+name: CI
 on:
   workflow_dispatch:
   push:
@@ -6,12 +6,18 @@ on:
       - main
     tags: ["*"]
     paths:
-      - "Ray.jl/**"
-      - ".github/workflows/Ray_CI.yml"
+      - "src/**"
+      - "test/**"
+      - "Project.toml"
+      - "ray_julia_jll/**"
+      - ".github/workflows/CI.yml"
   pull_request:
     paths:
-      - "Ray.jl/**"
-      - ".github/workflows/Ray_CI.yml"
+      - "src/**"
+      - "test/**"
+      - "Project.toml"
+      - "ray_julia_jll/**"
+      - ".github/workflows/CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -19,7 +25,6 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   test:
-    # Run on push's or non-draft PRs
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on:
       labels: ubuntu-20.04-16core
@@ -33,19 +38,23 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
+    env:
+      ray_julia_jll_dir: ./ray_julia_jll
+      ray_dir: ./ray_julia_jll/deps/ray
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Clone Ray repository
         uses: actions/checkout@v3
         with:
           repository: beacon-biosignals/ray
-          path: deps/ray
+          path: ${{ env.ray_dir }}
       - name: Determine Ray commit
         id: ray-commit
         run: |
-           cd deps/ray
+           cd ${{ env.ray_dir }}
            head_sha="$(git rev-parse HEAD)"
            echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
+        working-directory: ${{ env.ray_julia_jll-directory }}
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -69,7 +78,6 @@ jobs:
       - name: Build Ray CLI
         run: |
           pip install --upgrade pip wheel
-          pushd deps/ray
 
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
           # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
@@ -97,21 +105,17 @@ jobs:
           # delete the cache and build from scratch.
           mkdir -p "$RAY_GEN_CACHE_DIR"
           cp -rfp . "$RAY_GEN_CACHE_DIR"
+        working-directory: ${{ env.ray_dir }}
       - name: "Monorepo setup"
-        shell: julia --color=yes --project=Ray.jl {0}
+        shell: julia --color=yes --project {0}
         run: |
           using Pkg
-          Pkg.develop(PackageSpec(; path="."))
+          Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
       - uses: julia-actions/julia-buildpkg@v1
-        with:
-          project: Ray.jl
       - uses: julia-actions/julia-runtest@v1
         with:
-          project: Ray.jl
           annotate: true
       - uses: julia-actions/julia-processcoverage@v1
-        with:
-          directories: Ray.jl/src/
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
