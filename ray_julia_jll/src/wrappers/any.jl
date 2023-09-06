@@ -136,6 +136,12 @@ function GetCoreWorker()
 end
 
 #####
+##### Buffer
+#####
+
+NullPtr(::Type{Buffer}) = BufferFromNull()
+
+#####
 ##### ObjectID
 #####
 
