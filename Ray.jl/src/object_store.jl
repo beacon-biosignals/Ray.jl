@@ -11,7 +11,7 @@ function put(data)
 end
 
 """
-    Ray.get(object_id::ObjectIDAllocated)
+    Ray.get(object_id::ObjectIDAllocated; timeout_ms=-1)
 
 Retrieves the data associated with the `object_id` from the object store.  This
 method is blocking until the data is available in the local object store, even
