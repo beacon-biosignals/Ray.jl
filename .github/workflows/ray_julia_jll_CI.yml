@@ -1,10 +1,17 @@
-name: CI
+name: ray_julia_jll - CI
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-    tags: ['*']
+    tags: ["*"]
+    paths:
+      - "ray_julia_jll/**"
+      - ".github/workflows/ray_julia_jll_CI.yml"
   pull_request:
+    paths:
+      - "ray_julia_jll/**"
+      - ".github/workflows/ray_julia_jll_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -25,17 +32,20 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
+    env:
+      ray_julia_jll_dir: ./ray_julia_jll
+      ray_dir: ./ray_julia_jll/deps/ray
     steps:
       - uses: actions/checkout@v3
       - name: Clone Ray repository
         uses: actions/checkout@v3
         with:
           repository: beacon-biosignals/ray
-          path: deps/ray
+          path: ${{ env.ray_dir }}
       - name: Determine Ray commit
         id: ray-commit
         run: |
-           cd deps/ray
+           cd ${{ env.ray_dir }}
            head_sha="$(git rev-parse HEAD)"
            echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
       - uses: julia-actions/setup-julia@v1
@@ -62,7 +72,6 @@ jobs:
       - name: Build Ray CLI
         run: |
           pip install --upgrade pip wheel
-          pushd deps/ray
 
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
           # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
@@ -90,9 +99,14 @@ jobs:
           # delete the cache and build from scratch.
           mkdir -p "$RAY_GEN_CACHE_DIR"
           cp -rfp . "$RAY_GEN_CACHE_DIR"
+        working-directory: ${{ env.ray_dir }}
 
       - uses: julia-actions/julia-buildpkg@v1
+        with:
+          project: ${{ env.ray_julia_jll_dir }}
       - uses: julia-actions/julia-runtest@v1
+        with:
+          project: ${{ env.ray_julia_jll_dir }}
 
       # https://github.com/actions/cache/tree/main/save#always-save-cache
       - name: Save build cache
