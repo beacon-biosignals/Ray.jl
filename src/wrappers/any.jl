@@ -157,7 +157,6 @@ end
 #####
 
 function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
-    isnull(buffer[]) && return nothing
     buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
     buffer_size = Size(buffer[])
     vec = Vector{UInt8}(undef, buffer_size)
