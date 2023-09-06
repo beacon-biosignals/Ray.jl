@@ -18,6 +18,7 @@ include("utils.jl")
     end
 
     include("object_ref.jl")
+    include("ray_serializer.jl")
     include("runtime_env.jl")
     include("remote_function.jl")
 
