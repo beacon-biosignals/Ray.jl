@@ -25,16 +25,13 @@ captured exception will be thrown on `get`.
 """
 get(obj_ref::ObjectRef; pollint_seconds=0.1) = get(obj_ref.oid; pollint_seconds)
 
-function get(oid::ray_jll.ObjectIDAllocated; pollint_seconds=0.1)
-    # we poll here with a 0 timeout in order to provide immediate return and
-    # create a yield point so this is `@async` friendly
-    timeout_ms = 0
-    result = get(ray_jll.get(oid, timeout_ms))
-    while result === nothing
-        sleep(pollint_seconds)
-        result = get(ray_jll.get(oid, timeout_ms))
+function get(oid::ray_jll.ObjectIDAllocated)
+    local ray_obj
+    while true
+        ray_obj = ray_jll.get(oid, 0)
+        isnull(ray_obj[]) ? sleep(0.1) : break
     end
-    return result
+    return get(ray_obj)
 end
 
 function get(ray_obj::SharedPtr{ray_jll.RayObject})
