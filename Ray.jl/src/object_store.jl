@@ -1,5 +1,5 @@
 """
-    Ray.put(data) -> ObjectIDAllocated
+    Ray.put(data) -> ObjectRef
 
 Store `data` in the object store. Returns an object reference which can used to retrieve
 the `data` with [`Ray.get`](@ref).
@@ -8,8 +8,10 @@ function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     ray_obj = ray_jll.RayObject(buffer)
-    return ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}())
+    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}()))
 end
+
+put(obj_ref::ObjectRef) = obj_ref
 
 """
     Ray.get(object_id::ObjectIDAllocated)
@@ -21,6 +23,7 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
+get(obj_ref::ObjectRef) = get(obj_ref.oid)
 get(oid::ray_jll.ObjectIDAllocated) = get(ray_jll.get(oid))
 get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
 get(x) = x
