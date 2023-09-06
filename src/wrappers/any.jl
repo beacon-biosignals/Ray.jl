@@ -156,11 +156,6 @@ end
 ##### Upstream fixes
 #####
 
-# Works around what appears to be a CxxWrap issue
-function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
-    return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
-end
-
 function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
     buffer_size = Size(buffer[])

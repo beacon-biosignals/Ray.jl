@@ -7,7 +7,8 @@ the `data` with [`Ray.get`](@ref).
 function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    return ObjectRef(ray_jll.put(buffer))
+    ray_obj = ray_jll.RayObject(buffer)
+    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}()))
 end
 
 put(obj_ref::ObjectRef) = obj_ref
@@ -22,9 +23,9 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(obj_ref::ObjectRef) = _get(take!(ray_jll.get(obj_ref.oid)))
-get(oid::ray_jll.ObjectIDAllocated) = _get(take!(ray_jll.get(oid)))
-get(obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(obj[])))
+get(obj_ref::ObjectRef) = get(obj_ref.oid)
+get(oid::ray_jll.ObjectIDAllocated) = get(ray_jll.get(oid))
+get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
 get(x) = x
 
 function _get(bytes)
