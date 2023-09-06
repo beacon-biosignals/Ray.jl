@@ -34,14 +34,7 @@ function get(oid::ray_jll.ObjectIDAllocated)
     return get(ray_obj)
 end
 
-function get(ray_obj::SharedPtr{ray_jll.RayObject})
-    if isnull(ray_obj[])
-        return nothing
-    else
-        return _get(take!(ray_jll.GetData(ray_obj[])))
-    end
-end
-
+get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
 get(x; kwargs...) = x
 
 function _get(bytes)
