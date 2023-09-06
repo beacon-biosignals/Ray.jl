@@ -18,7 +18,7 @@ RaySerializer(bytes::Vector{UInt8}) = RaySerializer{IOBuffer}(IOBuffer(bytes; wr
 
 function Base.getproperty(s::RaySerializer, f::Symbol)
     if f === :object_ids
-        return getproperty.(s.object_refs, :oid)
+        return Set(getproperty.(s.object_refs, :oid))
     else
         return getfield(s, f)
     end

@@ -234,7 +234,8 @@ function serialize_args(args)
 
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
         metadata = ray_jll.NullPtr(ray_jll.Buffer)
-        inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(serializer.object_ids))
+        inlined_ids = collect(serializer.object_ids)
+        inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(inlined_ids))
         ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
 
         # Inline arguments which are small and if there is room

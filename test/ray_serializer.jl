@@ -1,4 +1,39 @@
 @testset "RaySerializer" begin
+    @testset "byte constructor" begin
+        bytes = Vector{UInt8}()
+        s = Ray.RaySerializer(bytes)
+        @test isempty(bytes)
+
+        serialize(s, 1)
+        @test !isempty(bytes)
+    end
+
+    @testset "object_ids property" begin
+        s = Ray.RaySerializer(IOBuffer())
+        @test s.object_ids isa Set{<:ray_jll.ObjectID}
+    end
+
+    @testset "inlined object refs" begin
+        oids = [ray_jll.FromRandom(ray_jll.ObjectID) for _ in 1:3]
+        obj_refs = map(ObjectRef, oids)
+        x = [1, 2, obj_refs...]
+
+        s = Ray.RaySerializer(IOBuffer())
+        serialize(s, x)
+
+        @test s.object_refs == Set(obj_refs)
+        @test s.object_ids == Set(oids)
+    end
+
+    @testset "reset_state" begin
+        obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+        s = Ray.RaySerializer(IOBuffer())
+        serialize(s, obj_ref)
+        @test !isempty(s.object_refs)
+
+        Serialization.reset_state(s)
+        @test isempty(s.object_refs)
+    end
 end
 
 @testset "serialize_to_bytes / deserialize_from_bytes" begin
