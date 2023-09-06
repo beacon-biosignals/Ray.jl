@@ -34,17 +34,6 @@ function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     return invoke(serialize, Tuple{AbstractSerializer, ObjectRef}, s, obj_ref)
 end
 
-# We cannot serialize pointers between processes
-function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
-    serialize_type(s, typeof(obj_ref))
-    serialize(s, hex_identifier(obj_ref))
-end
-
-function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
-    hex_str = deserialize(s)
-    return ObjectRef(hex_str)
-end
-
 # As we are just throwing away the Serializer we can just avoid collecting the inlined
 # object references
 function serialize_to_bytes(x)
