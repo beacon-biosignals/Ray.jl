@@ -23,7 +23,7 @@ if run in an `@async` task.
 If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(obj_ref::ObjectRef; pollint_seconds=0.1) = get(obj_ref.oid; pollint_seconds)
+get(obj_ref::ObjectRef) = get(obj_ref.oid)
 
 function get(oid::ray_jll.ObjectIDAllocated)
     local ray_obj
@@ -35,7 +35,7 @@ function get(oid::ray_jll.ObjectIDAllocated)
 end
 
 get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
-get(x; kwargs...) = x
+get(x) = x
 
 function _get(bytes)
     result = deserialize_from_bytes(bytes)
