@@ -11,7 +11,7 @@ using ray_core_worker_julia_jll: ObjectID
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
-        ray_obj = get(oid)
+        ray_obj = get(oid, -1)
         buffer = GetData(ray_obj[])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
@@ -29,7 +29,7 @@ using ray_core_worker_julia_jll: ObjectID
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
         oid = put(RayObject(buffer), StdVector{ObjectID}())
 
-        ray_obj = get(oid)
+        ray_obj = get(oid, -1)
         buffer = GetData(ray_obj[])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])

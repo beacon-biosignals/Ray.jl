@@ -24,7 +24,16 @@ If the task that generated the `ObjectID` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
 get(obj_ref::ObjectRef) = get(obj_ref.oid)
-get(oid::ray_jll.ObjectIDAllocated) = get(ray_jll.get(oid))
+
+function get(oid::ray_jll.ObjectIDAllocated)
+    local ray_obj
+    while true
+        ray_obj = ray_jll.get(oid, 0)
+        isnull(ray_obj[]) ? sleep(0.1) : break
+    end
+    return get(ray_obj)
+end
+
 get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
 get(x) = x
 
@@ -42,6 +51,4 @@ function serialize_to_bytes(x)
     return bytes
 end
 
-function deserialize_from_bytes(bytes)
-    return deserialize(IOBuffer(bytes))
-end
+deserialize_from_bytes(bytes) = deserialize(IOBuffer(bytes))

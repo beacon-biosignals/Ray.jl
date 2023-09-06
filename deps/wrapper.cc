@@ -195,13 +195,16 @@ ObjectID put(const std::shared_ptr<RayObject> object,
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<RayObject> get(const ObjectID object_id) {
+std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<std::shared_ptr<RayObject>> objects;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    RAY_CHECK_OK(worker.Get(get_obj_ids, -1, &objects));
+    auto status = worker.Get(get_obj_ids, timeout_ms, &objects);
+    if (!status.ok()) {
+        return nullptr;
+    }
 
     RAY_CHECK(objects.size() == 1);
     return objects[0];

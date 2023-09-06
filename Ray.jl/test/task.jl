@@ -177,6 +177,19 @@ end
     @test !isempty(intersect(pids, pids2))
 end
 
+# do this after the many tasks testset so we have workers warmed up
+@testset "Async waiting on task" begin
+    sleep_t = t -> (sleep(t); t)
+    results = []
+    t1 = @async push!(results, Ray.get(submit_task(sleep_t, (10,))))
+    t2 = @async push!(results, Ray.get(submit_task(sleep_t, (1,))))
+
+    wait(t1)
+    wait(t2)
+
+    @test results == [1, 10]
+end
+
 @testset "task resource requests" begin
     function gimme_resources()
         resources = ray_jll.get_task_required_resources()
