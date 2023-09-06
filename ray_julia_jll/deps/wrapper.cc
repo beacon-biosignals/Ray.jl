@@ -518,14 +518,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return json;
         });
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
-    mod.add_type<ray::core::CoreWorker>("CoreWorker")
-        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
-        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
-        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
-    mod.method("_GetCoreWorker", &_GetCoreWorker);
-
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
     mod.add_type<rpc::ObjectReference>("ObjectReference");
@@ -549,6 +541,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
     });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
+        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("put", &put);
     mod.method("get", &get);
