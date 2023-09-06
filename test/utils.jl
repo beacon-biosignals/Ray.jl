@@ -1,4 +1,4 @@
-# copied from ray_core_worker_julia_jll tests
+# copied from ray_julia_jll tests
 function setup_ray_head_node(body)
     prestarted = success(`ray status`)
     if !prestarted

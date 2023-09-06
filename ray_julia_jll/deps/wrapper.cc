@@ -120,13 +120,13 @@ void initialize_worker(
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
         };
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
     CoreWorkerProcess::Initialize(options);
 
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Starting julia worker task execution loop";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Starting julia worker task execution loop";
     CoreWorkerProcess::RunTaskExecutionLoop();
 
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Task execution loop exited";
 }
 
 std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_returns(void *ptr) {

@@ -1,6 +1,6 @@
 using Serialization: deserialize, serialize
 using Test
-using ray_core_worker_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
+using ray_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
 
 @testset "LocalMemoryBuffer" begin
     data = UInt16[1:3;]

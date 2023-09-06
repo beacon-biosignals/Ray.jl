@@ -1,7 +1,7 @@
-using ray_core_worker_julia_jll: put, get
-using ray_core_worker_julia_jll: LocalMemoryBuffer, Data
-using ray_core_worker_julia_jll: RayObject, GetData
-using ray_core_worker_julia_jll: ObjectID
+using ray_julia_jll: put, get
+using ray_julia_jll: LocalMemoryBuffer, Data
+using ray_julia_jll: RayObject, GetData
+using ray_julia_jll: ObjectID
 
 @testset "put / get" begin
     @testset "roundtrip vector" begin

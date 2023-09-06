@@ -4,14 +4,14 @@ using libcxxwrap_julia_jll
 
 using Serialization
 
-JLLWrappers.@generate_wrapper_header("ray_core_worker_julia")
-JLLWrappers.@declare_library_product(ray_core_worker_julia, "julia_core_worker_lib.so")
-@wrapmodule(joinpath(artifact"ray_core_worker_julia", "julia_core_worker_lib.so"))
+JLLWrappers.@generate_wrapper_header("ray_julia")
+JLLWrappers.@declare_library_product(ray_julia, "julia_core_worker_lib.so")
+@wrapmodule(joinpath(artifact"ray_julia", "julia_core_worker_lib.so"))
 
 function __init__()
     JLLWrappers.@generate_init_header(libcxxwrap_julia_jll)
     JLLWrappers.@init_library_product(
-        ray_core_worker_julia,
+        ray_julia,
         "julia_core_worker_lib.so",
         RTLD_GLOBAL,
     )
@@ -221,6 +221,6 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
     result = initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
                                node_manager_port, startup_token, runtime_env_hash, cfunc)
 
-    @info "worker exiting `ray_core_worker_julia_jll.initialize_worker`"
+    @info "worker exiting `ray_julia_jll.initialize_worker`"
     return result
 end

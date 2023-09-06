@@ -1,6 +1,6 @@
 using CxxWrap
 using Test
-using ray_core_worker_julia_jll: JuliaFunctionDescriptor, function_descriptor
+using ray_julia_jll: JuliaFunctionDescriptor, function_descriptor
 
 include("utils.jl")
 
@@ -8,7 +8,7 @@ module M
 f(x) = x + 1
 end
 
-@testset "ray_core_worker_julia_jll.jl" begin
+@testset "ray_julia_jll.jl" begin
     include("buffer.jl")
     include("function_descriptor.jl")
 

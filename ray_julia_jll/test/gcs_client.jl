@@ -1,8 +1,7 @@
 @testset "GCS client" begin
     using UUIDs
-    using ray_core_worker_julia_jll: JuliaGcsClient, Connect,
-                                     Put, Get, Keys, Exists,
-                                     Status, ok, ToString
+    using ray_julia_jll: JuliaGcsClient, Connect, Put, Get, Keys, Exists, Status, ok,
+                         ToString
 
     client = JuliaGcsClient("127.0.0.1:6379")
 

@@ -1,4 +1,4 @@
-name = "ray_core_worker_julia_jll"
+name = "ray_julia_jll"
 uuid = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
 version = "0.1.0"
 
