@@ -39,7 +39,7 @@ get(x) = x
 function _get(bytes)
     result = deserialize_from_bytes(bytes)
     # TODO: add an option to not rethrow
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/58
+    # https://github.com/beacon-biosignals/Ray.jl/issues/58
     result isa RayRemoteException ? throw(result) : return result
 end
 

@@ -1,6 +1,6 @@
 @testset "function manager" begin
     using Ray: FunctionManager, export_function!, import_function!, timedwait_for_function
-    using ray_core_worker_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
+    using ray_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
     Connect(client)
@@ -80,7 +80,7 @@
     #         using Pkg
     #         Pkg.activate($(Pkg.project().path))
     #         using Ray: FunctionManager, export_function!, import_function!
-    #         using ray_core_worker_julia_jll: JuliaGcsClient, Connect, function_descriptor
+    #         using ray_julia_jll: JuliaGcsClient, Connect, function_descriptor
     #     end)
     #     # XXX: function descriptor does not serialize well, probalby since it's a
     #     # pointer under the hood.  I don't expect that this actually will matter for

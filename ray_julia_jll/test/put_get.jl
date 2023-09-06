@@ -1,7 +1,7 @@
-using ray_core_worker_julia_jll: put, get
-using ray_core_worker_julia_jll: LocalMemoryBuffer, Data
-using ray_core_worker_julia_jll: RayObject, GetData
-using ray_core_worker_julia_jll: ObjectID
+using ray_julia_jll: put, get
+using ray_julia_jll: LocalMemoryBuffer, Data
+using ray_julia_jll: RayObject, GetData
+using ray_julia_jll: ObjectID
 
 @testset "put / get" begin
     @testset "roundtrip vector" begin
@@ -10,7 +10,7 @@ using ray_core_worker_julia_jll: ObjectID
         oid = put(RayObject(buffer), StdVector{ObjectID}())
 
         # TODO: Currently uses size/length from `data`
-        # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/55
+        # https://github.com/beacon-biosignals/Ray.jl/issues/55
         ray_obj = get(oid, -1)
         buffer = GetData(ray_obj[])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)

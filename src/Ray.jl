@@ -15,7 +15,7 @@ using LoggingExtras
 using Pkg
 using Serialization
 
-import ray_core_worker_julia_jll as ray_jll
+import ray_julia_jll as ray_jll
 
 export start_worker, submit_task, @ray_import, ObjectRef
 

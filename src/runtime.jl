@@ -79,7 +79,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     end
 
     # TODO: use something like the java config bootstrap address (?) to get this
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/52
+    # https://github.com/beacon-biosignals/Ray.jl/issues/52
     # information instead of parsing logs?  I can't quite tell where it's coming
     # from (set from a `ray.address` config option):
     # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
@@ -172,7 +172,7 @@ function parse_ray_args_from_raylet_out(session_dir)
     node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
 
     # TODO: downgrade to debug
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
+    # https://github.com/beacon-biosignals/Ray.jl/issues/53
     @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
 
     return (raylet, store, gcs_address, node_ip, node_port)
@@ -217,7 +217,7 @@ function serialize_args(args)
     total_inlined = 0
 
     # TODO: Ideally would be `ray_jll.TaskArg[]`:
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/79
+    # https://github.com/beacon-biosignals/Ray.jl/issues/79
     task_args = Any[]
     for arg in args
         # Note: The Python `prepare_args_internal` function checks if the `arg` is an
@@ -309,11 +309,11 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
     end
 
     # TODO: remove - useful for now for debugging
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
+    # https://github.com/beacon-biosignals/Ray.jl/issues/53
     @info "Result: $result"
 
     # TODO: support multiple return values
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
+    # https://github.com/beacon-biosignals/Ray.jl/issues/54
     bytes = serialize_to_bytes(result)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     push!(returns, buffer)
@@ -323,7 +323,7 @@ end
 
 #=
 julia -e sleep(120) -- \
-  /Users/cvogt/.julia/dev/ray_core_worker_julia_jll/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
+  /Users/cvogt/.julia/dev/Ray/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
   --ray_node_manager_port=57236 \
@@ -387,7 +387,7 @@ function start_worker(args=ARGS)
     parsed_args = parse_args(args, s)
 
     # TODO: pass "debug mode" as a flag somehow
-    # https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/53
+    # https://github.com/beacon-biosignals/Ray.jl/issues/53
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
     global_logger(FileLogger(logfile; append=true, always_flush=true))

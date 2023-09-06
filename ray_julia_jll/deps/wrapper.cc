@@ -115,18 +115,18 @@ void initialize_worker(
           RAY_CHECK(return_vec.size() == 1);
 
           // TODO: support multiple return values
-          // https://github.com/beacon-biosignals/ray_core_worker_julia_jll.jl/issues/54
+          // https://github.com/beacon-biosignals/Ray.jl/issues/54
           std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
           (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
           return Status::OK();
         };
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Initializing julia worker coreworker";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
     CoreWorkerProcess::Initialize(options);
 
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Starting julia worker task execution loop";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Starting julia worker task execution loop";
     CoreWorkerProcess::RunTaskExecutionLoop();
 
-    RAY_LOG(DEBUG) << "ray_core_worker_julia_jll: Task execution loop exited";
+    RAY_LOG(DEBUG) << "ray_julia_jll: Task execution loop exited";
 }
 
 std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_returns(void *ptr) {

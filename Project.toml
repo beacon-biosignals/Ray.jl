@@ -1,31 +1,31 @@
-name = "ray_core_worker_julia_jll"
-uuid = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
-version = "0.1.0"
+name = "Ray"
+uuid = "3f779ece-f0b6-4c4f-a81a-0cb2add9eb95"
+authors = ["Beacon Biosignals, Inc"]
+version = "0.0.1"
 
 [deps]
-Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
-JLLWrappers = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
-Mustache = "ffc61752-8dc7-55ee-8c37-f3e9cdd09e70"
+LoggingExtras = "e6f89c97-d47a-5376-807f-9c37f3926c36"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
-TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-libcxxwrap_julia_jll = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
+ray_julia_jll = "c348cde4-7f22-4730-83d8-6959fb7a17ba"
 
 [compat]
-CxxWrap = "0.13.4"
-JLLWrappers = "1.2.0"
-Mustache = "1"
-TOML = "1"
-julia = "1.6"
-libcxxwrap_julia_jll = "0.9.7"
+Aqua = "0.5"
+ArgParse = "1"
+CxxWrap = "0.13"
+JSON3 = "1"
+LoggingExtras = "1"
+julia = "1.8"
+ray_julia_jll = "0.1"
 
 [extras]
-Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [targets]
-test = ["Serialization", "Test", "UUIDs"]
+test = ["Aqua", "Test"]
