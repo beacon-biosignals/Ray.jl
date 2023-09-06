@@ -136,6 +136,13 @@ function GetCoreWorker()
 end
 
 #####
+##### ObjectID
+#####
+
+FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
+FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
+
+#####
 ##### TaskArg
 #####
 
@@ -148,11 +155,6 @@ end
 #####
 ##### Upstream fixes
 #####
-
-# Works around what appears to be a CxxWrap issue
-function put(buffer::CxxWrap.StdLib.SharedPtr{LocalMemoryBuffer})
-    return put(CxxWrap.CxxWrapCore.__cxxwrap_smartptr_cast_to_base(buffer))
-end
 
 function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
     isnull(buffer[]) && return nothing

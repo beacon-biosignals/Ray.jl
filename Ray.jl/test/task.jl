@@ -20,9 +20,9 @@
     @test result == [3, 2, 1]
 
     # error handling
-    oid = submit_task(error, ("AHHHHH",))
+    obj_ref = submit_task(error, ("AHHHHH",))
     try
-        Ray.get(oid)
+        Ray.get(obj_ref)
     catch e
         @test e isa Ray.RayRemoteException
         @test e.captured.ex == ErrorException("AHHHHH")

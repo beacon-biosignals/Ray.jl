@@ -182,36 +182,32 @@ ray::core::CoreWorker &_GetCoreWorker() {
     return CoreWorkerProcess::GetCoreWorker();
 }
 
-// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(std::shared_ptr<Buffer> buffer) {
+// Example of using `CoreWorker::Put`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
+ObjectID put(const std::shared_ptr<RayObject> object,
+             const std::vector<ObjectID> &contained_object_ids) {
+
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
-    // Store our string in the object store
+    // Store our data in the object store
     ObjectID object_id;
-    RayObject ray_obj = RayObject(buffer, nullptr, std::vector<rpc::ObjectReference>());
-    RAY_CHECK_OK(worker.Put(ray_obj, {}, &object_id));
-
+    RAY_CHECK_OK(worker.Put(*object, contained_object_ids, &object_id));
     return object_id;
 }
 
-// https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<Buffer> get(ObjectID object_id, int64_t timeout_ms) {
+// Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
+std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
-    std::vector<std::shared_ptr<RayObject>> results;
+    std::vector<std::shared_ptr<RayObject>> objects;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    auto status = worker.Get(get_obj_ids, timeout_ms, &results);
+    auto status = worker.Get(get_obj_ids, timeout_ms, &objects);
     if (!status.ok()) {
         return nullptr;
     }
 
-    std::shared_ptr<RayObject> result = results[0];
-    if (result == nullptr) {
-        return nullptr;
-    }
-
-    return result->GetData();
+    RAY_CHECK(objects.size() == 1);
+    return objects[0];
 }
 
 std::string ToString(ray::FunctionDescriptor function_descriptor)
@@ -436,7 +432,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_driver", &initialize_driver);
     mod.method("shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
-    mod.add_type<ObjectID>("ObjectID");
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.add_type<ObjectID>("ObjectID")
+        .method("ObjectIDFromHex", &ObjectID::FromHex)
+        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("Hex", &ObjectID::Hex);
 
     // enum Language
     mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
@@ -502,9 +503,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
-    mod.method("put", &put);
-    mod.method("get", &get);
-
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
     mod.add_type<rpc::Address>("Address")
@@ -550,6 +548,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
     });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
+
+    mod.method("put", &put);
+    mod.method("get", &get);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)

@@ -194,12 +194,13 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    GC.@preserve task_args begin
+    oid = GC.@preserve task_args begin
         return ray_jll._submit_task(fd,
                                     transform_task_args(task_args),
                                     serialized_runtime_env_info,
                                     resources)
     end
+    return ObjectRef(oid)
 end
 
 # Adapted from `prepare_args_internal`:
@@ -228,15 +229,16 @@ function serialize_args(args)
         serialized_arg = serialize_to_bytes(arg)
         serialized_arg_size = sizeof(serialized_arg)
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
+        ray_obj = ray_jll.RayObject(buffer)
 
         # Inline arguments which are small and if there is room
         task_arg = if (serialized_arg_size <= put_threshold &&
                        serialized_arg_size + total_inlined <= rpc_inline_threshold)
 
             total_inlined += serialized_arg_size
-            ray_jll.TaskArgByValue(ray_jll.RayObject(buffer))
+            ray_jll.TaskArgByValue(ray_obj)
         else
-            oid = ray_jll.put(buffer)
+            oid = ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}())
             # TODO: Add test for populating `call_site`
             call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
             ray_jll.TaskArgByReference(oid, rpc_address, call_site)
