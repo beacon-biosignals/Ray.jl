@@ -269,6 +269,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
                        application_error, is_retryable_error)
     returns = ray_jll.cast_to_returns(returns_ptr)
     task_args = ray_jll.cast_to_task_args(task_args_ptr)
+    worker = ray_jll.GetCoreWorker()
 
     local result
     try
@@ -321,9 +322,17 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     # TODO: support multiple return values
     # https://github.com/beacon-biosignals/Ray.jl/issues/54
-    bytes = serialize_to_bytes(result)
+    bytes = Vector{UInt8}()
+    serializer = RaySerializer(bytes)
+    writeheader(serializer)
+    serialize(serializer, result)
+
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    push!(returns, buffer)
+    metadata = ray_jll.NullPtr(ray_jll.Buffer)
+    inlined_ids = collect(serializer.object_ids)
+    inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(inlined_ids))
+    ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
+    push!(returns, ray_obj)
 
     return nothing
 end
