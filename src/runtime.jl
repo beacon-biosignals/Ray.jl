@@ -226,10 +226,17 @@ function serialize_args(args)
         # always be a `Pair` (or a list in Python). I suspect this Python code path just
         # dead code so we'll exclude it from ours.
 
-        serialized_arg = serialize_to_bytes(arg)
+        serialized_arg = Vector{UInt8}()
+        serializer = RaySerializer(serialized_arg)
+        writeheader(serializer)
+        serialize(serializer, arg)
         serialized_arg_size = sizeof(serialized_arg)
+
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
-        ray_obj = ray_jll.RayObject(buffer)
+        metadata = ray_jll.NullPtr(ray_jll.Buffer)
+        inlined_ids = collect(serializer.object_ids)
+        inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(inlined_ids))
+        ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
 
         # Inline arguments which are small and if there is room
         task_arg = if (serialized_arg_size <= put_threshold &&

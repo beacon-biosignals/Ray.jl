@@ -86,6 +86,10 @@ end
     rpc_inline_threshold = ray_jll.task_rpc_inlined_bytes_limit(ray_config)
 
     # The `flatten_args` function uses `:_` as the key for positional arguments.
+    #
+    # Note: We are indirectly testing that `serialize_args` and `serialize_to_bytes` both
+    # match each other regarding including a serialization header. If there is a mismatch
+    # then the tests below will fail.
     serialization_overhead = begin
         sizeof(Ray.serialize_to_bytes(:_ => zeros(UInt8, put_threshold))) - put_threshold
     end

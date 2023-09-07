@@ -32,6 +32,13 @@
         @test e isa Ray.RayRemoteException
         @test e.captured.ex == ErrorException("AHHHHH")
     end
+
+    # object refs as arguments
+    obj_ref1 = Ray.put(1)
+    obj_ref2 = Ray.submit_task(identity, (obj_ref1,))
+    @test obj_ref2 != obj_ref1
+    @test Ray.get(obj_ref2) == obj_ref1
+    @test Ray.get(Ray.get(obj_ref2)) == 1
 end
 
 @testset "Task spawning a task" begin

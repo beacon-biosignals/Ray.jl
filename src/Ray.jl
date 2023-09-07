@@ -13,7 +13,8 @@ using JSON3
 using Logging
 using LoggingExtras
 using Pkg
-using Serialization
+using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
+    reset_state, serialize, serialize_type, writeheader
 
 import ray_julia_jll as ray_jll
 
@@ -24,6 +25,7 @@ include("runtime_env.jl")
 include("remote_function.jl")
 include("runtime.jl")
 include("object_ref.jl")
+include("ray_serializer.jl")
 include("object_store.jl")
 
 end

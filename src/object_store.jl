@@ -43,11 +43,3 @@ function _get(bytes)
     result isa RayRemoteException ? throw(result) : return result
 end
 
-function serialize_to_bytes(x)
-    bytes = Vector{UInt8}()
-    io = IOBuffer(bytes; write=true)
-    serialize(io, x)
-    return bytes
-end
-
-deserialize_from_bytes(bytes) = deserialize(IOBuffer(bytes))
