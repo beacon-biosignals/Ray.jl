@@ -183,16 +183,14 @@ end
 end
 
 # do this after the many tasks testset so we have workers warmed up
-@testset "Async waiting on task" begin
-    sleep_t = t -> (sleep(t); t)
-    results = []
-    t1 = @async push!(results, Ray.get(submit_task(sleep_t, (10,))))
-    t2 = @async push!(results, Ray.get(submit_task(sleep_t, (1,))))
+@testset "Async support for ObjectRef" begin
+    obj_ref = submit_task(sleep, (10,))
+    t = @async Ray.get(obj_ref)
+    yield()
 
-    wait(t1)
-    wait(t2)
-
-    @test results == [1, 10]
+    # If C++ blocks then the task will complete prior to running these tests
+    @test istaskstarted(t)
+    @test !istaskdone(t)
 end
 
 @testset "task resource requests" begin

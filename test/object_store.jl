@@ -1,5 +1,4 @@
 @testset "object_store.jl" begin
-
     @testset "Put/Get roundtrip for $(typeof(x))" for x in (
         1, 1.23, "hello", (1, 2, 3), [1, 2, 3],
     )
