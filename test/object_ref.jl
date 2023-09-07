@@ -9,8 +9,9 @@ end
     @testset "basic" begin
         hex_str = "f" ^ (2 * 28)
         obj_ref = ObjectRef(hex_str)
-        @test obj_ref == ObjectRef(hex_str)
         @test Ray.hex_identifier(obj_ref) == hex_str
+        @test obj_ref == ObjectRef(hex_str)
+        @test hash(obj_ref) == hash(ObjectRef(hex_str))
     end
 
     @testset "show" begin
