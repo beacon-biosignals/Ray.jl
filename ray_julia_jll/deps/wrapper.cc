@@ -210,6 +210,16 @@ std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
     return objects[0];
 }
 
+bool contains(const ObjectID object_id) {
+    auto &worker = CoreWorkerProcess::GetCoreWorker();
+    bool has_object;
+    auto status = worker.Contains(object_id, &has_object);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+    return has_object;
+}
+
 std::string ToString(ray::FunctionDescriptor function_descriptor)
 {
     return function_descriptor->ToString();
@@ -556,6 +566,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     mod.method("put", &put);
     mod.method("get", &get);
+    mod.method("contains", &contains);
 
     mod.add_type<Status>("Status")
         .method("ok", &Status::ok)

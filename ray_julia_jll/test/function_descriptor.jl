@@ -1,3 +1,5 @@
+using ray_julia_jll: JuliaFunctionDescriptor, function_descriptor
+
 @testset "function descriptor" begin
     fd = function_descriptor(isless)
 
