@@ -5,7 +5,7 @@ using ray_julia_jll: ObjectID
 
 @testset "put / get / contains" begin
     @testset "contains" begin
-        oid = ray_julia_jll.ObjectIDFromRandom()
+        oid = ray_julia_jll.FromRandom(ObjectID)
         @test !ray_julia_jll.contains(oid)
     end
 

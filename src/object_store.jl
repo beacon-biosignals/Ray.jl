@@ -25,11 +25,10 @@ captured exception will be thrown on `get`.
 get(obj_ref::ObjectRef) = get(obj_ref.oid)
 
 function get(oid::ray_jll.ObjectIDAllocated)
-    local ray_obj
-    while true
-        ray_obj = ray_jll.get(oid, 0)
-        isnull(ray_obj[]) ? sleep(0.1) : break
+    while !ray_jll.contains(oid)
+        sleep(0.1)
     end
+    ray_obj = ray_jll.get(oid, -1)
     return get(ray_obj)
 end
 
@@ -43,3 +42,21 @@ function _get(bytes)
     result isa RayRemoteException ? throw(result) : return result
 end
 
+"""
+    Base.isready(obj_ref::ObjectRef)
+
+Check whether `obj_ref` has a value that's ready to be retrieved.
+"""
+Base.isready(obj_ref::ObjectRef) = ray_jll.contains(obj_ref.oid)
+
+"""
+    Base.wait(obj_ref::ObjectRef)
+
+Block until `isready(obj_ref)`.  Returns `nothing`.
+"""
+function Base.wait(obj_ref::ObjectRef)
+    while !isready(obj_ref)
+        sleep(0.1)
+    end
+    return nothing
+end
