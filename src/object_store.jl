@@ -22,13 +22,9 @@ is blocking until the data is available in the local object store.
 If the task that generated the `ObjectRef` failed with a Julia exception, the
 captured exception will be thrown on `get`.
 """
-get(obj_ref::ObjectRef) = get(obj_ref.oid)
-
-function get(oid::ray_jll.ObjectIDAllocated)
-    while !ray_jll.contains(oid)
-        sleep(0.1)
-    end
-    ray_obj = ray_jll.get(oid, -1)
+function get(obj_ref::ObjectRef)
+    wait(obj_ref)
+    ray_obj = ray_jll.get(obj_ref.oid, -1)
     return get(ray_obj)
 end
 
