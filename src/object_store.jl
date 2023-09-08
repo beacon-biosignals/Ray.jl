@@ -24,7 +24,8 @@ captured exception will be thrown on `get`.
 """
 function get(obj_ref::ObjectRef)
     wait(obj_ref)
-    ray_obj = ray_jll.get(obj_ref.oid, -1)
+    ray_obj = ray_jll.get(obj_ref.oid, 0)
+    isnull(ray_obj[]) && error("got null pointer after successful `wait`; this is a bug!")
     return get(ray_obj)
 end
 

@@ -192,6 +192,7 @@ end
 # do this after the many tasks testset so we have workers warmed up
 @testset "Async support for ObjectRef: $f" for f in (Ray.get, Base.wait)
     obj_ref = submit_task(sleep, (3,))
+    @test !isready(obj_ref)
     t = @async f(obj_ref)
     yield()
 
