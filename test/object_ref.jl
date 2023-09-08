@@ -1,8 +1,9 @@
 function serialize_deserialize(x)
     io = IOBuffer()
-    serialize(io, x)
+    s = Ray.RaySerializer(io)
+    serialize(s, x)
     seekstart(io)
-    return deserialize(io)
+    return deserialize(s)
 end
 
 @testset "ObjectRef" begin

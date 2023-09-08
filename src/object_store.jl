@@ -26,14 +26,23 @@ function get(obj_ref::ObjectRef)
     wait(obj_ref)
     ray_obj = ray_jll.get(obj_ref.oid, 0)
     isnull(ray_obj[]) && error("got null pointer after successful `wait`; this is a bug!")
-    return get(ray_obj)
+
+    bytes = take!(ray_jll.GetData(ray_obj[]))
+    return _get(bytes, obj_ref)
 end
 
-get(ray_obj::SharedPtr{ray_jll.RayObject}) = _get(take!(ray_jll.GetData(ray_obj[])))
+function get(ray_obj::SharedPtr{ray_jll.RayObject})
+    bytes = take!(ray_jll.GetData(ray_obj[]))
+    return _get(bytes, nothing)
+end
+
 get(x) = x
 
-function _get(bytes)
-    result = deserialize_from_bytes(bytes)
+function _get(bytes::Vector{UInt8}, outer_object_ref::Union{ObjectRef,Nothing})
+    serializer = RaySerializer(IOBuffer(bytes))
+    serializer.outer_object_ref = outer_object_ref
+    result = deserialize(serializer)
+
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
     result isa RayRemoteException ? throw(result) : return result

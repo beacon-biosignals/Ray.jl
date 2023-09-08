@@ -1,7 +1,3 @@
-struct ObjectRef
-    oid::ray_jll.ObjectIDAllocated
-end
-
 ObjectRef(hex_str::AbstractString) = ObjectRef(ray_jll.FromHex(ray_jll.ObjectID, hex_str))
 hex_identifier(obj_ref::ObjectRef) = String(ray_jll.Hex(obj_ref.oid))
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
@@ -53,7 +49,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     return nothing
 end
 
-function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
+function Serialization.deserialize(s::RaySerializer, ::Type{ObjectRef})
     worker = ray_jll.GetCoreWorker()
 
     hex_str = deserialize(s)
@@ -63,7 +59,11 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     obj_ref = ObjectRef(hex_str)
 
     if !has_owner(obj_ref) && !isempty(owner_address_str)
-        outer_object_id = ray_jll.Nil(ray_jll.ObjectID)
+        outer_object_id = if s.outer_object_ref !== nothing
+            s.outer_object_ref.oid
+        else
+            ray_jll.Nil(ray_jll.ObjectID)
+        end
         owner_address = ray_jll.Address()
         ray_jll.ParseFromString(owner_address, owner_address_str)
 
