@@ -590,15 +590,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
-    mod.add_type<ray::core::CoreWorker>("CoreWorker")
-        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
-        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
-        .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
-        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
-    mod.method("_GetCoreWorker", &_GetCoreWorker);
-
     mod.method("put", &put);
     mod.method("get", &get);
     mod.method("contains", &contains);
@@ -672,6 +663,16 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("unique_ptr", [](TaskArgByValue *t) {
             return std::unique_ptr<TaskArgByValue>(t);
         });
+
+    // class CoreWorker
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
+        .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
+        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("_submit_task", &_submit_task);
 }
