@@ -171,7 +171,7 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
 end
 
 # Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
-function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{LocalMemoryBuffer}
+function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{RayObject}
     return push!(v, CxxRef(el))
 end
 

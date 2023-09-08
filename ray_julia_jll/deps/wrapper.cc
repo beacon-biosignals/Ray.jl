@@ -104,7 +104,7 @@ void initialize_worker(
             bool is_reattempt,
             bool is_streaming_generator) {
 
-          std::vector<std::shared_ptr<LocalMemoryBuffer>> return_vec;
+          std::vector<std::shared_ptr<RayObject>> return_vec;
           task_executor(ray_function,
                         &return_vec, // implicity converts to void *
                         &args,       // implicity converts to void *
@@ -116,8 +116,7 @@ void initialize_worker(
 
           // TODO: support multiple return values
           // https://github.com/beacon-biosignals/Ray.jl/issues/54
-          std::shared_ptr<LocalMemoryBuffer> buffer = return_vec[0];
-          (*returns)[0].second = std::make_shared<RayObject>(buffer, nullptr, std::vector<rpc::ObjectReference>(), false);
+          (*returns)[0].second = return_vec[0];
           return Status::OK();
         };
     RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
@@ -129,9 +128,9 @@ void initialize_worker(
     RAY_LOG(DEBUG) << "ray_julia_jll: Task execution loop exited";
 }
 
-std::vector<std::shared_ptr<LocalMemoryBuffer>> * cast_to_returns(void *ptr) {
-    auto buffer_ptr = static_cast<std::vector<std::shared_ptr<LocalMemoryBuffer>> *>(ptr);
-    return buffer_ptr;
+std::vector<std::shared_ptr<RayObject>> *cast_to_returns(void *ptr) {
+    auto rayobj_ptr = static_cast<std::vector<std::shared_ptr<RayObject>> *>(ptr);
+    return rayobj_ptr;
 }
 
 std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
