@@ -343,9 +343,7 @@ std::string serialize_job_config_json(const std::string &job_config_json) {
     RAY_CHECK(google::protobuf::util::JsonStringToMessage(job_config_json,
                                                           job_config.get()).ok());
 
-    std::string serialized;
-    job_config->SerializeToString(&serialized);
-    return serialized;
+    return job_config->SerializeAsString();
 }
 
 // Investigating OverrideTaskOrActorRuntimeEnvInfo
@@ -527,11 +525,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
     mod.add_type<rpc::Address>("Address")
         .constructor<>()
-        .method("SerializeToString", [](const rpc::Address &addr) {
-            std::string serialized;
-            addr.SerializeToString(&serialized);
-            return serialized;
-        })
+        .method("SerializeAsString", &rpc::Address::SerializeAsString)
         .method("MessageToJsonString", [](const rpc::Address &addr) {
             std::string json;
             google::protobuf::util::MessageToJsonString(addr, &json);
