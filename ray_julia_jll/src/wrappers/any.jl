@@ -69,6 +69,16 @@ const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
     $(_enum_propertynames_expr(WorkerType, WORKER_TYPE_SYMBOLS))
 end
 
+function check_status(status::Status)
+    ok(status) && return nothing
+
+    msg = message(status)
+
+    # TODO: Implement throw custom exception types like in:
+    # _raylet.pyx:437
+    error(msg)
+end
+
 #####
 ##### Function descriptor wrangling
 #####

@@ -17,6 +17,24 @@ function Base.show(io::IO, obj_ref::ObjectRef)
     return nothing
 end
 
+# Mirrors the functionality of the Python Ray function `get_owner_address`
+# https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3308
+function get_owner_address(obj_ref::ObjectRef)
+    worker = ray_jll.GetCoreWorker()
+    owner_address = ray_jll.Address()
+    status = ray_jll.GetOwnerAddress(worker, obj_ref.oid, CxxPtr(owner_address))
+    ray_jll.check_status(status)
+    return owner_address
+end
+
+# TODO: A more efficiently `CoreWorker::HasOwner` exists but is private
+function has_owner(obj_ref::ObjectRef)
+    worker = ray_jll.GetCoreWorker()
+    owner_address = ray_jll.Address()
+    status = ray_jll.GetOwnerAddress(worker, obj_ref.oid, CxxPtr(owner_address))
+    return !isempty(ray_jll.SerializeAsString(owner_address))
+end
+
 # We cannot serialize pointers between processes
 function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     serialize_type(s, typeof(obj_ref))
