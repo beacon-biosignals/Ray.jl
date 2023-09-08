@@ -47,9 +47,9 @@ Check whether `obj_ref` has a value that's ready to be retrieved.
 Base.isready(obj_ref::ObjectRef) = ray_jll.contains(obj_ref.oid)
 
 """
-    Base.wait(obj_ref::ObjectRef)
+    Base.wait(obj_ref::ObjectRef) -> Nothing
 
-Block until `isready(obj_ref)`.  Returns `nothing`.
+Block until `isready(obj_ref)`.
 """
 function Base.wait(obj_ref::ObjectRef)
     while !isready(obj_ref)
