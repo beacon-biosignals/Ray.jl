@@ -13,6 +13,7 @@
         @test s.object_ids isa Set{<:ray_jll.ObjectID}
     end
 
+    # Note: Serializing `ObjectRef` requires the core worker to be initialized
     @testset "inlined object refs" begin
         oids = [ray_jll.FromRandom(ray_jll.ObjectID) for _ in 1:3]
         obj_refs = map(ObjectRef, oids)
@@ -25,6 +26,7 @@
         @test s.object_ids == Set(oids)
     end
 
+    # Note: Serializing `ObjectRef` requires the core worker to be initialized
     @testset "reset_state" begin
         obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
         s = Ray.RaySerializer(IOBuffer())

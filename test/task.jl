@@ -42,14 +42,27 @@
 end
 
 @testset "object ownership" begin
-    obj_ref1 = submit_task(Ray.put, (1,))
-    obj_ref2 = Ray.get(obj_ref1)
-    @test obj_ref2 isa ObjectRef
-    @test Ray.has_owner(obj_ref1)
-    @test !Ray.has_owner(obj_ref2)
+    @testset "unknown owner" begin
+        invalid_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+        @test !Ray.has_owner(invalid_ref)
 
-    msg = "An application is trying to access a Ray object whose owner is unknown"
-    @test_throws msg Ray.get_owner_address(obj_ref2)
+        msg = "An application is trying to access a Ray object whose owner is unknown"
+        @test_throws msg Ray.get_owner_address(invalid_ref)
+    end
+
+    @testset "local fetch remote object" begin
+        return_ref = submit_task(Ray.put, (2,))
+        remote_ref = Ray.get(return_ref)
+        @test Ray.has_owner(return_ref)
+        @test Ray.has_owner(remote_ref)
+
+        # Convert address to string to compare
+        return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
+        remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
+        @test return_ref_addr != remote_ref_addr
+
+        @test Ray.get(remote_ref) == 2
+    end
 end
 
 @testset "Task spawning a task" begin
