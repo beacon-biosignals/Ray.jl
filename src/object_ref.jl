@@ -29,7 +29,10 @@ end
 
 # TODO: A more efficiently `CoreWorker::HasOwner` exists but is private
 function has_owner(obj_ref::ObjectRef)
-    return !isempty(ray_jll.SerializeAsString(get_owner_address(obj_ref)))
+    worker = ray_jll.GetCoreWorker()
+    owner_address = ray_jll.Address()
+    status = ray_jll.GetOwnerAddress(worker, obj_ref.oid, CxxPtr(owner_address))
+    return !isempty(ray_jll.SerializeAsString(owner_address))
 end
 
 # We cannot serialize pointers between processes

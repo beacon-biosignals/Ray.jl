@@ -41,6 +41,17 @@
     @test Ray.get(Ray.get(obj_ref2)) == 1
 end
 
+@testset "object ownership" begin
+    obj_ref1 = submit_task(Ray.put, (1,))
+    obj_ref2 = Ray.get(obj_ref1)
+    @test obj_ref2 isa ObjectRef
+    @test Ray.has_owner(obj_ref1)
+    @test !Ray.has_owner(obj_ref2)
+
+    msg = "An application is trying to access a Ray object whose owner is unknown"
+    @test_throws msg Ray.get_owner_address(obj_ref2)
+end
+
 @testset "Task spawning a task" begin
     # As tasks may be run on the same worker it's better to use the task ID rather than the
     # process ID.
