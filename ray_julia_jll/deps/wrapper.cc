@@ -52,6 +52,7 @@ void initialize_worker(
     int node_manager_port,
     int64_t startup_token,
     int64_t runtime_env_hash,
+    std::string logs_dir,
     void *julia_task_executor) {
 
     // XXX: Ideally the task_executor would use a `jlcxx::SafeCFunction` and take the expected
@@ -75,7 +76,8 @@ void initialize_worker(
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
-    // options.enable_logging = true;
+    options.enable_logging = !logs_dir.empty();
+    options.log_dir = logs_dir;
     // options.install_failure_signal_handler = true;
     options.node_ip_address = node_ip_address;
     options.node_manager_port = node_manager_port;
