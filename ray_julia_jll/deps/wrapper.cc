@@ -561,6 +561,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
         .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
+        .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
         .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
     mod.method("_GetCoreWorker", &_GetCoreWorker);
 
