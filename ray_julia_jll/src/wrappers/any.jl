@@ -83,6 +83,16 @@ function Base.propertynames(::Type{WorkerType}, private::Bool=false)
     end
 end
 
+function check_status(status::Status)
+    ok(status) && return nothing
+
+    msg = message(status)
+
+    # TODO: Implement throw custom exception types like in:
+    # _raylet.pyx:437
+    error(msg)
+end
+
 #####
 ##### Function descriptor wrangling
 #####
