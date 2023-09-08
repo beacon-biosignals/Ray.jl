@@ -3,11 +3,17 @@ using ray_julia_jll: LocalMemoryBuffer, Data
 using ray_julia_jll: RayObject, GetData
 using ray_julia_jll: ObjectID
 
-@testset "put / get" begin
+@testset "put / get / contains" begin
+    @testset "contains" begin
+        oid = ray_julia_jll.ObjectIDFromRandom()
+        @test !ray_julia_jll.contains(oid)
+    end
+
     @testset "roundtrip vector" begin
         data = UInt16[1:3;]
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
         oid = put(RayObject(buffer), StdVector{ObjectID}())
+        @test ray_julia_jll.contains(oid)
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/Ray.jl/issues/55
@@ -28,6 +34,7 @@ using ray_julia_jll: ObjectID
         data = "Greetings from Julia!"
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
         oid = put(RayObject(buffer), StdVector{ObjectID}())
+        @test ray_julia_jll.contains(oid)
 
         ray_obj = get(oid, -1)
         buffer = GetData(ray_obj[])

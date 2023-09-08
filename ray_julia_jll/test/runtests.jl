@@ -1,6 +1,6 @@
 using CxxWrap
 using Test
-using ray_julia_jll: JuliaFunctionDescriptor, function_descriptor
+using ray_julia_jll: ray_julia_jll
 
 include("utils.jl")
 
