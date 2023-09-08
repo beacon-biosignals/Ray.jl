@@ -63,6 +63,18 @@ end
 
         @test Ray.get(remote_ref) == 2
     end
+
+    # Broken test that seems to corrupt other ObjectIDs
+    # @testset "remote fetch local object" begin
+    #     local_ref = Ray.put(3)
+    #     return_ref = Ray.submit_task(Ray.get, (local_ref,))
+    #     @test return_ref != local_ref
+    #     @test Ray.has_owner(return_ref)
+    #     @test Ray.has_owner(local_ref)
+
+    #     # TODO: Causes tasks to be re-run due to "lost objects"
+    #     # @test Ray.get(return_ref) == Ray.get(local_ref)
+    # end
 end
 
 @testset "Task spawning a task" begin
