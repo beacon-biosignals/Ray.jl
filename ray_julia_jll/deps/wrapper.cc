@@ -459,6 +459,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("OutOfResource", ray::StatusCode::OutOfResource);
     mod.set_const("ObjectRefEndOfStream", ray::StatusCode::ObjectRefEndOfStream);
 
+    // class Status
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/status.h#L127
+    mod.add_type<Status>("Status")
+        .method("ok", &Status::ok)
+        .method("code", &Status::code)
+        .method("message", &Status::message)
+        .method("ToString", &Status::ToString);
+
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
     // than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
@@ -600,9 +608,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("contains", &contains);
 
-    mod.add_type<Status>("Status")
-        .method("ok", &Status::ok)
-        .method("ToString", &Status::ToString);
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
         .constructor<const std::string&>()
         .method("Connect", &JuliaGcsClient::Connect)
