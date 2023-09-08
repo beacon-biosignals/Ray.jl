@@ -27,6 +27,11 @@ function get_owner_address(obj_ref::ObjectRef)
     return owner_address
 end
 
+# TODO: A more efficiently `CoreWorker::HasOwner` exists but is private
+function has_owner(obj_ref::ObjectRef)
+    return !isempty(ray_jll.SerializeAsString(get_owner_address(obj_ref)))
+end
+
 # We cannot serialize pointers between processes
 function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     serialize_type(s, typeof(obj_ref))
