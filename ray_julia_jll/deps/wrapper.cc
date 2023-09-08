@@ -426,6 +426,47 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return keys;
     });
 
+    // enum StatusCode
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/status.h#L81
+    mod.add_bits<ray::StatusCode>("StatusCode", jlcxx::julia_type("CppEnum"));
+    mod.set_const("OK", ray::StatusCode::OK);
+    mod.set_const("OutOfMemory", ray::StatusCode::OutOfMemory);
+    mod.set_const("KeyError", ray::StatusCode::KeyError);
+    mod.set_const("TypeError", ray::StatusCode::TypeError);
+    mod.set_const("Invalid", ray::StatusCode::Invalid);
+    mod.set_const("IOError", ray::StatusCode::IOError);
+    mod.set_const("UnknownError", ray::StatusCode::UnknownError);
+    mod.set_const("NotImplemented", ray::StatusCode::NotImplemented);
+    mod.set_const("RedisError", ray::StatusCode::RedisError);
+    mod.set_const("TimedOut", ray::StatusCode::TimedOut);
+    mod.set_const("Interrupted", ray::StatusCode::Interrupted);
+    mod.set_const("IntentionalSystemExit", ray::StatusCode::IntentionalSystemExit);
+    mod.set_const("UnexpectedSystemExit", ray::StatusCode::UnexpectedSystemExit);
+    mod.set_const("CreationTaskError", ray::StatusCode::CreationTaskError);
+    mod.set_const("NotFound", ray::StatusCode::NotFound);
+    mod.set_const("Disconnected", ray::StatusCode::Disconnected);
+    mod.set_const("SchedulingCancelled", ray::StatusCode::SchedulingCancelled);
+    mod.set_const("ObjectExists", ray::StatusCode::ObjectExists);
+    mod.set_const("ObjectNotFound", ray::StatusCode::ObjectNotFound);
+    mod.set_const("ObjectAlreadySealed", ray::StatusCode::ObjectAlreadySealed);
+    mod.set_const("ObjectStoreFull", ray::StatusCode::ObjectStoreFull);
+    mod.set_const("TransientObjectStoreFull", ray::StatusCode::TransientObjectStoreFull);
+    mod.set_const("GrpcUnavailable", ray::StatusCode::GrpcUnavailable);
+    mod.set_const("GrpcUnknown", ray::StatusCode::GrpcUnknown);
+    mod.set_const("OutOfDisk", ray::StatusCode::OutOfDisk);
+    mod.set_const("ObjectUnknownOwner", ray::StatusCode::ObjectUnknownOwner);
+    mod.set_const("RpcError", ray::StatusCode::RpcError);
+    mod.set_const("OutOfResource", ray::StatusCode::OutOfResource);
+    mod.set_const("ObjectRefEndOfStream", ray::StatusCode::ObjectRefEndOfStream);
+
+    // class Status
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/status.h#L127
+    mod.add_type<Status>("Status")
+        .method("ok", &Status::ok)
+        .method("code", &Status::code)
+        .method("message", &Status::message)
+        .method("ToString", &Status::ToString);
+
     // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
     // than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
@@ -567,9 +608,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("get", &get);
     mod.method("contains", &contains);
 
-    mod.add_type<Status>("Status")
-        .method("ok", &Status::ok)
-        .method("ToString", &Status::ToString);
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
         .constructor<const std::string&>()
         .method("Connect", &JuliaGcsClient::Connect)

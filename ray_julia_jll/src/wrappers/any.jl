@@ -20,67 +20,53 @@ function __init__()
     @initcxx
 end  # __init__()
 
+const STATUS_CODE_SYMBOLS = (:OK,
+                             :OutOfMemory,
+                             :KeyError,
+                             :TypeError,
+                             :Invalid,
+                             :IOError,
+                             :UnknownError,
+                             :NotImplemented,
+                             :RedisError,
+                             :TimedOut,
+                             :Interrupted,
+                             :IntentionalSystemExit,
+                             :UnexpectedSystemExit,
+                             :CreationTaskError,
+                             :NotFound,
+                             :Disconnected,
+                             :SchedulingCancelled,
+                             :ObjectExists,
+                             :ObjectNotFound,
+                             :ObjectAlreadySealed,
+                             :ObjectStoreFull,
+                             :TransientObjectStoreFull,
+                             :GrpcUnavailable,
+                             :GrpcUnknown,
+                             :OutOfDisk,
+                             :ObjectUnknownOwner,
+                             :RpcError,
+                             :OutOfResource,
+                             :ObjectRefEndOfStream)
 
-# function Base.Symbol(language::Language)
-#     return if language === PYTHON
-#         :PYTHON
-#     elseif field === JAVA
-#         :JAVA
-#     elseif field === CPP
-#         :CPP
-#     elseif field === JULIA
-#         :JULIA
-#     else
-#         throw(ArgumentError("Unknown language: $language"))
-#     end
-# end
-
-# Base.instances(::Type{Language}) = (PYTHON, JAVA, CPP, JULIA)
-
-function Base.getproperty(::Type{Language}, field::Symbol)
-    return if field === :PYTHON
-        PYTHON
-    elseif field === :JAVA
-        JAVA
-    elseif field === :CPP
-        CPP
-    elseif field === :JULIA
-        JULIA
-    else
-        Base.getfield(Language, field)
-    end
+@eval begin
+    $(_enum_getproperty_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_propertynames_expr(StatusCode, STATUS_CODE_SYMBOLS))
 end
 
-function Base.propertynames(::Type{Language}, private::Bool=false)
-    public_properties = (:PYTHON, :JAVA, :CPP, :JULIA)
-    return if private
-        tuple(public_properties..., fieldnames(typeof(Language))...)
-    else
-        public_properties
-    end
+const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
+
+@eval begin
+    $(_enum_getproperty_expr(Language, LANGUAGE_SYMBOLS))
+    $(_enum_propertynames_expr(Language, LANGUAGE_SYMBOLS))
 end
 
-function Base.getproperty(::Type{WorkerType}, field::Symbol)
-    return if field === :WORKER
-        WORKER
-    elseif field === :DRIVER
-        DRIVER
-    elseif field === :SPILL_WORKER
-        SPILL_WORKER
-    elseif field === :RESTORE_WORKER
-        RESTORE_WORKER
-    else
-        Base.getfield(WorkerType, field)
-    end
-end
+const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
 
-function Base.propertynames(::Type{WorkerType}, private::Bool=false)
-    public_properties = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
-    return if private
-        tuple(public_properties..., fieldnames(typeof(WorkerType))...)
-    else
-        public_properties
-    end
+@eval begin
+    $(_enum_getproperty_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_propertynames_expr(WorkerType, WORKER_TYPE_SYMBOLS))
 end
 
 #####
