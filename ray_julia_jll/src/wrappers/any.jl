@@ -143,6 +143,7 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 
 FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
 FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
+Nil(::Type{ObjectID}) = ObjectIDFromNil()
 
 #####
 ##### TaskArg

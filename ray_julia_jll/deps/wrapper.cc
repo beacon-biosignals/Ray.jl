@@ -485,6 +485,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<ObjectID>("ObjectID")
         .method("ObjectIDFromHex", &ObjectID::FromHex)
         .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("ObjectIDFromNil", &ObjectID::Nil)
         .method("Hex", &ObjectID::Hex);
 
     // enum Language
