@@ -20,6 +20,40 @@ function __init__()
     @initcxx
 end  # __init__()
 
+const STATUS_CODE_SYMBOLS = (:OK,
+                             :OutOfMemory,
+                             :KeyError,
+                             :TypeError,
+                             :Invalid,
+                             :IOError,
+                             :UnknownError,
+                             :NotImplemented,
+                             :RedisError,
+                             :TimedOut,
+                             :Interrupted,
+                             :IntentionalSystemExit,
+                             :UnexpectedSystemExit,
+                             :CreationTaskError,
+                             :NotFound,
+                             :Disconnected,
+                             :SchedulingCancelled,
+                             :ObjectExists,
+                             :ObjectNotFound,
+                             :ObjectAlreadySealed,
+                             :ObjectStoreFull,
+                             :TransientObjectStoreFull,
+                             :GrpcUnavailable,
+                             :GrpcUnknown,
+                             :OutOfDisk,
+                             :ObjectUnknownOwner,
+                             :RpcError,
+                             :OutOfResource,
+                             :ObjectRefEndOfStream)
+
+@eval begin
+    $(_enum_getproperty_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_propertynames_expr(StatusCode, STATUS_CODE_SYMBOLS))
+end
 
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
 
