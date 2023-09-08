@@ -190,9 +190,9 @@ end
 end
 
 # do this after the many tasks testset so we have workers warmed up
-@testset "Async support for ObjectRef" begin
+@testset "Async support for ObjectRef: $f" for f in (Ray.get, Base.wait)
     obj_ref = submit_task(sleep, (3,))
-    t = @async Ray.get(obj_ref)
+    t = @async f(obj_ref)
     yield()
 
     # If C++ blocks then the task will complete prior to running these tests
@@ -203,6 +203,8 @@ end
     # driver is shutdown we'll see the error: `ERROR: Package Ray errored during testing`
     # https://github.com/beacon-biosignals/Ray.jl/issues/96
     wait(t)
+
+    @test isready(obj_ref)
 end
 
 @testset "task resource requests" begin
