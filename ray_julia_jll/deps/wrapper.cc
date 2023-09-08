@@ -561,6 +561,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<rpc::Address>("Address")
         .constructor<>()
         .method("SerializeAsString", &rpc::Address::SerializeAsString)
+        .method("ParseFromString", &rpc::Address::ParseFromString)
         .method("MessageToJsonString", [](const rpc::Address &addr) {
             std::string json;
             google::protobuf::util::MessageToJsonString(addr, &json);
