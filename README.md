@@ -79,7 +79,19 @@ source venv/bin/activate
 julia --project=ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true)'
 ```
 
-### Build Ray CLI/server
+### Install Ray CLI/server
+
+We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either build from source or install using our custom-build wheels.
+
+#### Install from github release
+
+Find the appropriate binary wheel for your python version and system (currently supported are ARM MacOS, e.g. M1, and AND64/x86_64 linux) from the release page, and install from the release URL.  For instance, to install for Linux for Python 3.9, run this in the appropriate virtual environment:
+
+```sh
+pip install https://github.com/beacon-biosignals/ray/releases/download/ray-2.5.1-beacon/ray-2.5.1-cp39-cp39-manylinux2014_x86_64.whl
+```
+
+#### Build from source
 
 ```sh
 # Build the Ray CLI. Based upon these instructions:
