@@ -10,7 +10,7 @@
 
     @testset "object_ids property" begin
         s = Ray.RaySerializer(IOBuffer())
-        @test s.object_ids isa Set{<:ray_jll.ObjectID}
+        @test s.object_ids isa Set{ray_jll.ObjectIDAllocated}
     end
 
     # Note: Serializing `ObjectRef` requires the core worker to be initialized
@@ -22,7 +22,9 @@
         s = Ray.RaySerializer(IOBuffer())
         serialize(s, x)
 
+        @test s.object_refs isa Set{ObjectRef}
         @test s.object_refs == Set(obj_refs)
+        @test s.object_ids isa Set{ray_jll.ObjectIDAllocated}
         @test s.object_ids == Set(oids)
     end
 
