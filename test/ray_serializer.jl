@@ -34,6 +34,19 @@
         Serialization.reset_state(s)
         @test isempty(s.object_refs)
     end
+
+    @testset "header support" begin
+        bytes = Vector{UInt8}()
+        s = Ray.RaySerializer(IOBuffer(bytes; write=true))
+        Serialization.writeheader(s)
+
+        s = Ray.RaySerializer(IOBuffer(bytes))
+        b = Int32(read(s.io, UInt8)::UInt8)
+        @test b == Serialization.HEADER_TAG
+
+        # Using `readheader` requires the serializer to have the `version` field
+        @test Serialization.readheader(s) === nothing
+    end
 end
 
 @testset "serialize_to_bytes / deserialize_from_bytes" begin
