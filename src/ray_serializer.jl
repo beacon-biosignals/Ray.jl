@@ -4,12 +4,13 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     counter::Int
     table::IdDict{Any,Any}
     pending_refs::Vector{Int}
+    version::Int
 
     # Inlined object references encountered during serializing
     object_refs::Set{ObjectRef}
 
     function RaySerializer{I}(io::I) where I<:IO
-        return new(io, 0, IdDict(), Int[], Set{ObjectRef}())
+        return new(io, 0, IdDict(), Int[], ser_version, Set{ObjectRef}())
     end
 end
 
