@@ -104,6 +104,8 @@ cd -
 
 ### Validate installation
 
+Note that because `ray_julia_jll` is not yet released, it's necessary to `Pkg.develop` it; otherwise you'll get errors that Pkg expected it to be registered.
+
 ```sh
 # Run the tests
 julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.test()'
