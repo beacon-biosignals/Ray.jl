@@ -41,6 +41,19 @@
     @test Ray.get(Ray.get(obj_ref2)) == 1
 end
 
+@testset "Task spawning a task" begin
+    # As tasks may be run on the same worker it's better to use the task ID rather than the
+    # process ID.
+    f = function ()
+        task_id = Ray.get_task_id()
+        subtask_id = Ray.get(submit_task(Ray.get_task_id, ()))
+        return (task_id, subtask_id)
+    end
+
+    task_id, subtask_id = Ray.get(submit_task(f, ()))
+    @test Ray.get_task_id() != task_id != subtask_id
+end
+
 @testset "object ownership" begin
     @testset "unknown owner" begin
         invalid_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
@@ -64,7 +77,7 @@ end
         @test Ray.get(remote_ref) == 2
     end
 
-    # Broken test that seems to corrupt other ObjectIDs
+    # TODO: Broken test that seems to corrupt other ObjectIDs
     # @testset "remote fetch local object" begin
     #     local_ref = Ray.put(3)
     #     return_ref = Ray.submit_task(Ray.get, (local_ref,))
@@ -75,19 +88,32 @@ end
     #     # TODO: Causes tasks to be re-run due to "lost objects"
     #     # @test Ray.get(return_ref) == Ray.get(local_ref)
     # end
-end
 
-@testset "Task spawning a task" begin
-    # As tasks may be run on the same worker it's better to use the task ID rather than the
-    # process ID.
-    f = function ()
-        task_id = Ray.get_task_id()
-        subtask_id = Ray.get(submit_task(Ray.get_task_id, ()))
-        return (task_id, subtask_id)
+    @testset "remote fetch remote object" begin
+        f = function (x)
+            local_ref = Ray.put(x)
+            return_ref = Ray.submit_task(Ray.get, (local_ref,))
+            return Ray.get(return_ref)
+        end
+        return_ref = Ray.submit_task(f, (7,))
+        @test Ray.get(return_ref) == 7
+
+        g = function (x)
+            return_ref = Ray.submit_task(Ray.put, (x,))
+            remote_ref = Ray.get(return_ref)
+            return Ray.get(remote_ref)
+        end
+        return_ref = Ray.submit_task(g, (8,))
+        @test Ray.get(return_ref) == 8
     end
 
-    task_id, subtask_id = Ray.get(submit_task(f, ()))
-    @test Ray.get_task_id() != task_id != subtask_id
+    # @testset "local fetch remote subtask object" begin
+    #     f = () -> Ray.submit_task(Ray.put, (5,))
+    #     return_ref = Ray.submit_task(f, ())
+    #     inner_ref = Ray.get(return_ref)
+    #     remote_ref = Ray.get(inner_ref)
+    #     @test Ray.get(remote_ref) == 5  # TODO: Will always timeout (if enabled)
+    # end
 end
 
 @testset "task runtime environment" begin
