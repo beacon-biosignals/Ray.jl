@@ -46,13 +46,16 @@ const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
 # https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
 const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
 
+function redirect_logs()
+    return Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
+end
+
 function default_log_dir(session_dir)
-    redirect_logs = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
     # realpath() resolves relative paths and symlinks, including the default
     # `/tmp/ray/session_latest/`.  this is defense against folks potentially
     # starting multiple ray sessions locally, which could cause the logs path to
     # change out from under us if we use the symlink directly.
-    return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
+    return redirect_logs() ? "" : realpath(joinpath(session_dir, "logs"))
 end
 
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
@@ -422,11 +425,12 @@ function start_worker(args=ARGS)
     @info "Starting Julia worker runtime with args" parsed_args
 
     return ray_jll.initialize_worker(parsed_args["raylet_socket"],
-                                    parsed_args["store_socket"],
-                                    parsed_args["address"],
-                                    parsed_args["node_ip_address"],
-                                    parsed_args["node_manager_port"],
-                                    parsed_args["startup_token"],
-                                    parsed_args["runtime_env_hash"],
-                                    task_executor)
+                                     parsed_args["store_socket"],
+                                     parsed_args["address"],
+                                     parsed_args["node_ip_address"],
+                                     parsed_args["node_manager_port"],
+                                     parsed_args["startup_token"],
+                                     parsed_args["runtime_env_hash"],
+                                     redirect_logs() ? parsed_args["logs_dir"] : "",
+                                     task_executor)
 end

@@ -201,7 +201,7 @@ end
 #####
 
 function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                           node_manager_port, startup_token, runtime_env_hash,
+                           node_manager_port, startup_token, runtime_env_hash, logs_dir,
                            task_executor::Function)
 
     # Note (omus): If you are trying to figure out what type to pass in here I recommend
@@ -221,7 +221,8 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
 
     @info "cfunction generated!"
     result = initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-                               node_manager_port, startup_token, runtime_env_hash, cfunc)
+                               node_manager_port, startup_token, runtime_env_hash, logs_dir,
+                               cfunc)
 
     @info "worker exiting `ray_julia_jll.initialize_worker`"
     return result
