@@ -94,5 +94,5 @@ cd -
 
 ```sh
 # Run the tests
-julia --project -e 'using Pkg; Pkg.test()'
+julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.test()'
 ```
