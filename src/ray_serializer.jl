@@ -9,10 +9,8 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     # Inlined object references encountered during serializing
     object_refs::Set{ObjectRef}
 
-    outer_object_ref::Union{ObjectRef,Nothing}
-
     function RaySerializer{I}(io::I) where I<:IO
-        return new(io, 0, IdDict(), Int[], ser_version, Set{ObjectRef}(), nothing)
+        return new(io, 0, IdDict(), Int[], ser_version, Set{ObjectRef}())
     end
 end
 

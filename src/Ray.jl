@@ -20,16 +20,12 @@ import ray_julia_jll as ray_jll
 
 export start_worker, submit_task, @ray_import, ObjectRef
 
-struct ObjectRef
-    oid::ray_jll.ObjectIDAllocated
-end
-
 include("function_manager.jl")
 include("runtime_env.jl")
 include("remote_function.jl")
 include("runtime.jl")
-include("ray_serializer.jl")
 include("object_ref.jl")
+include("ray_serializer.jl")
 include("object_store.jl")
 
 end
