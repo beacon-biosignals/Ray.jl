@@ -64,11 +64,8 @@ Base.isready(obj_ref::ObjectRef) = ray_jll.contains(obj_ref.oid)
 Block until `isready(obj_ref)`.
 """
 function Base.wait(obj_ref::ObjectRef)
-    timeout = 20
-    start_time = time()
-    while !isready(obj_ref) && (time() - start_time) < timeout
+    while !isready(obj_ref)
         sleep(0.1)
     end
-    time() - start_time >= timeout && error("timeout")
     return nothing
 end
