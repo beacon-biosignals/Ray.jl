@@ -40,7 +40,13 @@ get(x) = x
 
 function _get(bytes::Vector{UInt8}, outer_obj_ref::Union{ObjectRef,Nothing})
     serializer = RaySerializer(IOBuffer(bytes))
-    result = deserialize(serializer)
+
+    result = try
+        deserialize(serializer)
+    catch
+        @error "Unable to deserialize $outer_obj_ref bytes: $(bytes2hex(bytes))"
+        rethrow()
+    end
 
     for obj_ref in serializer.object_refs
         _register_ownership(obj_ref, outer_obj_ref)
