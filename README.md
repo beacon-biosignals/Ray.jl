@@ -58,7 +58,7 @@ npm install -g @bazel/bazelisk
 
 ### Prepare python environment
 
-We recommend always using the same virtualenv as Bazel can cause unnecessary rebuilds when using different versions of Python.
+We recommend always using the same virtualenv since Bazel can cause unnecessary rebuilds when using different versions of Python.
 
 ```sh
 python -m venv venv
