@@ -234,8 +234,8 @@ function serialize_args(args)
 
         buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
         metadata = ray_jll.NullPtr(ray_jll.Buffer)
-        inlined_ids = collect(serializer.object_ids)
-        inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(inlined_ids))
+        inlined_ids = StdVector(collect(serializer.object_ids))::StdVector{ray_jll.ObjectID}
+        inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
         ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
 
         # Inline arguments which are small and if there is room
@@ -329,8 +329,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     metadata = ray_jll.NullPtr(ray_jll.Buffer)
-    inlined_ids = collect(serializer.object_ids)
-    inlined_refs = ray_jll.GetObjectRefs(worker, StdVector(inlined_ids))
+    inlined_ids = StdVector(collect(serializer.object_ids))::StdVector{ray_jll.ObjectID}
+    inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
     ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
     push!(returns, ray_obj)
 
