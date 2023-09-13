@@ -152,6 +152,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Build JLL
     # TODO: execute inside a python venv
+    # TODO: limit what we include in the tarball
     build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
@@ -183,8 +184,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     branch = LibGit2.branch(repo)
     message = "Publish artifact for ray_julia_jll $(jll_version) on $host_platform"
 
-    # TODO: ghr and LibGit2 use different credential setups. Double check
-    # what BB does here.
+    # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
     Base.shred!(LibGit2.CredentialPayload()) do credentials
         LibGit2.with(LibGit2.GitRepo(repo_path)) do repo
 
