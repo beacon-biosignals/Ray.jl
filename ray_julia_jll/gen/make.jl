@@ -15,6 +15,35 @@ const GH_RELEASE_ASSET_PATH_REGEX = r"""
     (?<tag>[^/]+)/(?<file_name>[^/]+)$
     """x
 
+# Parse "GIT URLs" syntax (URLs and a scp-like syntax). For details see:
+# https://git-scm.com/docs/git-clone#_git_urls_a_id_urls_a
+# Note that using a Regex like this is inherently insecure with regards to its
+# handling of passwords; we are unable to deterministically and securely erase
+# the passwords from memory after use.
+# TODO: reimplement with a Julian parser instead of leaning on this regex
+const URL_REGEX = r"""
+^(?:(?<scheme>ssh|git|https?)://)?+
+(?:
+    (?<user>.*?)
+    (?:\:(?<password>.*?))?@
+)?
+(?<host>[A-Za-z0-9\-\.]+)
+(?(<scheme>)
+    # Only parse port when not using scp-like syntax
+    (?:\:(?<port>\d+))?
+    /?
+    |
+    :?
+)
+(?<path>
+    # Require path to be preceded by '/'. Alternatively, ':' when using scp-like syntax.
+    (?<=(?(<scheme>)/|:))
+    .*
+)?
+$
+"""x
+
+
 function create_tarball(dir, tarball)
     return open(GzipCompressorStream, tarball, "w") do tar
         Tar.create(dir, tar)
@@ -131,13 +160,19 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     create_tarball(readlink(compiled_dir), tarball_path)
 
-    tag = "v$(jll_version)"
-    artifact_url = "$(pkg_url)/releases/download/$(tag)/$(basename(tarball_path))"
+    m = match(URL_REGEX, pkg_url)
+    if m === nothing
+        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
+    end
 
-    artifacts_toml = joinpath(repo_path, "Artifacts.toml")
+    pkg_http_url = "https://" * joinpath(m[:host], m[:path])
+    tag = "v$(jll_version)"
+    artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
+
+    artifacts_toml = joinpath(repo_path, "ray_julia_jll", "Artifacts.toml")
     bind_artifact!(
         artifacts_toml,
-        "ray_julia_jll",
+        "ray_julia",
         tree_hash_sha1(tarball_path);
         download_info=[(artifact_url, sha256sum(tarball_path))],
         force=true
