@@ -30,7 +30,7 @@ to stop.
 
 ### Where can I find log files?
 
-`/tmp/ray/session_latest/logs`
+The directory `/tmp/ray/session_latest/logs` contains logs for the current or last ran ray backend.
 
 The `raylet.err` is particularly informative when debugging workers failing to start, since error output before connecting to the Ray server is printed there.
 
