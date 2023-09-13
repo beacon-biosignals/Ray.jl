@@ -31,11 +31,3 @@ end
 if !isfile(joinpath(artifact_dir, library_name))
     error("Failed to build library: $(joinpath(artifact_dir, library_name))")
 end
-
-# Add entry to depot specific Overrides.toml
-overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
-overrides_dict = isfile(overrides_toml) ? TOML.parsefile(overrides_toml) : Dict{String,Any}()
-overrides_dict[pkg_uuid] = Dict("ray_julia" => abspath(artifact_dir))
-open(overrides_toml, "w") do io
-    TOML.print(io, overrides_dict)
-end
