@@ -72,8 +72,7 @@ python -m pip install --upgrade pip wheel
 ### Build wrapper
 
 ```sh
-python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate # if not still activated from previous step
 
 # Build the required libraries
 julia --project=ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true)'
