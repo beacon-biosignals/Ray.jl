@@ -182,7 +182,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # TODO: Ensure no other files are staged before committing
     @info "Committing and pushing changes to Artifacts.toml"
-    branch = LibGit2.branch(repo)
+    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     message = "Publish artifact for ray_julia_jll $(jll_version) on $host_platform"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
