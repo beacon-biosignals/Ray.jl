@@ -6,7 +6,7 @@ At the moment the package requires that the shared libraries are built directly 
 
 ## FAQ
 
-### Why am I seeing "expectd `ray_julia_jll` to be registered when I use Ray.jl?
+### Why am I seeing "expected `ray_julia_jll` to be registered when I use Ray.jl?
 
 You need to `Pkg.develop` _both_ Ray.jl _and_ `ray_julia_jll` in any project that uses Ray.jl.
 
