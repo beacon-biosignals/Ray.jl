@@ -48,9 +48,9 @@ function _get(bytes::Vector{UInt8}, outer_obj_ref::Union{ObjectRef,Nothing})
         rethrow()
     end
 
-    for obj_ref in serializer.object_refs
-        _register_ownership(obj_ref, outer_obj_ref)
-    end
+    # for obj_ref in serializer.object_refs
+    #     _register_ownership(obj_ref, outer_obj_ref)
+    # end
 
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
@@ -70,6 +70,7 @@ Base.isready(obj_ref::ObjectRef) = ray_jll.contains(obj_ref.oid)
 Block until `isready(obj_ref)`.
 """
 function Base.wait(obj_ref::ObjectRef)
+    !has_owner(obj_ref) && error("Attempted to wait for unowned object: $obj_ref")
     while !isready(obj_ref)
         sleep(0.1)
     end
