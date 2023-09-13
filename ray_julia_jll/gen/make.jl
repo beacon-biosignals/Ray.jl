@@ -2,7 +2,8 @@ using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
 using Pkg.Artifacts: bind_artifact!
-using Pkg.Types: build, read_project
+using Pkg.Types: read_project
+using Pkg
 using SHA: sha256
 using Tar: Tar
 using TOML: TOML
@@ -153,7 +154,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # Build JLL
     # TODO: execute inside a python venv
     # TODO: limit what we include in the tarball
-    build("ray_julia_jll"; verbose=true)
+    Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
     @info "Creating tarball $tarball_name"
