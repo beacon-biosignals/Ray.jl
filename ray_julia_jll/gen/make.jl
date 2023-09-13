@@ -2,7 +2,7 @@ using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
 using Pkg.Artifacts: bind_artifact!
-using Pkg.Types: read_project
+using Pkg.Types: build, read_project
 using SHA: sha256
 using Tar: Tar
 using TOML: TOML
@@ -152,7 +152,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Build JLL
     # TODO: execute inside a python venv
-    Pkg.build("ray_julia_jll"; verbose=true)
+    build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
     @info "Creating tarball $tarball_name"
@@ -180,7 +180,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # TODO: Ensure no other files are staged before committing
     @info "Committing and pushing changes to Artifacts.toml"
-    branch = "gm/test"  # TODO - pass as function arg
+    branch = LibGit2.branch(repo)
     message = "Publish artifact for ray_julia_jll $(jll_version) on $host_platform"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check
@@ -189,7 +189,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         LibGit2.with(LibGit2.GitRepo(repo_path)) do repo
 
             # TODO: This allows empty commits
-            LibGit2.add!(repo, basename(artifacts_toml))
+            LibGit2.add!(repo, joinpath("ray_julia_jll", basename(artifacts_toml)))
             LibGit2.commit(repo, message)
 
             # Same as "refs/heads/$branch" but fails if branch doesn't exist locally
