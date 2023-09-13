@@ -1,2 +1,6 @@
 [ray_julia]
-git-tree-sha1 = "0000000000000000000000000000000000000000"
+git-tree-sha1 = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
+    [[ray_julia.download]]
+    sha256 = "08cb513bcd73858f0c8841d22c8dbd07dcaa07c9ef62476cf50a255c50db5630"
+    url = "https://github.com/beacon-biosignals/ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version+1.9.2.tar.gz"
