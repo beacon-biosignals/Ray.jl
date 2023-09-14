@@ -119,6 +119,8 @@ julia --project=ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true)'
 
 We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either build from source or install using our custom-build wheels.
 
+NOTE: make sure you've [activated the appropriate virtual environment](#prepare-python-environment) where you want to install the Ray CLI!
+
 #### Install from github release
 
 Find the appropriate binary wheel for your python version and system (currently supported are ARM MacOS, e.g. M1, and AND64/x86_64 linux) from the release page, and install from the release URL.  For instance, to install for Linux for Python 3.9, run this in the appropriate virtual environment:
