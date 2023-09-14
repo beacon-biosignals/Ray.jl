@@ -1,0 +1,206 @@
+# For most use-cases, it makes sense to schedule one Ray pod per Kubernetes node.
+# This is a configuration for an autoscaling RayCluster with 1 Ray head pod and 0 Ray worker pods,
+# with capacity to scale up to 10 worker pods.
+# Each worker pod requests 14 CPU and 54 Gi memory.
+# Each pod can be scheduled on a virtual machine with roughly 64 Gi memory and 16 CPU.
+# (AWS: m5.4xlarge, GCP: e2-standard-16, Azure: Standard_D5_v2)
+# Optimal resource allocation will depend on your Kubernetes infrastructure and might
+# require some experimentation.
+
+# The actual instance types that are available in EKS are specified by the EKS configuration. This manifest
+# was setup to use m5dn.4xlarge instances (16 CPU, 64 GiB memory, up to 25 Gbps networking).
+
+# Ray recommends using a head node with networking characteristics at least as good as the r5dn.16xlarge (75 Gbps)
+# https://docs.ray.io/en/releases-2.5.1/cluster/vms/user-guides/large-cluster-best-practices.html#configuring-the-head-node
+
+# Based upon the examples I have seen in the Ray documentation it appears that the requested resources specified for nodes is
+# approximately 80% of the resources of the instance rounded down (for a 64 GiB instance request 51 GiB)
+# https://github.com/ray-project/kuberay/blob/08792cae74dbe005f7c9ab807b176af5e25c786e/ray-operator/config/samples/ray-cluster.autoscaler.large.yaml#L4C1-L5
+# https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/gpu.html#configuring-ray-pods-for-gpu-usage
+
+# The Ray autoscaler and KubeRay operator scale Ray pod quantities.
+# To achieve Kubernetes node autoscaling with this example, we recommend setting up an autoscaling node group/pool with
+# - 2 nodes minimum for the Ray head pod and Ray worker pod
+# - 11 nodes maximum to accommodate up to 10 Ray worker pods.
+
+# Based on:
+# https://github.com/ray-project/kuberay/blob/08792cae74dbe005f7c9ab807b176af5e25c786e/ray-operator/config/samples/ray-cluster.autoscaler.large.yaml
+apiVersion: ray.io/v1alpha1
+kind: RayCluster
+metadata:
+  # A unique identifier for the head node and workers of this cluster.
+  name: raycluster-demo
+  labels:
+    controller-tools.k8s.io: "1.0"
+spec:
+  # The version of Ray you are using. Make sure all Ray containers are running this version of Ray.
+  rayVersion: "2.5.1"
+  # If enableInTreeAutoscaling is true, the autoscaler sidecar will be added to the Ray head pod.
+  enableInTreeAutoscaling: true
+  # autoscalerOptions is an OPTIONAL field specifying configuration overrides for the Ray autoscaler.
+  # The example configuration shown below below represents the DEFAULT values.
+  # (You may delete autoscalerOptions if the defaults are suitable.)
+  autoscalerOptions:
+    # upscalingMode is "Default" or "Aggressive".
+    # Conservative: Upscaling is rate-limited; the number of pending worker pods is at most the size of the Ray cluster.
+    # Default: Upscaling is not rate-limited.
+    # Aggressive: An alias for Default; upscaling is not rate-limited.
+    upscalingMode: Default
+    # idleTimeoutSeconds is the number of seconds to wait before scaling down a worker pod which is not using Ray resources.
+    idleTimeoutSeconds: 60
+    # image optionally overrides the autoscaler's container image.
+    # If instance.spec.rayVersion is at least "2.0.0", the autoscaler will default to the same image as
+    # the ray container. For older Ray versions, the autoscaler will default to using the Ray 2.0.0 image.
+    ## image: "my-repo/my-custom-autoscaler-image:tag"
+    # imagePullPolicy optionally overrides the autoscaler container's default image pull policy (IfNotPresent).
+    imagePullPolicy: IfNotPresent
+    # Optionally specify the autoscaler container's securityContext.
+    securityContext: {}
+    env: []
+    envFrom: []
+    # resources specifies optional resource request and limit overrides for the autoscaler container.
+    # The default autoscaler resource limits and requests should be sufficient for production use-cases.
+    # However, for large Ray clusters, we recommend monitoring container resource usage to determine if overriding the defaults is required.
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+  # Ray head pod template
+  headGroupSpec:
+    # The `rayStartParams` are used to configure the `ray start` command.
+    # See https://github.com/ray-project/kuberay/blob/master/docs/guidance/rayStartParams.md for the default settings of `rayStartParams` in KubeRay.
+    # See https://docs.ray.io/en/latest/cluster/cli.html#ray-start for all available options in `rayStartParams`.
+    rayStartParams:
+      dashboard-host: "0.0.0.0"
+      # Use `resources` to optionally specify custom resource annotations for the Ray node.
+      # The value of `resources` is a string-integer mapping.
+      # Currently, `resources` must be provided in the specific format demonstrated below:
+      # resources: '"{\"Custom1\": 1, \"Custom2\": 5}"'
+
+      # Prevent Ray workloads with non-zero CPU requirements from being scheduled on the head node.
+      # https://docs.ray.io/en/releases-2.5.1/cluster/vms/user-guides/large-cluster-best-practices.html#configuring-the-head-node
+      num-cpus: "0"
+    template:
+      spec:
+        serviceAccountName: quantitative-tools
+        containers:
+          - name: ray-head
+            # https://github.com/ray-project/ray/tree/master/docker/ray#tags
+            image: rayproject/ray:2.5.1-py310
+            ports:
+              - containerPort: 6379
+                name: gcs
+              - containerPort: 8265
+                name: dashboard
+              - containerPort: 10001
+                name: client
+
+            # Ensure graceful termination of Ray pods
+            # https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/config.html#pod-and-container-lifecyle-prestophook
+            lifecycle:
+              preStop:
+                exec:
+                  command: ["/bin/sh", "-c", "ray stop"]
+
+            # It is better to use a few large Ray pod than many small ones.
+            # For production, it is ideal to size each Ray pod to take up the
+            # entire Kubernetes node on which it is scheduled.
+            # The rest state memory usage of the Ray head node is around 1Gb. We do not
+            # recommend allocating less than 2Gb memory for the Ray head pod.
+            # For production use-cases, we recommend allocating at least 8Gb memory for each Ray container.
+            resources:
+              limits:
+                cpu: 2
+                memory: 8Gi
+              requests:
+                cpu: 2
+                memory: 8Gi
+            # resources:
+            #   limits:
+            #     cpu: 14
+            #     memory: 54Gi
+            #   requests:
+            #     cpu: 14
+            #     memory: 54Gi
+  workerGroupSpecs:
+    - # logical group name, for this called cpu-group, also can be functional
+      groupName: cpu
+      replicas: 0
+      minReplicas: 0
+      maxReplicas: 3
+      # If worker pods need to be added, we can increment the replicas.
+      # If worker pods need to be removed, we decrement the replicas, and populate the workersToDelete list.
+      # The operator will remove pods from the list until the desired number of replicas is satisfied.
+      # If the difference between the current replica count and the desired replicas is greater than the
+      # number of entries in workersToDelete, random worker pods will be deleted.
+      #scaleStrategy:
+      #  workersToDelete:
+      #  - raycluster-complete-worker-cpu-bdtwh
+      #  - raycluster-complete-worker-cpu-hv457
+      #  - raycluster-complete-worker-cpu-k8tj7
+      # The `rayStartParams` are used to configure the `ray start` command.
+      # See https://github.com/ray-project/kuberay/blob/master/docs/guidance/rayStartParams.md for the default settings of `rayStartParams` in KubeRay.
+      # See https://docs.ray.io/en/latest/cluster/cli.html#ray-start for all available options in `rayStartParams`.
+      rayStartParams: {}
+      template:
+        spec:
+          serviceAccountName: quantitative-tools
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.5.1-py310
+
+              # Ensure graceful termination of Ray pods
+              # https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/config.html#pod-and-container-lifecyle-prestophook
+              lifecycle:
+                preStop:
+                  exec:
+                    command: ["/bin/sh", "-c", "ray stop"]
+
+              # Optimal resource allocation will depend on your Kubernetes infrastructure and might
+              # require some experimentation.
+              # Setting requests=limits is recommended with Ray. K8s limits are used for Ray-internal
+              # resource accounting. K8s requests are not used by Ray.
+              resources:
+                limits:
+                  cpu: 14
+                  memory: 54Gi
+                requests:
+                  cpu: 14
+                  memory: 54Gi
+
+    - groupName: gpu
+      replicas: 0
+      minReplicas: 0
+      maxReplicas: 2
+      rayStartParams:
+        # https://github.com/ray-project/kuberay/issues/321#issuecomment-1166618132
+        num-gpus: "1"
+      template:
+        spec:
+          serviceAccountName: quantitative-tools
+          containers:
+            - name: ray-worker
+              image: rayproject/ray:2.5.1-py310-gpu
+
+              # Ensure graceful termination of Ray pods
+              # https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/config.html#pod-and-container-lifecyle-prestophook
+              lifecycle:
+                preStop:
+                  exec:
+                    command: ["/bin/sh", "-c", "ray stop"]
+
+              # The following resource requests were set to be scheduled on g4dn.xlarge instances (4 CPU, 16 GiB memory, up to 25 Gbps networking)
+              # Setting requests=limits is recommended with Ray. K8s limits are used for Ray logical resource scheduling.
+              # K8s requests are not used by Ray.
+              resources:
+                limits:
+                  nvidia.com/gpu: 1
+                  cpu: 3
+                  memory: 12Gi
+                requests:
+                  nvidia.com/gpu: 1
+                  cpu: 3
+                  memory: 12Gi
