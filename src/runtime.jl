@@ -338,8 +338,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 end
 
 #=
-julia -e sleep(120) -- \
-  /Users/cvogt/.julia/dev/Ray/venv/lib/python3.10/site-packages/ray/cpp/default_worker \
+julia -e 'using Ray; start_worker()' -- \
   --ray_plasma_store_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/plasma_store \
   --ray_raylet_socket_name=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/sockets/raylet \
   --ray_node_manager_port=57236 \
@@ -396,8 +395,6 @@ function start_worker(args=ARGS)
             required=false
             arg_type=Int
             default=0
-        "arg1"
-            required = true
     end
 
     parsed_args = parse_args(args, s)
