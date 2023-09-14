@@ -14,7 +14,7 @@ Currently neither Ray.jl nor the `ray_julia_jll` package are registered since th
 
 ### How do I start/stop the ray backend?
 
-Make sure the appropriate environment (`venv` or `conda`-managed) is active (wherever you `pip install`ed Ray) and then do
+Make sure the appropriate environment (`venv` or `conda`-managed) is active (wherever you [`pip install`ed Ray](#install-ray-cli-server)) and then do
 
 ```sh
 ray start --head
