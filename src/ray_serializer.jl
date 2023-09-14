@@ -19,7 +19,7 @@ RaySerializer(bytes::Vector{UInt8}) = RaySerializer{IOBuffer}(IOBuffer(bytes; wr
 
 function Base.getproperty(s::RaySerializer, f::Symbol)
     if f === :object_ids
-        return Set(getproperty.(s.object_refs, :oid))
+        return Set{ray_jll.ObjectIDAllocated}(getproperty.(s.object_refs, :oid))
     else
         return getfield(s, f)
     end
@@ -33,6 +33,12 @@ end
 function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     push!(s.object_refs, obj_ref)
     return invoke(serialize, Tuple{AbstractSerializer, ObjectRef}, s, obj_ref)
+end
+
+function Serialization.deserialize(s::RaySerializer, T::Type{ObjectRef})
+    obj_ref = invoke(deserialize, Tuple{AbstractSerializer, Type{ObjectRef}}, s, T)
+    push!(s.object_refs, obj_ref)
+    return obj_ref
 end
 
 # As we are just throwing away the Serializer we can just avoid collecting the inlined

@@ -20,6 +20,7 @@ end
         @test sprint(show, obj_ref) == "ObjectRef(\"$hex_str\")"
     end
 
+    # Note: Serializing `ObjectRef` requires the core worker to be initialized
     @testset "serialize/deserialize" begin
         obj_ref1 = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
         obj_ref2 = serialize_deserialize(obj_ref1)
