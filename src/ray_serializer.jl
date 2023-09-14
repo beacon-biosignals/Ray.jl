@@ -10,7 +10,7 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     object_refs::Set{ObjectRef}
 
     function RaySerializer{I}(io::I) where I<:IO
-        return new(io, 0, IdDict(), Int[], ser_version, Set{ObjectRef}())
+        return new(io, 0, IdDict(), Int[], Serialization.ser_version, Set{ObjectRef}())
     end
 end
 
