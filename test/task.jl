@@ -33,23 +33,12 @@
         @test e.captured.ex == ErrorException("AHHHHH")
     end
 
-    # object refs as arguments
-    obj_ref1 = Ray.put(1)
-    obj_ref2 = Ray.submit_task(identity, (obj_ref1,))
-    @test obj_ref2 != obj_ref1
-    @test Ray.get(obj_ref2) == obj_ref1
-    @test Ray.get(Ray.get(obj_ref2)) == 1
-end
-
-@testset "object ownership" begin
-    obj_ref1 = submit_task(Ray.put, (1,))
-    obj_ref2 = Ray.get(obj_ref1)
-    @test obj_ref2 isa ObjectRef
-    @test Ray.has_owner(obj_ref1)
-    @test !Ray.has_owner(obj_ref2)
-
-    msg = "An application is trying to access a Ray object whose owner is unknown"
-    @test_throws msg Ray.get_owner_address(obj_ref2)
+    # passthrough object refs as arguments
+    remote_ref = Ray.put(1)
+    return_ref = Ray.submit_task(identity, (remote_ref,))
+    @test return_ref != remote_ref
+    @test Ray.get(return_ref) == remote_ref
+    @test Ray.get(Ray.get(return_ref)) == 1
 end
 
 @testset "Task spawning a task" begin
@@ -63,6 +52,74 @@ end
 
     task_id, subtask_id = Ray.get(submit_task(f, ()))
     @test Ray.get_task_id() != task_id != subtask_id
+end
+
+@testset "object ownership" begin
+    @testset "unknown owner" begin
+        invalid_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+        @test !Ray.has_owner(invalid_ref)
+
+        msg = "An application is trying to access a Ray object whose owner is unknown"
+        @test_throws msg Ray.get_owner_address(invalid_ref)
+    end
+
+    @testset "driver get on worker put" begin
+        return_ref = submit_task(Ray.put, (2,))
+        remote_ref = Ray.get(return_ref)
+        @test Ray.has_owner(return_ref)
+        @test_broken Ray.has_owner(remote_ref)
+
+        # Convert address to string to compare
+        @test_broken begin
+            return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
+            remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
+            return_ref_addr != remote_ref_addr
+        end
+
+        @test_broken Ray.get(remote_ref) == 2
+    end
+
+    # TODO: When owner registration is enabled this test seems to corrupt other ObjectIDs
+    # such that later tests return the wrong results.
+    @testset "worker get on driver put" begin
+        local_ref = Ray.put(3)
+        return_ref = Ray.submit_task(Ray.get, (local_ref,))
+        @test return_ref != local_ref
+        @test Ray.has_owner(return_ref)
+        @test Ray.has_owner(local_ref)
+
+        # TODO: When owner registration is enabled this causes tasks to be re-run due to
+        # "lost objects"
+        @test_broken Ray.get(return_ref) == 3
+        @test Ray.get(local_ref) == 3
+    end
+
+    # Attempts to resolve all remote references before returning the result to the driver
+    @testset "worker get on worker put" begin
+        f = function (x)
+            local_ref = Ray.put(x)
+            return_ref = Ray.submit_task(Ray.get, (local_ref,))
+            return Ray.get(return_ref)
+        end
+        return_ref = Ray.submit_task(f, (4,))
+        @test_broken Ray.get(return_ref) == 4
+
+        g = function (x)
+            return_ref = Ray.submit_task(Ray.put, (x,))
+            remote_ref = Ray.get(return_ref)
+            return Ray.get(remote_ref)
+        end
+        return_ref = Ray.submit_task(g, (5,))
+        @test_broken Ray.get(return_ref) == 5
+    end
+
+    @testset "driver get on worker return" begin
+        f = x -> Ray.submit_task(identity, (x,))
+        return_ref = Ray.submit_task(f, (6,))
+        inner_ref = Ray.get(return_ref)
+        @test inner_ref isa ObjectRef
+        @test_broken Ray.get(inner_ref) == 6
+    end
 end
 
 @testset "task runtime environment" begin
