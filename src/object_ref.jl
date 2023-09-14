@@ -38,6 +38,9 @@ function has_owner(obj_ref::ObjectRef)
     return !isempty(ray_jll.SerializeAsString(owner_address))
 end
 
+# TODO: this is not currently used pending investigation of how to properly handle ownership
+# see https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
+# and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
     worker = ray_jll.GetCoreWorker()
 
