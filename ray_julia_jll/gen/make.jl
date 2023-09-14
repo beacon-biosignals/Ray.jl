@@ -10,6 +10,13 @@ using TOML: TOML
 using URIs: URI
 using ghr_jll: ghr
 
+const ASSETS = Set(["external",
+                    "julia_core_worker_lib.so-2.params",
+                    "_objs",
+                    "julia_core_worker_lib.so.runfiles_manifest",
+                    "julia_core_worker_lib.so",
+                    "julia_core_worker_lib.so.runfiles"])
+
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
     releases/download/
@@ -159,6 +166,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # TODO: limit what we include in the tarball
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
+
+    compiled_assets = Set(readdir(compiled_dir))
+    if compiled_assets != ASSETS
+        throw(ArgumentError("Unexpected JLL assets found: $compiled_assets"))
+    end
 
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(tempdir(), tarball_name)
