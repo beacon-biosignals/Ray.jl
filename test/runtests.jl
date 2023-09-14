@@ -18,14 +18,14 @@ include("utils.jl")
         Aqua.test_all(Ray; ambiguities=false)
     end
 
-    include("object_ref.jl")
-    include("ray_serializer.jl")
     include("runtime_env.jl")
     include("remote_function.jl")
 
     setup_ray_head_node() do
         include("function_manager.jl")
         setup_core_worker() do
+            include("object_ref.jl")
+            include("ray_serializer.jl")
             include("runtime.jl")
             include("object_store.jl")
             include("task.jl")

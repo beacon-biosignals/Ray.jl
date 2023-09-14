@@ -7,14 +7,14 @@ module Ray
 
 using ArgParse
 using Base64
-using CxxWrap: CxxPtr, CxxRef, StdVector, isnull
+using CxxWrap: CxxPtr, CxxRef, StdString, StdVector, isnull
 using CxxWrap.StdLib: SharedPtr
 using JSON3
 using Logging
 using LoggingExtras
 using Pkg
 using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
-    reset_state, serialize, serialize_type, writeheader
+    reset_state, serialize, serialize_type, ser_version, writeheader
 
 import ray_julia_jll as ray_jll
 

@@ -485,6 +485,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<ObjectID>("ObjectID")
         .method("ObjectIDFromHex", &ObjectID::FromHex)
         .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("ObjectIDFromNil", &ObjectID::Nil)
         .method("Hex", &ObjectID::Hex);
 
     // enum Language
@@ -560,6 +561,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<rpc::Address>("Address")
         .constructor<>()
         .method("SerializeAsString", &rpc::Address::SerializeAsString)
+        .method("ParseFromString", &rpc::Address::ParseFromString)
         .method("MessageToJsonString", [](const rpc::Address &addr) {
             std::string json;
             google::protobuf::util::MessageToJsonString(addr, &json);
@@ -589,15 +591,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<RayObject>(data, nullptr, std::vector<rpc::ObjectReference>(), false);
     });
     jlcxx::stl::apply_stl<std::shared_ptr<RayObject>>(mod);
-
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
-    mod.add_type<ray::core::CoreWorker>("CoreWorker")
-        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
-        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
-        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
-        .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
-        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs);
-    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("put", &put);
     mod.method("get", &get);
@@ -672,6 +665,18 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("unique_ptr", [](TaskArgByValue *t) {
             return std::unique_ptr<TaskArgByValue>(t);
         });
+
+    // class CoreWorker
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
+    mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
+        .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
+        .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
+        .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
+        .method("GetOwnershipInfo", &ray::core::CoreWorker::GetOwnershipInfo)
+        .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs)
+        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture);
+    mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("_submit_task", &_submit_task);
 }
