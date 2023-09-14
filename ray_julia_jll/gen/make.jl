@@ -139,6 +139,9 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
+    # Check for this now before we spend any time building the JLL
+    !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
+
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
     pkg_url = remote_url(repo_path)
 
