@@ -24,12 +24,10 @@ function json_dict(runtime_env::RuntimeEnv)
 
     code = "using $(@__MODULE__); start_worker()"
     cmd = `$(Base.julia_cmd()) -e $code`
-    executable = cmd.exec[1]
-    args = cmd.exec[2:end]
 
     # The keys of `context` must match what is supported by the Python `RuntimeEnvContext`:
     # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
-    context = Dict("executable" => executable, "args" => args, "env_vars" => env_vars)
+    context = Dict("command" => cmd.exec, "env_vars" => env_vars)
 
     return context
 end
