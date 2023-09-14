@@ -176,6 +176,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         artifacts_toml,
         "ray_julia",
         tree_hash_sha1(tarball_path);
+        platform=Base.BinaryPlatforms.HostPlatform(),
         download_info=[(artifact_url, sha256sum(tarball_path))],
         force=true
     )
