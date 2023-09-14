@@ -397,7 +397,7 @@ function start_worker(args=ARGS)
             arg_type=Int
             default=0
         "arg1"
-            required = true
+            required = false
     end
 
     parsed_args = parse_args(args, s)
