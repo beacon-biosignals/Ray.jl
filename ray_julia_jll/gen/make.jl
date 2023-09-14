@@ -175,11 +175,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
     artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
 
     artifacts_toml = joinpath(repo_path, "ray_julia_jll", "Artifacts.toml")
+    # https://github.com/JuliaLang/Pkg.jl/issues/3623
+    host = Base.BinaryPlatforms.HostPlatform()
+    delete!(host.compare_strategies, "libstdcxx_version")
     bind_artifact!(
         artifacts_toml,
         "ray_julia",
         tree_hash_sha1(tarball_path);
-        platform=Base.BinaryPlatforms.HostPlatform(),
+        platform=host,
         download_info=[(artifact_url, sha256sum(tarball_path))],
     )
 
