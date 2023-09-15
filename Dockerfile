@@ -77,6 +77,10 @@ RUN --mount=type=cache,target=/tmp/julia-cache,uid=1000,gid=100 \
 
 FROM ray-base as ray-jl
 
+ENV JULIA_PROJECT /Ray.jl
+RUN sudo mkdir -p ${JULIA_PROJECT} && \
+    sudo chown ray ${JULIA_PROJECT}
+
 # Install Bazel and compilers
 RUN set -eux; \
     case $(uname -m) in \
@@ -98,32 +102,37 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-# Copy over artifacts generated during the previous stages
-COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
-
-ENV JULIA_PROJECT /Ray.jl
-COPY --chown=ray . ${JULIA_PROJECT}/
-
-# Setup ray_julia_jll
+ENV RAY_REPO=/ray
 RUN ln -s /mnt/bazel-cache ~/.cache/bazel
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
-    julia --project=${JULIA_PROJECT}/ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' &&\
-    cp -rpL ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-bin ${JULIA_PROJECT}/ray_julia_jll/deps/bin && \
-    rm -rf ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-*
-COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
-[c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
-EOF
-
-RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+    set -eux && \
+    git clone https://github.com/beacon-biosignals/ray ${JULIA_PROJECT}/ray_julia_jll/deps/ray && \
+    cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python/ray/dashboard/client && \
+    npm ci && \
+    npm run build && \
     cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python && \
-    python -m pip install --upgrade pip wheel setuptools && \
-    pip install .
+    pip install --verbose . && \
+    mv ${JULIA_PROJECT}/ray_julia_jll/deps/ray ${RAY_REPO}
 
-#RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
-#    cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python/ray/dashboard/client && \
-#    npm ci && \
-#    npm run build
+# Copy over artifacts generated during the previous stages
+# COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
+
+# Setup ray_julia_jll
+# ENV RAY_JULIA_JLL_PROJECT=/ray_julia_jll
+# COPY --chown=ray ray_julia_jll ${JULIA_PROJECT}/ray_julia_jll
+# RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+#     ln -s ${RAY_REPO} ${JULIA_PROJECT}/ray_julia_jll/deps/ray && \
+#     julia --project=${JULIA_PROJECT}/ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' &&\
+#     cp -rpL ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-bin ${JULIA_PROJECT}/ray_julia_jll/deps/bin && \
+#     rm ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-*
+#     mv ${JULIA_PROJECT}/ray_julia_jll ${RAY_JULIA_JLL_PROJECT}
+# COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
+# [c348cde4-7f22-4730-83d8-6959fb7a17ba]
+# ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
+# EOF
+
+# COPY --chown=ray . ${JULIA_PROJECT}/
+# RUN ln ${RAY_JULIA_JLL_PROJECT} ${JULIA_PROJECT}/ray_julia_jll
 
 # Note: The `timing` flag requires Julia 1.9
 # RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
