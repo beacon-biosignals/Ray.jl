@@ -9,6 +9,8 @@ using SHA: sha256
 using Tar: Tar
 using TOML: TOML
 
+const ARTIFACT_S3_BUCKET = "TODO"
+
 const ASSETS = Set(["external",
                     "julia_core_worker_lib.so-2.params",
                     "_objs",
@@ -101,9 +103,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tarball_path = joinpath(tempdir(), tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
 
-    pkg_http_url = "https://" * joinpath(m[:host], m[:path])
-    tag = "v$(jll_version)"
-    artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
+    artifact_url = joinpath(ARTIFACT_S3_BUCKET, jll_version, basename(tarball_path))
 
     artifacts_toml = joinpath(repo_path, "ray_julia_jll", "Artifacts.toml")
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
