@@ -108,7 +108,7 @@ RUN sudo mkdir -p ${JULIA_PROJECT} && \
 # Install custom ray CLI which supports the Julia language
 # Since the ray build writes some content into the ray repo we need to be careful to
 # preserve this repo as otherwise the preserved Bazel cache state can result in build
-# failures. 
+# failures (https://github.com/ray-project/ray/issues/13826).
 ENV RAY_ROOT=/ray
 ARG RAY_COMMIT=0155184
 RUN sudo mkdir -p ${RAY_ROOT} && \
@@ -139,7 +139,8 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT} && \
     julia --project=${JLL_JULIA_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
     cp -rpL ${JLL_JULIA_PROJECT}/deps/bazel-bin ${JLL_JULIA_PROJECT}/deps/bin && \
-    rm ${JLL_JULIA_PROJECT}/deps/bazel-*
+    rm ${JLL_JULIA_PROJECT}/deps/bazel-* && \
+    rm ${JLL_JULIA_PROJECT}
 
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
@@ -147,14 +148,14 @@ COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
 EOF
 
-#COPY --chown=ray . ${JULIA_PROJECT}/
+COPY --chown=ray . ${JULIA_PROJECT}/
 
 # Restore content from previously built ray_julia_jll directory
-#RUN rm -rf ${JLL_JULIA_PROJECT} && \
-#    ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT}
+RUN rm -rf ${JLL_JULIA_PROJECT} && \
+    ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
-# RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
+RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 WORKDIR ${JULIA_PROJECT}
