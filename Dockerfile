@@ -7,8 +7,10 @@ ARG RAY_VERSION=2.5.1
 
 FROM julia:${JULIA_VERSION}-bullseye as julia-base
 
-# Based upon `/etc/debian_version` the `ray:2.5.1` image is based on Debian Bullseye
-FROM rayproject/ray:${RAY_VERSION}-py310-aarch64 as ray-base
+# Based upon `/etc/debian_version` the `ray:2.5.1` image is based on Debian Bullseye.
+# No automatic multi-architecture support at the moment. Must specify `-aarch64` suffix
+# otherwise the default is x86_64 (https://github.com/ray-project/ray/tree/master/docker/ray#tags)
+FROM rayproject/ray:${RAY_VERSION}-py310 as ray-base
 
 # Install Julia
 COPY --link --from=julia-base /usr/local/julia /usr/local/julia
@@ -64,7 +66,6 @@ RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=1000,gid=100 \
 # Copy the shared ephemeral Julia depot into the image and remove any installed packages
 # not used by our Manifest.toml.
 RUN --mount=type=cache,target=/tmp/julia-cache,uid=1000,gid=100 \
-    echo $HOME && \
     rm ~/.julia && \
     mkdir ~/.julia && \
     cp -rp /tmp/julia-cache/* ~/.julia && \
@@ -94,19 +95,22 @@ RUN set -eux; \
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
 ENV JULIA_PROJECT /Ray.jl
+COPY --chown=ray . ${JULIA_PROJECT}/
 
-# Install and bulid ray_julia_jll
-COPY --chown=ray ray_julia_jll ${JULIA_PROJECT}/ray_julia_jll
-RUN echo "[c348cde4-7f22-4730-83d8-6959fb7a17ba]" > ~/.julia/artifacts/Overrides.toml && \
-    echo "ray_julia = \"${JULIA_PROJECT}/ray_julia_jll/deps/bazel-bin\"" >> ~/.julia/artifacts/Overrides.toml
-RUN --mount=type=cache,target=~/.cache,uid=1000,gid=100 \
-    julia --project=${JULIA_PROJECT}/ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true)'
+# Setup ray_julia_jll
+RUN ln -s /mnt/bazel-cache ~/.cache/bazel
+RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+    julia --project=${JULIA_PROJECT}/ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' &&\
+    cp -rpL ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-bin ${JULIA_PROJECT}/ray_julia_jll/deps/bin && \
+    rm -rf ${JULIA_PROJECT}/ray_julia_jll/deps/bazel-*
+COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
+[c348cde4-7f22-4730-83d8-6959fb7a17ba]
+ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
+EOF
 
-# COPY --chown=ray . ${JULIA_PROJECT}/
+# Note: The `timing` flag requires Julia 1.9
+RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 WORKDIR ${JULIA_PROJECT}
-
-# Note: The `timing` flag requires Julia 1.9
-# RUN julia -e 'using Pkg; Pkg.precompile("Ray"; timing=true); using Ray'
 

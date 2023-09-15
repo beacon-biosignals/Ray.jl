@@ -20,7 +20,8 @@ open(joinpath(build_dir, "WORKSPACE.bazel"), "w+") do io
     Mustache.render(io, template, dict)
 end
 
-isdir(ray_dir) || cd(dirname(ray_dir)) do
+# Clone "ray" repo when the directory is missing or empty
+isdir(ray_dir) && !isempty(readdir(ray_dir)) || cd(dirname(ray_dir)) do
     run(`git clone https://github.com/beacon-biosignals/ray $(basename(ray_dir))`)
 end
 
