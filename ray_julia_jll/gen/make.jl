@@ -47,19 +47,11 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
+    # e.g. ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version+1.9.2
+    host = BinaryPlatforms.HostPlatform()
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
 
-    # Read Project.toml
-    jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
-    jll_project = read_project(jll_project_toml)
-    jll_version = jll_project.version
-
-    # e.g. ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version+1.9.2
-    host = BinaryPlatforms.host_triplet()
-    tarball_name = "ray_julia.v$jll_version.$host.tar.gz"
-
     # Build JLL
-    # TODO: execute inside a python venv
     @info "Building ray_julia_jll on $host"
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
@@ -69,6 +61,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
     if compiled_assets != ASSETS
         throw(ArgumentError("Unexpected JLL assets found: $compiled_assets"))
     end
+
+    # Read Project.toml
+    jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
+    jll_project = read_project(jll_project_toml)
+    jll_version = jll_project.version
+
+    host_triplet = BinaryPlatforms.triplet(host)
+    tarball_name = "ray_julia.v$jll_version.$host_triplet.tar.gz"
 
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(tempdir(), tarball_name)
@@ -88,14 +88,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
         "ray_julia",
         tree_hash_sha1(tarball_path);
         platform=host,
-        download_info=[(artifact_url, sha256sum(tarball_path))],
+        download_info=[(string(artifact_url), sha256sum(tarball_path))],
     )
 
     # TODO: Ensure no other files are staged before committing
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     @info "Committing and pushing changes to Artifacts.toml on $branch"
 
-    message = "Generate artifact for v$(jll_version) on $(os(host))-$(arch(host))-julia-v$VERSION"
+    message = "Generate artifact for v$(jll_version) on $host_triplet"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
     Base.shred!(LibGit2.CredentialPayload()) do credentials
