@@ -108,6 +108,10 @@ COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
 EOF
 
+RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+    cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python && \
+    pip install --verbose .
+
 # Note: The `timing` flag requires Julia 1.9
 RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
