@@ -24,7 +24,7 @@ end
 
 @testset "RuntimeEnv" begin
     @testset "defaults" begin
-        runtime_env = RuntimeEnv()
+        runtime_env = Ray.RuntimeEnv()
         @test runtime_env.project == Ray.project_dir()
         @test runtime_env.package_imports == Expr(:block)
     end
