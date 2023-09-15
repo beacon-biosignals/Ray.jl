@@ -1,4 +1,5 @@
 using Aqua
+using Base64: Base64DecodePipe
 using CxxWrap: CxxPtr, StdVector
 using CxxWrap.StdLib: UniquePtr
 using Ray
