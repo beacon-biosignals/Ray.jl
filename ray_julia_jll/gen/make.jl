@@ -44,7 +44,6 @@ const URL_REGEX = r"""
 $
 """x
 
-
 function create_tarball(dir, tarball)
     return open(GzipCompressorStream, tarball, "w") do tar
         Tar.create(dir, tar)
@@ -73,7 +72,6 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-
 if abspath(PROGRAM_FILE) == @__FILE__
 
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
@@ -89,6 +87,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Build JLL
     # TODO: execute inside a python venv
+    @info "Building ray_julia_jll on $host_platform"
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
@@ -100,7 +99,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(tempdir(), tarball_name)
-
     create_tarball(readlink(compiled_dir), tarball_path)
 
     pkg_http_url = "https://" * joinpath(m[:host], m[:path])
