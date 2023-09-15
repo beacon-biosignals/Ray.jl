@@ -1,4 +1,6 @@
+using Base64: base64encode
 using CxxWrap
+using JSON3: JSON3
 using Test
 using ray_julia_jll: ray_julia_jll
 
@@ -11,6 +13,7 @@ end
 @testset "ray_julia_jll.jl" begin
     include("buffer.jl")
     include("function_descriptor.jl")
+    include("address.jl")
 
     setup_ray_head_node() do
         # GCS client only needs head node

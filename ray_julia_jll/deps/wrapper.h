@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <google/protobuf/message.h>
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
