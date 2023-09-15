@@ -1,4 +1,4 @@
-using AWSS3: get_config, s3_put, S3Path
+using AWSS3: get_config, s3_put, s3_sign_url, S3Path
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
@@ -42,7 +42,7 @@ end
 function upload_to_s3(tarball)
     fp = joinpath(ARTIFACTS_PATH, basename(tarball))
     s3_put(get_config(fp), fp.bucket, fp.key, read(tarball))
-    return fp
+    return "https://$(fp.bucket).s3.us-east-2.amazonaws.com/$(fp.key)"
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -88,7 +88,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         "ray_julia",
         tree_hash_sha1(tarball_path);
         platform=host,
-        download_info=[(string(artifact_url), sha256sum(tarball_path))],
+        download_info=[(artifact_url, sha256sum(tarball_path))],
     )
 
     # TODO: Ensure no other files are staged before committing
