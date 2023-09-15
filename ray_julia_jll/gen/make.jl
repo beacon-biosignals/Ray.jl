@@ -75,6 +75,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     create_tarball(readlink(compiled_dir), tarball_path)
 
     @info "Uploading to $ARTIFACTS_PATH"
+    # TODO: have a rollback in case the changes below fail
     artifact_url = upload_to_s3(tarball_path)
 
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
