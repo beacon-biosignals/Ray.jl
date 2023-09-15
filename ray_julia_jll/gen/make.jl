@@ -92,6 +92,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     )
 
     # TODO: Ensure no other files are staged before committing
+    # TODO: Ensure no changes between HEAD~main except to Artifacts.toml
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     @info "Committing and pushing changes to Artifacts.toml on $branch"
 
