@@ -6,5 +6,6 @@ Rerunning for the same host/version will error unless the `ray_julia_jll` versio
 
 It is advised you run this within the python virtual environment associated with the root package:
 ```
-julia --project -e 'using Pkg; Pkg.develop(path=".."); include("make.jl")'
+julia --project -e 'using Pkg; Pkg.develop(path="..")'
+julia --project make.jl
 ```
