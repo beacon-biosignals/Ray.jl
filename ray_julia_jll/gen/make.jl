@@ -84,12 +84,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
     jll_version = jll_project.version
 
     # e.g. ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version+1.9.2
-    host_platform = BinaryPlatforms.host_triplet()
-    tarball_name = "ray_julia.v$jll_version.$host_platform.tar.gz"
+    host = BinaryPlatforms.host_triplet()
+    tarball_name = "ray_julia.v$jll_version.$host.tar.gz"
 
     # Build JLL
     # TODO: execute inside a python venv
-    @info "Building ray_julia_jll on $host_platform"
+    @info "Building ray_julia_jll on $host"
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
@@ -123,7 +123,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     @info "Committing and pushing changes to Artifacts.toml on $branch"
 
-    message = "Generate artifact for v$(jll_version) on $host_platform"
+    message = "Generate artifact for v$(jll_version) on $(os(host))-$(arch(host))-julia-v$VERSION"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
     Base.shred!(LibGit2.CredentialPayload()) do credentials
