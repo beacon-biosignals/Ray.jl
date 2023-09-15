@@ -9,7 +9,8 @@ using SHA: sha256
 using Tar: Tar
 using TOML: TOML
 
-const ARTIFACT_S3_BUCKET = "TODO"
+# TODO: change to public bucket
+const ARTIFACTS_PATH = "TODO"
 
 const ASSETS = Set(["external",
                     "julia_core_worker_lib.so-2.params",
@@ -74,6 +75,12 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
+function upload_to_s3(tarball)
+    fp = joinpath(ARTIFACTS_PATH, basename(tarball))
+    AWSS3.s3_put(AWSS3.get_config(fp), fp.bucket, fp.key, read(tarball))
+    return fp
+end
+
 if abspath(PROGRAM_FILE) == @__FILE__
 
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
@@ -103,8 +110,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tarball_path = joinpath(tempdir(), tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
 
-    artifact_url = joinpath(ARTIFACT_S3_BUCKET, jll_version, basename(tarball_path))
-    # TODO: upload_to_s3(artifact_url, tarball_path)
+    @info "Uploading to $ARTIFACTS_PATH"
+    artifact_url = upload_to_s3(tarball_path)
 
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
     host = Base.BinaryPlatforms.HostPlatform()
