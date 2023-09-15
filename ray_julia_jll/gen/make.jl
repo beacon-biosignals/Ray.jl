@@ -77,7 +77,6 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
 
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
-    pkg_url = remote_url(repo_path)
 
     # Read Project.toml
     jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
@@ -103,11 +102,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tarball_path = joinpath(tempdir(), tarball_name)
 
     create_tarball(readlink(compiled_dir), tarball_path)
-
-    m = match(URL_REGEX, pkg_url)
-    if m === nothing
-        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
-    end
 
     pkg_http_url = "https://" * joinpath(m[:host], m[:path])
     tag = "v$(jll_version)"
