@@ -91,6 +91,13 @@ RUN set -eux; \
     curl -sSLo bazel https://github.com/bazelbuild/bazelisk/releases/download/v1.18.0/bazelisk-linux-${ARCH} && \
     sudo install bazel /usr/local/bin
 
+# Install npm
+COPY --from=node:14-bullseye /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:14-bullseye /usr/local/bin/node /usr/local/bin/
+RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
+RUN node --version && \
+    npm --version
+
 # Copy over artifacts generated during the previous stages
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
@@ -110,10 +117,16 @@ EOF
 
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python && \
-    pip install --verbose .
+    python -m pip install --upgrade pip wheel setuptools && \
+    pip install .
+
+#RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+#    cd ${JULIA_PROJECT}/ray_julia_jll/deps/ray/python/ray/dashboard/client && \
+#    npm ci && \
+#    npm run build
 
 # Note: The `timing` flag requires Julia 1.9
-RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
+# RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 WORKDIR ${JULIA_PROJECT}
