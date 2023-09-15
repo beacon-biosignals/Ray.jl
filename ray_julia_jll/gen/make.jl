@@ -89,10 +89,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Build JLL
     # TODO: execute inside a python venv
-    # TODO: limit what we include in the tarball
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
+    # Limit what we include in tarball
     compiled_assets = Set(readdir(compiled_dir))
     if compiled_assets != ASSETS
         throw(ArgumentError("Unexpected JLL assets found: $compiled_assets"))
