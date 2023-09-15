@@ -132,6 +132,22 @@ function GetCoreWorker()
 end
 
 #####
+##### Message
+#####
+
+function ParseFromString(::Type{T}, str::AbstractString) where T <: Message
+    message = T()
+    ParseFromString(message, str)
+    return message
+end
+
+function JsonStringToMessage(::Type{T}, json::AbstractString) where T <: Message
+    message = T()
+    JsonStringToMessage(json, CxxPtr(message))
+    return message
+end
+
+#####
 ##### Buffer
 #####
 

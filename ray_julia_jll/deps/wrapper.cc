@@ -372,6 +372,8 @@ namespace jlcxx
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
     template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
+    template<> struct SuperType<rpc::Address> { typedef google::protobuf::Message type; };
+    template<> struct SuperType<rpc::ObjectReference> { typedef google::protobuf::Message type; };
     template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
     template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
@@ -556,21 +558,36 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
+    // Useful notes on wrapping protobuf messages:
+    // - `.proto` file syntax: https://protobuf.dev/programming-guides/proto3/
+    // - The protobuf syntax is compiled into C++ code and can be useful to inspect. For example:
+    //   "src/ray/protobuf/common.proto" is compiled into "bazel-out/*/bin/src/ray/protobuf/common.pb.h"
+
+    // class Message: public MessageLite
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message_lite/
+    mod.add_type<google::protobuf::Message>("Message")
+        .method("SerializeAsString", &google::protobuf::Message::SerializeAsString)
+        .method("ParseFromString", &google::protobuf::Message::ParseFromString);
+
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.util.json_util/
+    mod.method("JsonStringToMessage", [](const std::string json, google::protobuf::Message *message) {
+        google::protobuf::util::JsonStringToMessage(json, message);
+    });
+    mod.method("MessageToJsonString", [](const google::protobuf::Message &message) {
+        std::string json;
+        google::protobuf::util::MessageToJsonString(message, &json);
+        return json;
+    });
+
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
-    mod.add_type<rpc::Address>("Address")
-        .constructor<>()
-        .method("SerializeAsString", &rpc::Address::SerializeAsString)
-        .method("ParseFromString", &rpc::Address::ParseFromString)
-        .method("MessageToJsonString", [](const rpc::Address &addr) {
-            std::string json;
-            google::protobuf::util::MessageToJsonString(addr, &json);
-            return json;
-        });
+    mod.add_type<rpc::Address>("Address", jlcxx::julia_base_type<google::protobuf::Message>())
+        .constructor<>();
 
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
-    mod.add_type<rpc::ObjectReference>("ObjectReference");
+    mod.add_type<rpc::ObjectReference>("ObjectReference", jlcxx::julia_base_type<google::protobuf::Message>());
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
     // class RayObject
