@@ -42,7 +42,7 @@ end
 function upload_to_s3(tarball)
     fp = joinpath(ARTIFACTS_PATH, basename(tarball))
     s3_put(get_config(fp), fp.bucket, fp.key, read(tarball))
-    return "https://$(fp.bucket).s3.us-east-2.amazonaws.com/$(fp.key)"
+    return s3_sign_url(fp.bucket, fp.key)  # TODO: only temporary for local testing
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
