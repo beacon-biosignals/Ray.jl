@@ -1,5 +1,4 @@
 [deps]
-AWS = "fbe9abb3-538b-5e4e-ba9e-bc94f4f92ebc"
 AWSS3 = "1c724243-ef5b-51ab-93f4-b0a88ac62a95"
 Artifacts = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
