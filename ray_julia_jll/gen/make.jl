@@ -91,6 +91,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         download_info=[(artifact_url, sha256sum(tarball_path))],
     )
 
+    host_wrapper = joinpath(repo_path, "ray_julia_jll", "src", "wrappers", "$host_triplet.jl")
+    cp("wrapper.jl.tmp", host_wrapper; force=true)
+
     # TODO: Ensure no other files are staged before committing
     # TODO: Ensure no changes between HEAD~main except to Artifacts.toml
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
@@ -103,7 +106,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
         LibGit2.with(LibGit2.GitRepo(repo_path)) do repo
 
             # TODO: This allows empty commits
-            LibGit2.add!(repo, joinpath("ray_julia_jll", basename(artifacts_toml)))
+            LibGit2.add!(artifacts_toml)
+            LibGit2.add!(host_wrapper)
             LibGit2.commit(repo, message)
 
             # Same as "refs/heads/$branch" but fails if branch doesn't exist locally
