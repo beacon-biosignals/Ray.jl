@@ -61,7 +61,8 @@ end
 # https://github.com/beacon-biosignals/Ray.jl/issues/57
 function _serialize(job_config::JobConfig)
     job_config_json = JSON3.write(json_dict(job_config))
-    return ray_jll.serialize_job_config_json(job_config_json)
+    rpc_job_config = ray_jll.JsonStringToMessage(ray_jll.JobConfig, job_config_json)
+    return ray_jll.SerializeAsString(rpc_job_config)
 end
 
 function process_import_statements(ex::Expr)
