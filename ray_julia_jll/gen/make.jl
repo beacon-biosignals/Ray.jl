@@ -1,10 +1,10 @@
-using AWSS3
+using AWSS3: get_config, s3_put
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
+using Pkg
 using Pkg.Artifacts: bind_artifact!
 using Pkg.Types: read_project
-using Pkg
 using SHA: sha256
 using Tar: Tar
 using TOML: TOML
@@ -18,34 +18,6 @@ const ASSETS = Set(["external",
                     "julia_core_worker_lib.so.runfiles_manifest",
                     "julia_core_worker_lib.so",
                     "julia_core_worker_lib.so.runfiles"])
-
-# Parse "GIT URLs" syntax (URLs and a scp-like syntax). For details see:
-# https://git-scm.com/docs/git-clone#_git_urls_a_id_urls_a
-# Note that using a Regex like this is inherently insecure with regards to its
-# handling of passwords; we are unable to deterministically and securely erase
-# the passwords from memory after use.
-# TODO: reimplement with a Julian parser instead of leaning on this regex
-const URL_REGEX = r"""
-^(?:(?<scheme>ssh|git|https?)://)?+
-(?:
-    (?<user>.*?)
-    (?:\:(?<password>.*?))?@
-)?
-(?<host>[A-Za-z0-9\-\.]+)
-(?(<scheme>)
-    # Only parse port when not using scp-like syntax
-    (?:\:(?<port>\d+))?
-    /?
-    |
-    :?
-)
-(?<path>
-    # Require path to be preceded by '/'. Alternatively, ':' when using scp-like syntax.
-    (?<=(?(<scheme>)/|:))
-    .*
-)?
-$
-"""x
 
 function create_tarball(dir, tarball)
     return open(GzipCompressorStream, tarball, "w") do tar
@@ -67,17 +39,9 @@ function sha256sum(tarball_path)
     end
 end
 
-function remote_url(repo_root::AbstractString, name::AbstractString="origin")
-    return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
-        LibGit2.with(LibGit2.lookup_remote(repo, name)) do remote
-            LibGit2.url(remote)
-        end
-    end
-end
-
 function upload_to_s3(tarball)
     fp = joinpath(ARTIFACTS_PATH, basename(tarball))
-    AWSS3.s3_put(AWSS3.get_config(fp), fp.bucket, fp.key, read(tarball))
+    s3_put(get_config(fp), fp.bucket, fp.key, read(tarball))
     return fp
 end
 
