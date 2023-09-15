@@ -105,10 +105,12 @@ ENV JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
 RUN sudo mkdir -p ${JULIA_PROJECT} && \
     sudo chown ray ${JULIA_PROJECT}
 
-# Install custom ray CLI which supports the Julia language
-# Since the ray build writes some content into the ray repo we need to be careful to
-# preserve this repo as otherwise the preserved Bazel cache state can result in build
-# failures (https://github.com/ray-project/ray/issues/13826).
+# Install custom Ray CLI which supports the Julia language
+# The Ray Bazel build includes some instructions which copy content into the repo.
+# If the Ray repo and Bazel cache become out-of-sync you can enounter build failures
+# (https://github.com/ray-project/ray/issues/13826). In order to avoid these failures
+# on subsequent Docker builds we'll always clear the Bazel cache when performing a
+# fresh clone of the Ray repository.
 ENV RAY_ROOT=/ray
 ARG RAY_COMMIT=0155184
 RUN sudo mkdir -p ${RAY_ROOT} && \
@@ -119,13 +121,14 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     git --git-dir=${RAY_ROOT}/.git checkout -q ${RAY_COMMIT} && \
     mkdir -p ${JLL_JULIA_PROJECT}/deps && \
     ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray  && \
+    cd ${JLL_JULIA_PROJECT}/deps/ray && \
+    bazel clean --expunge && \
     cd ${JLL_JULIA_PROJECT}/deps/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
     cd ${JLL_JULIA_PROJECT}/deps/ray/python && \
-    pip install --verbose .
-
-RUN rm -rf ${JLL_JULIA_PROJECT}
+    pip install --verbose . && \
+    rm -rf ${JLL_JULIA_PROJECT}
 
 # Copy over artifacts generated during the previous stages
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
