@@ -7,8 +7,6 @@ using Pkg
 using SHA: sha256
 using Tar: Tar
 using TOML: TOML
-using URIs: URI
-using ghr_jll: ghr
 
 const ASSETS = Set(["external",
                     "julia_core_worker_lib.so-2.params",
@@ -16,12 +14,6 @@ const ASSETS = Set(["external",
                     "julia_core_worker_lib.so.runfiles_manifest",
                     "julia_core_worker_lib.so",
                     "julia_core_worker_lib.so.runfiles"])
-
-const GH_RELEASE_ASSET_PATH_REGEX = r"""
-    ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
-    releases/download/
-    (?<tag>[^/]+)/(?<file_name>[^/]+)$
-    """x
 
 # Parse "GIT URLs" syntax (URLs and a scp-like syntax). For details see:
 # https://git-scm.com/docs/git-clone#_git_urls_a_id_urls_a
@@ -86,68 +78,8 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-function upload_to_github_release(
-    archive_path::AbstractString,
-    archive_url::AbstractString,
-    commit;
-    kwargs...
-)
-    return upload_to_github_release(archive_path, parse(URI, artifact_url), commit; kwargs...)
-end
-
-# TODO: Does this work properly with directories?
-function upload_to_github_release(archive_path::AbstractString, archive_uri::URI, commit; kwargs...)
-    # uri = parse(URI, artifact_url)
-    if archive_uri.host != "github.com"
-        throw(ArgumentError("Artifact URL is not for github.com: $(archive_uri)"))
-    end
-
-    m = match(GH_RELEASE_ASSET_PATH_REGEX, archive_uri.path)
-    if m === nothing
-        throw(ArgumentError(
-            "Artifact URL is not a GitHub release asset path: $(archive_uri)"
-        ))
-    end
-
-    # The `ghr` utility uses the local file name for the release asset. In order to have
-    # have the asset match the specified URL we'll temporarily rename the file.
-    org_archive_name = nothing
-    if basename(archive_path) != m[:file_name]
-        org_archive_name = basename(archive_path)
-        archive_path = mv(archive_path, joinpath(dirname(archive_path), m[:file_name]))
-    end
-
-    upload_to_github_release(m[:owner], m[:repo_name], commit, m[:tag], archive_path; kwargs...)
-
-    # Rename the archive back to the original name
-    if org_archive_name !== nothing
-        mv(archive_path, joinpath(dirname(archive_path), org_archive_name))
-    end
-
-    return nothing
-end
-
-
-function upload_to_github_release(owner, repo_name, commit, tag, path; token=ENV["GITHUB_TOKEN"])
-    # Based on: https://github.com/JuliaPackaging/BinaryBuilder.jl/blob/d40ec617d131a1787851559ef1a9f04efce19f90/src/AutoBuild.jl#L487
-    # TODO: Passing in a directory path uploads multiple assets
-    # TODO: Would be nice to perform parallel uploads
-    cmd = ```
-        $(ghr()) \
-        -owner $owner \
-        -repository $repo_name \
-        -commitish $commit \
-        -token $token \
-        $tag $path
-    ```
-
-    run(cmd)
-end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-
-    # Check for this now before we spend any time building the JLL
-    !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
     pkg_url = remote_url(repo_path)
@@ -220,6 +152,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
             LibGit2.push(repo; refspecs, credentials)
         end
     end
-
-    upload_to_github_release(tarball_path, artifact_url, branch)
 end
