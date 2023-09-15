@@ -104,6 +104,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     create_tarball(readlink(compiled_dir), tarball_path)
 
     artifact_url = joinpath(ARTIFACT_S3_BUCKET, jll_version, basename(tarball_path))
+    # TODO: upload_to_s3(artifact_url, tarball_path)
 
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
     host = Base.BinaryPlatforms.HostPlatform()
@@ -119,8 +120,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     )
 
     # TODO: Ensure no other files are staged before committing
-    @info "Committing and pushing changes to Artifacts.toml"
-    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))  # TODO: set to main
+    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
+    @info "Committing and pushing changes to Artifacts.toml on $branch"
+
     message = "Generate artifact for v$(jll_version) on $host_platform"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
