@@ -1,3 +1,4 @@
+using AWSS3
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
@@ -47,12 +48,6 @@ $
 function create_tarball(dir, tarball)
     return open(GzipCompressorStream, tarball, "w") do tar
         Tar.create(dir, tar)
-    end
-end
-
-function artifact_checksums(tarball::AbstractString)
-    return open(tarball, "r") do io
-        artifact_checksums(io)
     end
 end
 
