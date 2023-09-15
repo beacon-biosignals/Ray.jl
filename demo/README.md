@@ -26,5 +26,6 @@ I've noticed that the Ray CLI we build from source is missing the `ray job` subc
 Next submit the job. Be sure to not put the virtual environment inside the demo directory as this results in unnecessary data being transferred to the cluster and may cause your job to fail:
 
 ```sh
+source demo-venv/bin/activate
 ray job submit --address http://localhost:8265 --working-dir demo -- python demo.py
 ```
