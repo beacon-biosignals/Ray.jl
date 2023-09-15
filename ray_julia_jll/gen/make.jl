@@ -1,4 +1,4 @@
-using AWSS3: get_config, s3_put
+using AWSS3: get_config, s3_put, S3Path
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
