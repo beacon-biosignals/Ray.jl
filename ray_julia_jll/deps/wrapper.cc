@@ -469,8 +469,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
     mod.add_type<JobID>("JobID")
-        .method("ToInt", &JobID::ToInt)
-        .method("FromInt", &JobID::FromInt);
+        .method("JobIDFromInt", &JobID::FromInt)
+        .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
     mod.add_type<TaskID>("TaskID")

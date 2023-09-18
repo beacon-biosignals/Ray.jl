@@ -98,7 +98,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     # When the driver is executed on a cluster the job ID is specified via ENV variable
     # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L365-L370
     job_id = if haskey(ENV, "RAY_JOB_ID")
-        ray_jll.FromHex(ray_jll.ObjectID, ENV["RAY_JOB_ID"])
+        ray_jll.FromInt(ray_jll.JobID, parse(UInt32, ENV["RAY_JOB_ID"]; base=16))
     else
         ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
     end
@@ -123,7 +123,7 @@ end
 Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
 create tasks.
 """
-get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))::UInt32
 
 """
     get_task_id() -> String
