@@ -130,6 +130,7 @@ function upload_to_github_release(owner, repo_name, commit, tag, path; token=ENV
         -repository $repo_name \
         -commitish $commit \
         -token $token \
+        -n $tag \
         -draft \
         -prerelease \
         $tag $path
