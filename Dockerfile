@@ -149,8 +149,8 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
 
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
-    mkdir -p "${RAY_GEN_CACHE_DIR}" && \
-    cp -rfp . "${RAY_GEN_CACHE_DIR}" && \
+    mkdir -p ${RAY_GEN_CACHE_DIR} && \
+    cp -rfp ${RAY_ROOT} ${RAY_GEN_CACHE_DIR} && \
 
     # Remove directory to avoid conflict with a future COPY
     rm -rf ${JLL_JULIA_PROJECT}
