@@ -143,6 +143,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
     repo_path = abspath(joinpath(@__DIR__, "..", ".."))
+    pkg_url = remote_url(repo_path)
 
     # Build JLL
     @info "Building ray_julia_jll on $host"
@@ -166,6 +167,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(tempdir(), tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
+
+    m = match(URL_REGEX, pkg_url)
+    if m === nothing
+        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
+    end
+
+    pkg_http_url = "https://" * joinpath(m[:host], m[:path])
+    tag = "v$(jll_version)"
+    artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
 
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
     host = Base.BinaryPlatforms.HostPlatform()
