@@ -97,7 +97,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     # When the driver is executed on a cluster the job ID is specified via ENV variable
     # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L365-L370
-    job_id = get(ENV, "RAY_JOB_ID") do
+    job_id = Base.get(ENV, "RAY_JOB_ID") do
         ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
     end
 
