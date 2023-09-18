@@ -13,6 +13,7 @@ const ASSETS = Set(["external",
                     "_objs",
                     "julia_core_worker_lib.so.runfiles_manifest",
                     "julia_core_worker_lib.so",
+                    "julia_core_worker_lib.so.cppmap",
                     "julia_core_worker_lib.so.runfiles"])
 
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
@@ -161,7 +162,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     jll_project = read_project(jll_project_toml)
     jll_version = jll_project.version
 
-    host_triplet = BinaryPlatforms.triplet(host)
+    host_triplet = BinaryPlatforms.host_triplet()
     tarball_name = "ray_julia.v$jll_version.$host_triplet.tar.gz"
 
     @info "Creating tarball $tarball_name"
@@ -177,5 +178,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tag = "v$(jll_version)"
     artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
 
+    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     upload_to_github_release(tarball_path, artifact_url, branch)
 end
