@@ -129,6 +129,8 @@ function upload_to_github_release(owner, repo_name, commit, tag, path; token=ENV
         -repository $repo_name \
         -commitish $commit \
         -token $token \
+        -draft \
+        -prerelease \
         $tag $path
     ```
 
@@ -144,7 +146,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     pkg_url = remote_url(repo_path)
 
     # Build JLL
-    @info "Building ray_julia_jll on $host"
+    @info "Building ray_julia_jll..."
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
