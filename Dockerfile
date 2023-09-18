@@ -117,7 +117,7 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     --mount=type=cache,sharing=locked,target=${RAY_GEN_CACHE_DIR},uid=1000,gid=100 \
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
-    git --git-dir=${RAY_ROOT}/.git checkout -q ${RAY_COMMIT} && \
+    git -C ${RAY_ROOT} checkout ${RAY_COMMIT} && \
     mkdir -p ${JLL_JULIA_PROJECT}/deps && \
     ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray && \
     cd ${JLL_JULIA_PROJECT}/deps/ray && \
@@ -132,8 +132,7 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
     # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
     # saving/restoring these files we can work around this.
-    if [ -n "$(ls -A ${RAY_GEN_CACHE_DIR})" ]; then \
-        dest=$(pwd) && \
+    if [ -d ${RAY_GEN_CACHE_DIR}/.git ]; then \
         cd ${RAY_GEN_CACHE_DIR} && \
         cp -rp --parents \
             python/ray/_raylet.so \
@@ -141,7 +140,7 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
             python/ray/serve/generated \
             python/ray/core/src/ray/raylet/raylet \
             python/ray/core/src/ray/gcs \
-            $dest && \
+            ${RAY_ROOT} && \
         cd -; \
     fi && \
     #
