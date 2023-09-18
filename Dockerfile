@@ -101,13 +101,13 @@ RUN node --version && \
     npm --version
 
 ENV JULIA_PROJECT /Ray.jl
-ENV JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
+ARG JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
 RUN sudo mkdir -p ${JULIA_PROJECT} && \
     sudo chown ray ${JULIA_PROJECT}
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-ENV RAY_ROOT=/ray
+ARG RAY_ROOT=/ray
 ARG RAY_COMMIT=63da369ba0
 ARG RAY_GEN_CACHE_DIR=/mnt/ray-generated
 ARG RAY_CACHE_CLEAR=false
@@ -165,7 +165,7 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
 # Setup ray_julia_jll
-ENV JLL_ROOT=/ray_julia_jll
+ARG JLL_ROOT=/ray_julia_jll
 COPY --chown=ray ray_julia_jll ${JLL_ROOT}
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     set -eux && \
