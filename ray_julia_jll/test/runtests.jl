@@ -20,6 +20,7 @@ end
         include("gcs_client.jl")
         setup_core_worker() do
             include("put_get.jl")
+            include("reference_counting.jl")
         end
     end
 end
