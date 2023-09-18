@@ -1,4 +1,4 @@
-using ray_julia_jll: initialize_driver, shutdown_driver, FromInt
+using ray_julia_jll: initialize_driver, shutdown_driver, FromInt, JobID
 
 function setup_ray_head_node(body)
     prestarted = success(`ray status`)
@@ -34,7 +34,7 @@ function setup_core_worker(body)
                       "127.0.0.1:6379",
                       "127.0.0.1",
                       node_manager_port(),
-                      FromInt(1234),
+                      FromInt(JobID, 1234),
                       "/tmp/ray/session_latest/logs/",
                       "")
     try
