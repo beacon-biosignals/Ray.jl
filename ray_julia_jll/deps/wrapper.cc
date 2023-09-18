@@ -395,6 +395,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    // Resource map type wrapper
     mod.add_type<std::unordered_map<std::string, double>>("CxxMapStringDouble");
     mod.method("_setindex!", [](std::unordered_map<std::string, double> &map,
                                 double val,
@@ -674,6 +675,24 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return std::unique_ptr<TaskArgByValue>(t);
         });
 
+    // ObjectID reference count map wrapper
+    typedef std::unordered_map<ObjectID, std::pair<size_t, size_t>> ReferenceCountMap;
+    mod.add_type<ReferenceCountMap>("CxxMapObjectIDPairIntInt");
+    mod.method("_keys", [](ReferenceCountMap &map) {
+        std::vector<ObjectID> keys(map.size());
+        for (auto kv : map) {
+            keys.push_back(kv.first);
+        }
+        return keys;
+    });
+    mod.method("_getindex", [](ReferenceCountMap &map, ObjectID &key) {
+        auto val = map[key];
+        std::vector<size_t> retval;
+        retval.push_back(val.first);
+        retval.push_back(val.second);
+        return retval;
+    });
+
     // class CoreWorker
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
@@ -688,7 +707,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("AddLocalReference", [](ray::core::CoreWorker &worker, ObjectID &object_id) {
             return worker.AddLocalReference(object_id);
         })
-        .method("RemoveLocalReference", &ray::core::CoreWorker::RemoveLocalReference);
+        .method("RemoveLocalReference", &ray::core::CoreWorker::RemoveLocalReference)
+        .method("GetAllReferenceCounts", &ray::core::CoreWorker::GetAllReferenceCounts);
     mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("_submit_task", &_submit_task);
