@@ -683,7 +683,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
         .method("GetOwnershipInfo", &ray::core::CoreWorker::GetOwnershipInfo)
         .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs)
-        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture);
+        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture)
+        .method("AddLocalReference", &ray::core::CoreWorker::AddLocalReference)
+        .method("RemoveLocalReference", &ray::core::CoreWorker::RemoveLocalReference);
     mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("_submit_task", &_submit_task);

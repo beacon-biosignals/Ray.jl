@@ -7,7 +7,7 @@ mutable struct ObjectRef
                        add_local_ref=true)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
-            ray_jll.add_local_reference(worker, oid)
+            ray_jll.AddLocalReference(worker, oid)
         end
         objref = new(oid, owner_address, serialized_object_status)
         return finalizer(objref) do objref
@@ -23,7 +23,7 @@ end
 function finalize_object_ref(obj::ObjectRef)
     @debug "Removing local ref for ObjectID $(obj.oid)"
     worker = ray_jll.GetCoreWorker()
-    ray_jll.remove_local_reference(worker, obj.oid)
+    ray_jll.RemoveLocalReference(worker, obj.oid)
     return nothing
 end
 
