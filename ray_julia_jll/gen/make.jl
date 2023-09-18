@@ -2,11 +2,9 @@ using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
 using Pkg
-using Pkg.Artifacts: bind_artifact!
 using Pkg.Types: read_project
 using SHA: sha256
 using Tar: Tar
-using TOML: TOML
 using URIs: URI
 using ghr_jll: ghr
 
@@ -176,48 +174,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     pkg_http_url = "https://" * joinpath(m[:host], m[:path])
     tag = "v$(jll_version)"
     artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
-
-    # https://github.com/JuliaLang/Pkg.jl/issues/3623
-    host = Base.BinaryPlatforms.HostPlatform()
-    delete!(host.compare_strategies, "libstdcxx_version")
-
-    artifacts_toml = joinpath(repo_path, "ray_julia_jll", "Artifacts.toml")
-    bind_artifact!(
-        artifacts_toml,
-        "ray_julia",
-        tree_hash_sha1(tarball_path);
-        platform=host,
-        download_info=[(artifact_url, sha256sum(tarball_path))],
-    )
-
-    host_wrapper = joinpath(repo_path, "ray_julia_jll", "src", "wrappers", "$host_triplet.jl")
-    cp("wrapper.jl.tmp", host_wrapper; force=true)
-
-    # TODO: Ensure no other files are staged before committing
-    # TODO: Ensure no changes between HEAD~main except to Artifacts.toml
-    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
-    @info "Committing and pushing changes to Artifacts.toml on $branch"
-
-    message = "Generate artifact for v$(jll_version) on $host_triplet"
-
-    # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
-    Base.shred!(LibGit2.CredentialPayload()) do credentials
-        LibGit2.with(LibGit2.GitRepo(repo_path)) do repo
-
-            # TODO: This allows empty commits
-            LibGit2.add!(artifacts_toml)
-            LibGit2.add!(host_wrapper)
-            LibGit2.commit(repo, message)
-
-            # Same as "refs/heads/$branch" but fails if branch doesn't exist locally
-            branch_ref = LibGit2.lookup_branch(repo, branch)
-            refspecs = [LibGit2.name(branch_ref)]
-
-            # TODO: Expecting users to have their branch up to date. Pushing outdated
-            # branches will fail like normal git CLI
-            LibGit2.push(repo; refspecs, credentials)
-        end
-    end
 
     upload_to_github_release(tarball_path, artifact_url, branch)
 end
