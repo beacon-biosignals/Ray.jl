@@ -103,10 +103,16 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
     end
 
+    session_name = ""
+    if haskey(ENV, "RAY_JOB_CONFIG_JSON_ENV_VAR")
+        job_config_alt = JSON3.read(ENV["RAY_JOB_CONFIG_JSON_ENV_VAR"])
+        job_config_alt.metadata.job_name
+    end
+
     job_config = JobConfig(RuntimeEnvInfo(runtime_env))
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
+    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config, session_name)
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
