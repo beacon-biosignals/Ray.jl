@@ -108,7 +108,7 @@ RUN sudo mkdir -p ${JULIA_PROJECT} && \
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
 ENV RAY_ROOT=/ray
-ARG RAY_COMMIT=0155184
+ARG RAY_COMMIT=63da369ba0
 ARG RAY_GEN_CACHE_DIR=/mnt/ray-generated
 RUN sudo mkdir -p ${RAY_ROOT} && \
     sudo chown ray ${RAY_ROOT}
