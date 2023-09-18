@@ -153,7 +153,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # Limit what we include in tarball
     compiled_assets = Set(readdir(compiled_dir))
-    if compiled_assets != ASSETS
+    if compiled_assets ⊈ ASSETS
         throw(ArgumentError("Unexpected JLL assets found: $compiled_assets"))
     end
 
