@@ -2,10 +2,33 @@ mutable struct ObjectRef
     oid::ray_jll.ObjectIDAllocated
     owner_address::Union{ray_jll.AddressAllocated,Nothing}
     serialized_object_status::String
+
+    function ObjectRef(oid, owner_address, serialized_object_status;
+                       add_local_ref=true)
+        if add_local_ref
+            worker = ray_jll.GetCoreWorker()
+            ray_jll.add_local_reference(worker, oid)
+        end
+        objref = new(oid, owner_address, serialized_object_status)
+        return finalizer(objref) do objref
+            # putting finalizer behind `@async` may not be necessary since docs
+            # suggest that you should `ccall` IO functions.  But doing it this
+            # way allows us to do things like debug logging...
+            errormonitor(@async finalize_object_ref(objref))
+            return nothing
+        end
+    end
 end
 
-ObjectRef(oid::ray_jll.ObjectIDAllocated) = ObjectRef(oid, nothing, "")
-ObjectRef(hex_str::AbstractString) = ObjectRef(ray_jll.FromHex(ray_jll.ObjectID, hex_str))
+function finalize_object_ref(obj::ObjectRef)
+    @debug "Removing local ref for ObjectID $(obj.oid)"
+    worker = ray_jll.GetCoreWorker()
+    ray_jll.remove_local_reference(worker, obj.oid)
+    return nothing
+end
+
+ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...) = ObjectRef(oid, nothing, ""; kwargs...)
+ObjectRef(hex_str::AbstractString; kwargs...) = ObjectRef(ray_jll.FromHex(ray_jll.ObjectID, hex_str); kwargs...)
 hex_identifier(obj_ref::ObjectRef) = String(ray_jll.Hex(obj_ref.oid))
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
 
