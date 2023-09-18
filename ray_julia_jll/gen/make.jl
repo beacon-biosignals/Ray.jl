@@ -1,4 +1,3 @@
-using AWSS3: get_config, s3_put, s3_sign_url, S3Path
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
@@ -8,9 +7,6 @@ using Pkg.Types: read_project
 using SHA: sha256
 using Tar: Tar
 using TOML: TOML
-
-# TODO: change to public bucket
-const ARTIFACTS_PATH = "TODO"
 
 const ASSETS = Set(["external",
                     "julia_core_worker_lib.so-2.params",
@@ -37,12 +33,6 @@ function sha256sum(tarball_path)
     return open(tarball_path, "r") do tar
         bytes2hex(sha256(tar))
     end
-end
-
-function upload_to_s3(tarball)
-    fp = joinpath(ARTIFACTS_PATH, basename(tarball))
-    s3_put(get_config(fp), fp.bucket, fp.key, read(tarball))
-    return s3_sign_url(fp.bucket, fp.key)  # TODO: only temporary for local testing
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -73,10 +63,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(tempdir(), tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
-
-    @info "Uploading to $ARTIFACTS_PATH"
-    # TODO: have a rollback in case the changes below fail
-    artifact_url = upload_to_s3(tarball_path)
 
     # https://github.com/JuliaLang/Pkg.jl/issues/3623
     host = Base.BinaryPlatforms.HostPlatform()
