@@ -105,29 +105,54 @@ ENV JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
 RUN sudo mkdir -p ${JULIA_PROJECT} && \
     sudo chown ray ${JULIA_PROJECT}
 
-# Install custom Ray CLI which supports the Julia language
-# The Ray Bazel build includes some instructions which copy content into the repo.
-# If the Ray repo and Bazel cache become out-of-sync you can enounter build failures
-# (https://github.com/ray-project/ray/issues/13826). In order to avoid these failures
-# on subsequent Docker builds we'll always clear the Bazel cache when performing a
-# fresh clone of the Ray repository.
+# Install custom Ray CLI which supports the Julia language.
+# https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
 ENV RAY_ROOT=/ray
 ARG RAY_COMMIT=0155184
+ARG RAY_GEN_CACHE_DIR=/mnt/ray-generated
 RUN sudo mkdir -p ${RAY_ROOT} && \
     sudo chown ray ${RAY_ROOT}
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+    --mount=type=cache,sharing=locked,target=${RAY_GEN_CACHE_DIR},uid=1000,gid=100 \
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
     git --git-dir=${RAY_ROOT}/.git checkout -q ${RAY_COMMIT} && \
     mkdir -p ${JLL_JULIA_PROJECT}/deps && \
     ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray  && \
     cd ${JLL_JULIA_PROJECT}/deps/ray && \
-    bazel clean --expunge && \
+
+    # The Ray `BUILD.bazel` includes a bunch of `copy_to_workspace` rules which copy build output
+    # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
+    # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
+    # saving/restoring these files we can work around this.
+    if [ -d ${RAY_GEN_CACHE_DIR}/python ]; then \
+        dest=$(pwd) && \
+        cd ${RAY_GEN_CACHE_DIR} && \
+        cp -rp --parents \
+            python/ray/_raylet.so \
+            python/ray/core/generated \
+            python/ray/serve/generated \
+            python/ray/core/src/ray/raylet/raylet \
+            python/ray/core/src/ray/gcs \
+            $dest && \
+        cd -; \
+    fi && \
+
+    # Build the dashboard
     cd ${JLL_JULIA_PROJECT}/deps/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
+
+    # Build Ray for Python
     cd ${JLL_JULIA_PROJECT}/deps/ray/python && \
     pip install --verbose . && \
+
+    # By copying the entire Ray worktree we can easily restore missing files without having to
+    # delete the cache and build from scratch.
+    mkdir -p "${RAY_GEN_CACHE_DIR}" && \
+    cp -rfp . "${RAY_GEN_CACHE_DIR}" && \
+
+    # Remove directory to avoid conflict with a future COPY
     rm -rf ${JLL_JULIA_PROJECT}
 
 # Copy over artifacts generated during the previous stages
