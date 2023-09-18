@@ -1,5 +1,5 @@
 using Ray
 Ray.init()
 
-return_ref = Ray.submit_task(sum, (1, 1))
+return_ref = Ray.submit_task(max, (1, 2))
 @show Ray.get(return_ref)
