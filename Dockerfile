@@ -110,6 +110,7 @@ RUN sudo mkdir -p ${JULIA_PROJECT} && \
 ENV RAY_ROOT=/ray
 ARG RAY_COMMIT=63da369ba0
 ARG RAY_GEN_CACHE_DIR=/mnt/ray-generated
+ARG RAY_CACHE_CLEAR=false
 RUN sudo mkdir -p ${RAY_ROOT} && \
     sudo chown ray ${RAY_ROOT}
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
@@ -118,14 +119,20 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
     git --git-dir=${RAY_ROOT}/.git checkout -q ${RAY_COMMIT} && \
     mkdir -p ${JLL_JULIA_PROJECT}/deps && \
-    ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray  && \
+    ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray && \
     cd ${JLL_JULIA_PROJECT}/deps/ray && \
-
+    #
+    # Allow builders to clear just the Ray CLI cache.
+    if [ "${RAY_CACHE_CLEAR}" != "false" ]; then \
+        bazel clean --expunge && \
+        rm -rf ${RAY_GEN_CACHE_DIR}/*; \
+    fi && \
+    #
     # The Ray `BUILD.bazel` includes a bunch of `copy_to_workspace` rules which copy build output
     # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
     # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
     # saving/restoring these files we can work around this.
-    if [ -d ${RAY_GEN_CACHE_DIR}/python ]; then \
+    if [ -n "$(ls -A ${RAY_GEN_CACHE_DIR})" ]; then \
         dest=$(pwd) && \
         cd ${RAY_GEN_CACHE_DIR} && \
         cp -rp --parents \
@@ -137,21 +144,21 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
             $dest && \
         cd -; \
     fi && \
-
+    #
     # Build the dashboard
     cd ${JLL_JULIA_PROJECT}/deps/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
-
+    #
     # Build Ray for Python
     cd ${JLL_JULIA_PROJECT}/deps/ray/python && \
     pip install --verbose . && \
-
+    #
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
     mkdir -p ${RAY_GEN_CACHE_DIR} && \
-    cp -rfp ${RAY_ROOT} ${RAY_GEN_CACHE_DIR} && \
-
+    cp -rfp ${RAY_ROOT}/. ${RAY_GEN_CACHE_DIR} && \
+    #
     # Remove directory to avoid conflict with a future COPY
     rm -rf ${JLL_JULIA_PROJECT}
 
