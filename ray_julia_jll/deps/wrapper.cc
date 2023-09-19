@@ -8,8 +8,7 @@ void initialize_driver(
     int node_manager_port,
     JobID job_id,
     std::string logs_dir,
-    const std::string &serialized_job_config,
-    std::string session_name) {
+    const std::string &serialized_job_config) {
 
     // RAY_LOG_ENABLED(DEBUG);
 
@@ -28,7 +27,6 @@ void initialize_driver(
     options.raylet_ip_address = node_ip_address;
     options.metrics_agent_port = -1;
     options.driver_name = "julia_core_worker_test";
-    options.session_name = session_name;
 
     // `CoreWorkerProcess::Initialize` will create a `WorkerContext` (ray/core_worker/context.h) which
     // is populated with the `JobConfig` specified here.

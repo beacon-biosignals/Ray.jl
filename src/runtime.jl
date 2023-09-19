@@ -107,8 +107,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    session_name = ""
-    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config, session_name)
+    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
