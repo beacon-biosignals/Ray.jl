@@ -78,6 +78,25 @@
             @test !contains(stderr_logs, "Constructing CoreWorkerProcess")
         end
     end
+
+    @testset "job config metadata" begin
+        job_config_json = Dict(:metadata => Dict(:job_name => "test"))
+
+        json_str = withenv("RAY_JOB_CONFIG_JSON_ENV_VAR" => JSON3.write(job_config_json)) do
+             @process_eval begin
+                using Ray, ray_julia_jll, JSON3
+                Ray.init()
+                worker = ray_julia_jll.GetCoreWorker()
+                worker_context = ray_julia_jll.GetWorkerContext(worker)
+                job_config = ray_julia_jll.GetCurrentJobConfig(worker_context)
+                return String(ray_julia_jll.MessageToJsonString(job_config))
+            end
+        end
+
+        result = JSON3.read(json_str)
+        @test haskey(result, :metadata)
+        @test result[:metadata] == job_config_json[:metadata]
+    end
 end
 
 @testset "serialize_args" begin
