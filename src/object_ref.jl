@@ -1,22 +1,34 @@
 mutable struct ObjectRef
-    oid::ray_jll.ObjectIDAllocated
+    # oid::ray_jll.ObjectIDAllocated
+    oid_hex::String
     owner_address::Union{ray_jll.AddressAllocated,Nothing}
     serialized_object_status::String
 
-    function ObjectRef(oid, owner_address, serialized_object_status;
+    function ObjectRef(oid_hex, owner_address, serialized_object_status;
                        add_local_ref=true)
+        objref = new(oid_hex, owner_address, serialized_object_status)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
-            ray_jll.AddLocalReference(worker, oid)
+            ray_jll.AddLocalReference(worker, objref.oid)
         end
-        objref = new(oid, owner_address, serialized_object_status)
-        return finalizer(objref) do objref
-            # putting finalizer behind `@async` may not be necessary since docs
-            # suggest that you should `ccall` IO functions.  But doing it this
-            # way allows us to do things like debug logging...
-            errormonitor(@async finalize_object_ref(objref))
-            return nothing
-        end
+        # finalizer(f, object) returns object
+        return finalizer(finalize_object_ref, objref)
+    end
+end
+
+function finalize_object_ref(obj::ObjectRef)
+    @debug "Removing local ref for ObjectID $(obj.oid_hex)"
+    worker = ray_jll.GetCoreWorker()
+    oid = ray_jll.FromHex(ray_jll.ObjectID, obj.oid_hex)
+    ray_jll.RemoveLocalReference(worker, oid)
+    return nothing
+end
+
+function Base.getproperty(x::ObjectRef, prop::Symbol)
+    return if prop == :oid
+        ray_jll.FromHex(ray_jll.ObjectID, x.oid_hex)
+    else
+        getfield(x, prop)
     end
 end
 
@@ -37,16 +49,9 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
     return xcp
 end
 
-function finalize_object_ref(obj::ObjectRef)
-    @debug "Removing local ref for ObjectID $(obj.oid)"
-    worker = ray_jll.GetCoreWorker()
-    ray_jll.RemoveLocalReference(worker, obj.oid)
-    return nothing
-end
-
-ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...) = ObjectRef(oid, nothing, ""; kwargs...)
-ObjectRef(hex_str::AbstractString; kwargs...) = ObjectRef(ray_jll.FromHex(ray_jll.ObjectID, hex_str); kwargs...)
-hex_identifier(obj_ref::ObjectRef) = String(ray_jll.Hex(obj_ref.oid))
+ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
+ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
+hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
 
 function Base.hash(obj_ref::ObjectRef, h::UInt)
@@ -127,12 +132,11 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     owner_address_str = deserialize(s)
     serialized_object_status = deserialize(s)
 
-    object_id = ray_jll.FromHex(ray_jll.ObjectID, hex_str)
     owner_address = nothing
     if !isempty(owner_address_str)
         owner_address = ray_jll.Address()
         ray_jll.ParseFromString(owner_address, owner_address_str)
     end
 
-    return ObjectRef(object_id, owner_address, serialized_object_status)
+    return ObjectRef(hex_str, owner_address, serialized_object_status)
 end

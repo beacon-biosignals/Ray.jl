@@ -1,3 +1,5 @@
+# this runs inside setup_core_worker()
+
 function serialize_deserialize(x)
     io = IOBuffer()
     serialize(io, x)
@@ -26,4 +28,27 @@ end
         obj_ref2 = serialize_deserialize(obj_ref1)
         @test obj_ref1 == obj_ref2
     end
+end
+
+@testset "Local reference counting" begin
+    using ray_julia_jll: Hex
+    obj = Ray.put(nothing)
+    oid = obj.oid_hex
+
+    local_count(o::ObjectRef) = local_count(o.oid_hex)
+    local_count(oid_hex) = first(get(Ray.get_all_reference_counts(), oid_hex, 0))
+
+    @test local_count(obj) == 1
+
+    obj2 = deepcopy(obj)
+    @test local_count(obj) == 2
+
+    obj2 = nothing
+    GC.gc()
+    @test local_count(obj) == 1
+
+    obj = nothing
+    GC.gc()
+    @test local_count(oid) == 0
+    
 end
