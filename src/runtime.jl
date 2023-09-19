@@ -97,7 +97,17 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
-    job_config = JobConfig(RuntimeEnvInfo(runtime_env))
+    # When submitting a job via `ray job submit` this metadata includes the
+    # "job_submission_id" which lets Ray know that this driver is associated with a
+    # submission ID.
+    metadata = if haskey(ENV, "RAY_JOB_CONFIG_JSON_ENV_VAR")
+        json = JSON3.read(ENV["RAY_JOB_CONFIG_JSON_ENV_VAR"])
+        Dict(string(k) => v for (k, v) in json.metadata)
+    else
+        Dict()
+    end
+
+    job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
     ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
