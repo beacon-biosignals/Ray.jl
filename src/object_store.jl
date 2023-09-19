@@ -8,7 +8,9 @@ function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     ray_obj = ray_jll.RayObject(buffer)
-    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}()))
+    # `CoreWorker::Put` initializes the local ref count to 1
+    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}());
+                     add_local_ref=false)
 end
 
 put(obj_ref::ObjectRef) = obj_ref

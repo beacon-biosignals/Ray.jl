@@ -200,7 +200,9 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                              serialized_runtime_env_info,
                              resources)
     end
-    return ObjectRef(oid)
+    # CoreWorker::SubmitTask calls TaskManager::AddPendingTask which initializes
+    # the local ref count to 1, so we don't need to do that here.
+    return ObjectRef(oid; add_local_ref=false)
 end
 
 # Adapted from `prepare_args_internal`:
