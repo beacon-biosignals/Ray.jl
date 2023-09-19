@@ -143,11 +143,11 @@ Replace the `https://` URL with the approriate release asset URL.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
 python -m pip install --upgrade pip wheel
 cd ray_julia_jll/deps/ray/python
-pip install -e ".[default]" --verbose
+pip install ".[default]" --verbose
 cd -
 ```
 
-As with the pre-built wheels, if you don't need to status server/dashboard, you can omit the `[default]` and use `pip install -e . --verbose`.
+As with the pre-built wheels, if you don't need to status server/dashboard, you can omit the `[default]` and use `pip install . --verbose`.
 
 ### Validate installation
 
