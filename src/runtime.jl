@@ -98,7 +98,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
     metadata = if haskey(ENV, "RAY_JOB_CONFIG_JSON_ENV_VAR")
-        JSON3.read(ENV["RAY_JOB_CONFIG_JSON_ENV_VAR"])["metadata"]
+        json = JSON3.read(ENV["RAY_JOB_CONFIG_JSON_ENV_VAR"])
+        Dict(string(k) => v for (k, v) in json.metadata)
     else
         Dict{String,String}()
     end
