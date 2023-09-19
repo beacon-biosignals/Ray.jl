@@ -147,7 +147,7 @@ pip install ".[default]" --verbose
 cd -
 ```
 
-As with the pre-built wheels, if you don't need to status server/dashboard, you can omit the `[default]` and use `pip install . --verbose`.
+As with the pre-built wheels, if you don't need to status server/dashboard, you can omit the `[default]` and use `pip install . --verbose`.  If you intend to edit any python source files, use `pip install -e` to install in "editable" mode.
 
 ### Validate installation
 
