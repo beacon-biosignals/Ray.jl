@@ -17,15 +17,18 @@ libcxxwrap_julia_jll = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
 [compat]
 CxxWrap = "0.13.4"
 JLLWrappers = "1.2.0"
+JSON3 = "1"
 Mustache = "1"
 TOML = "1"
 julia = "1.6"
 libcxxwrap_julia_jll = "0.9.7"
 
 [extras]
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [targets]
-test = ["Serialization", "Test", "UUIDs"]
+test = ["Base64", "JSON3", "Serialization", "Test", "UUIDs"]

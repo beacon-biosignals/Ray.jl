@@ -333,19 +333,6 @@ Status report_error(std::string *application_error,
     return worker.PushError(jobid, "task", err_msg, timestamp);
 }
 
-// Serialize a JobConfig protobuf message into its serialized string equivalent by constructing it
-// via it's JSON representation of the message. Most likely there is a better way to construct
-// the protobuf message but this is works for now.
-std::string serialize_job_config_json(const std::string &job_config_json) {
-    std::shared_ptr<rpc::JobConfig> job_config = nullptr;
-    job_config.reset(new rpc::JobConfig());
-    RAY_CHECK(google::protobuf::util::JsonStringToMessage(job_config_json,
-                                                          job_config.get()).ok());
-
-    return job_config->SerializeAsString();
-}
-
-// Investigating OverrideTaskOrActorRuntimeEnvInfo
 // Useful in validating that the `serialized_job_config` set in `initialize_driver` is set. An invalid
 // string will not be set and the returned value here will be empty.
 std::string get_job_serialized_runtime_env() {
@@ -371,6 +358,9 @@ namespace jlcxx
     // Needed for upcasting
     template<> struct SuperType<LocalMemoryBuffer> { typedef Buffer type; };
     template<> struct SuperType<JuliaFunctionDescriptor> { typedef FunctionDescriptorInterface type; };
+    template<> struct SuperType<rpc::Address> { typedef google::protobuf::Message type; };
+    template<> struct SuperType<rpc::JobConfig> { typedef google::protobuf::Message type; };
+    template<> struct SuperType<rpc::ObjectReference> { typedef google::protobuf::Message type; };
     template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
     template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
@@ -555,21 +545,40 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return std::make_shared<LocalMemoryBuffer>(data, size, copy_data);
     });
 
+    // Useful notes on wrapping protobuf messages:
+    // - `.proto` file syntax: https://protobuf.dev/programming-guides/proto3/
+    // - The protobuf syntax is compiled into C++ code and can be useful to inspect. For example:
+    //   "src/ray/protobuf/common.proto" is compiled into "bazel-out/*/bin/src/ray/protobuf/common.pb.h"
+
+    // class Message: public MessageLite
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message/
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message_lite/
+    mod.add_type<google::protobuf::Message>("Message")
+        .method("SerializeAsString", &google::protobuf::Message::SerializeAsString)
+        .method("ParseFromString", &google::protobuf::Message::ParseFromString);
+
+    // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.util.json_util/
+    mod.method("JsonStringToMessage", [](const std::string json, google::protobuf::Message *message) {
+        google::protobuf::util::JsonStringToMessage(json, message);
+    });
+    mod.method("MessageToJsonString", [](const google::protobuf::Message &message) {
+        std::string json;
+        google::protobuf::util::MessageToJsonString(message, &json);
+        return json;
+    });
+
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
-    mod.add_type<rpc::Address>("Address")
-        .constructor<>()
-        .method("SerializeAsString", &rpc::Address::SerializeAsString)
-        .method("ParseFromString", &rpc::Address::ParseFromString)
-        .method("MessageToJsonString", [](const rpc::Address &addr) {
-            std::string json;
-            google::protobuf::util::MessageToJsonString(addr, &json);
-            return json;
-        });
+    mod.add_type<rpc::Address>("Address", jlcxx::julia_base_type<google::protobuf::Message>())
+        .constructor<>();
+
+    // message JobConfig
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L324
+    mod.add_type<rpc::JobConfig>("JobConfig", jlcxx::julia_base_type<google::protobuf::Message>());
 
     // message ObjectReference
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L500
-    mod.add_type<rpc::ObjectReference>("ObjectReference");
+    mod.add_type<rpc::ObjectReference>("ObjectReference", jlcxx::julia_base_type<google::protobuf::Message>());
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
     // class RayObject
@@ -617,7 +626,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("cast_to_returns", &cast_to_returns);
     mod.method("cast_to_task_args", &cast_to_task_args);
 
-    mod.method("serialize_job_config_json", &serialize_job_config_json);
     mod.method("get_job_serialized_runtime_env", &get_job_serialized_runtime_env);
     mod.method("get_task_required_resources", &get_task_required_resources);
 

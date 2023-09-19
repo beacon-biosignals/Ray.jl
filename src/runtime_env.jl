@@ -22,9 +22,12 @@ function json_dict(runtime_env::RuntimeEnv)
         env_vars["JULIA_RAY_PACKAGE_IMPORTS"] = base64encode(serialize, imports)
     end
 
+    code = "using $(@__MODULE__); start_worker()"
+    cmd = `$(Base.julia_cmd()) -e $code`
+
     # The keys of `context` must match what is supported by the Python `RuntimeEnvContext`:
     # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/runtime_env/context.py#L20-L45
-    context = Dict("env_vars" => env_vars)
+    context = Dict("julia_command" => cmd.exec, "env_vars" => env_vars)
 
     return context
 end
@@ -63,7 +66,8 @@ end
 # https://github.com/beacon-biosignals/Ray.jl/issues/57
 function _serialize(job_config::JobConfig)
     job_config_json = JSON3.write(json_dict(job_config))
-    return ray_jll.serialize_job_config_json(job_config_json)
+    rpc_job_config = ray_jll.JsonStringToMessage(ray_jll.JobConfig, job_config_json)
+    return ray_jll.SerializeAsString(rpc_job_config)
 end
 
 function process_import_statements(ex::Expr)
