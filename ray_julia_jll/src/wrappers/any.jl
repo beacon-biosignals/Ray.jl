@@ -159,7 +159,11 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 
 FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
 FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
-Nil(::Type{ObjectID}) = ObjectIDFromNil()
+FromNil(::Type{ObjectID}) = ObjectIDFromNil()
+
+Base.show(io::IO, x::ObjectID) = show(io, "ObjectID: " * Hex(x))
+Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
+Base.hash(x::ObjectID, h::UInt) = hash("ObjectID", hash(Hex(x), h))
 
 #####
 ##### TaskArg
