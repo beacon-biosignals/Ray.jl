@@ -90,6 +90,7 @@ spec:
           - name: ray-head
             # https://github.com/ray-project/ray/tree/master/docker/ray#tags
             image: rayproject/ray:2.5.1-py310
+            imagePullPolicy: Always
             ports:
               - containerPort: 6379
                 name: gcs
@@ -151,6 +152,7 @@ spec:
           containers:
             - name: ray-worker
               image: rayproject/ray:2.5.1-py310
+              imagePullPolicy: Always
 
               # Ensure graceful termination of Ray pods
               # https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/config.html#pod-and-container-lifecyle-prestophook
@@ -184,6 +186,7 @@ spec:
           containers:
             - name: ray-worker
               image: rayproject/ray:2.5.1-py310-gpu
+              imagePullPolicy: Always
 
               # Ensure graceful termination of Ray pods
               # https://docs.ray.io/en/releases-2.5.1/cluster/kubernetes/user-guides/config.html#pod-and-container-lifecyle-prestophook
