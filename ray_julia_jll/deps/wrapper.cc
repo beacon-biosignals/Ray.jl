@@ -18,8 +18,6 @@ void initialize_driver(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
-    // XXX: this is hard coded! very bad!!! should use global state accessor to
-    // get next job id instead
     options.job_id = job_id;
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     options.enable_logging = !logs_dir.empty();
