@@ -50,23 +50,24 @@ const STATUS_CODE_SYMBOLS = (:OK,
                              :OutOfResource,
                              :ObjectRefEndOfStream)
 
+
 @eval begin
-    $(_enum_getproperty_expr(StatusCode, STATUS_CODE_SYMBOLS))
-    $(_enum_propertynames_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_symbol_constructor_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_instances_expr(StatusCode, STATUS_CODE_SYMBOLS))
 end
 
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
 
 @eval begin
-    $(_enum_getproperty_expr(Language, LANGUAGE_SYMBOLS))
-    $(_enum_propertynames_expr(Language, LANGUAGE_SYMBOLS))
+    $(_enum_symbol_constructor_expr(Language, LANGUAGE_SYMBOLS))
+    $(_enum_instances_expr(Language, LANGUAGE_SYMBOLS))
 end
 
 const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
 
 @eval begin
-    $(_enum_getproperty_expr(WorkerType, WORKER_TYPE_SYMBOLS))
-    $(_enum_propertynames_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_symbol_constructor_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_instances_expr(WorkerType, WORKER_TYPE_SYMBOLS))
 end
 
 function check_status(status::Status)
