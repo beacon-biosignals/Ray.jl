@@ -117,7 +117,7 @@ end
 Get the current job ID for this worker or driver. Job ID is the id of your Ray drivers that
 create tasks.
 """
-get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))
+get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))::UInt32
 
 """
     get_task_id() -> String
