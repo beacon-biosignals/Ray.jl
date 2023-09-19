@@ -2,6 +2,7 @@ using Aqua
 using Base64: Base64DecodePipe
 using CxxWrap: CxxPtr, StdVector
 using CxxWrap.StdLib: UniquePtr
+using JSON3: JSON3
 using Ray
 using Serialization
 using Test

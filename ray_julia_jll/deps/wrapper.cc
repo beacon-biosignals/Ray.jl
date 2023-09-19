@@ -674,9 +674,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return std::unique_ptr<TaskArgByValue>(t);
         });
 
+    // class WorkerContext
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/context.h#L30
+    mod.add_type<ray::core::WorkerContext>("WorkerContext")
+        .method("GetCurrentJobConfig", &ray::core::WorkerContext::GetCurrentJobConfig);
+
     // class CoreWorker
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetWorkerContext", &ray::core::CoreWorker::GetWorkerContext)
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
         .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
