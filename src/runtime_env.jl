@@ -50,10 +50,12 @@ end
 # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L324-L349
 struct JobConfig
     runtime_env_info::RuntimeEnvInfo
+    metadata::Dict{String,String}
 end
 
 function json_dict(job_config::JobConfig)
-    return Dict("runtime_env_info" => json_dict(job_config.runtime_env_info))
+    return Dict("runtime_env_info" => json_dict(job_config.runtime_env_info),
+                "metadata" => job_config.metadata)
 end
 
 # TODO: We may want to use separate functions for protobuf serialization and JSON
