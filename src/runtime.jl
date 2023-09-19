@@ -95,13 +95,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         error("Failed to connect to Ray GCS at $(gcs_address)")
     atexit(() -> ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
 
-    # When the driver is executed on a cluster the job ID is specified via ENV variable
-    # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L365-L370
-    job_id = if haskey(ENV, "RAY_JOB_ID")
-        ray_jll.FromInt(ray_jll.JobID, parse(UInt32, ENV["RAY_JOB_ID"]; base=16))
-    else
-        ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
-    end
+    job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
     metadata = if haskey(ENV, "RAY_JOB_CONFIG_JSON_ENV_VAR")
         JSON3.read(ENV["RAY_JOB_CONFIG_JSON_ENV_VAR"])["metadata"]
