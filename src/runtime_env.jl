@@ -56,9 +56,14 @@ struct JobConfig
     metadata::Dict{String,String}
 end
 
+JobConfig(; runtime_env_info, metadata=Dict()) = JobConfig(runtime_env_info, metadata)
+
 function json_dict(job_config::JobConfig)
-    return Dict("runtime_env_info" => json_dict(job_config.runtime_env_info),
-                "metadata" => job_config.metadata)
+    json = Dict("runtime_env_info" => json_dict(job_config.runtime_env_info))
+    if !isempty(job_config.metadata)
+        json["metadata"] = job_config.metadata
+    end
+    return json
 end
 
 # TODO: We may want to use separate functions for protobuf serialization and JSON
