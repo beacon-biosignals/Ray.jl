@@ -20,6 +20,23 @@ mutable struct ObjectRef
     end
 end
 
+# in order to actually increment the local ref count appropriately when we
+# `deepcopy` an ObjectRef and setup the appropriate finalizer, this
+# specialization calls the constructor after deepcopying the fields.
+function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
+    fieldnames = Base.fieldnames(typeof(x))
+    fieldcopies = ntuple(length(fieldnames)) do i
+        @debug "deep copying x.$(fieldnames[i])"
+        fieldval = getfield(x, fieldnames[i])
+        return Base.deepcopy_internal(fieldval, stackdict)
+    end
+
+    xcp = ObjectRef(fieldcopies...; add_local_ref=true)
+    stackdict[x] = xcp
+
+    return xcp
+end
+
 function finalize_object_ref(obj::ObjectRef)
     @debug "Removing local ref for ObjectID $(obj.oid)"
     worker = ray_jll.GetCoreWorker()
@@ -70,7 +87,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
     outer_object_id = if outer_obj_ref !== nothing
         outer_obj_ref.oid
     else
-        ray_jll.Nil(ray_jll.ObjectID)
+        ray_jll.FromNil(ray_jll.ObjectID)
     end
 
     if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
