@@ -1,9 +1,8 @@
-using Base: SHA1, BinaryPlatforms
+using Base: BinaryPlatforms
 using CodecZlib: GzipCompressorStream, GzipDecompressorStream
 using LibGit2: LibGit2
 using Pkg
 using Pkg.Types: read_project
-using SHA: sha256
 using Tar: Tar
 using URIs: URI
 using ghr_jll: ghr
@@ -53,20 +52,6 @@ $
 function create_tarball(dir, tarball)
     return open(GzipCompressorStream, tarball, "w") do tar
         Tar.create(dir, tar)
-    end
-end
-
-# Compute the Artifact.toml `git-tree-sha1`.
-function tree_hash_sha1(tarball_path)
-    return open(GzipDecompressorStream, tarball_path, "r") do tar
-        SHA1(Tar.tree_hash(tar))
-    end
-end
-
-# Compute the Artifact.toml `sha256` from the compressed archive.
-function sha256sum(tarball_path)
-    return open(tarball_path, "r") do tar
-        bytes2hex(sha256(tar))
     end
 end
 
