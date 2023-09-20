@@ -5,6 +5,7 @@ using CxxWrap.StdLib: UniquePtr
 using JSON3: JSON3
 using Ray
 using Serialization
+using Sockets: @ip_str
 using Test
 
 import ray_julia_jll as ray_jll
@@ -19,6 +20,7 @@ include("utils.jl")
         Aqua.test_all(Ray; ambiguities=false)
     end
 
+    include("exceptions.jl")
     include("runtime_env.jl")
     include("remote_function.jl")
 
