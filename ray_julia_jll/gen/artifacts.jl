@@ -9,6 +9,8 @@ using SHA: sha256
 using Tar
 using wget_jll
 
+const DIR = mktempdir()
+
 const TRIPLET_REGEX = r"""
     ^ray_julia.v(?<jll_version>([0-9]\.){3})
     (?<triplet>[a-z, 0-9, \-, \_,]+)
@@ -53,10 +55,10 @@ function get_release_asset_urls(jll_version)
     return assets
 end
 
-function download_asset(asset_url, dir)
-    run(`$(wget()) $asset_url -P $dir`)
+function download_asset(asset_url)
+    run(`$(wget()) $asset_url -P $DIR`)
     filename = replace(basename(asset_url), "%2B" => "+") # TODO: better way to parse URL in unicode?
-    return joinpath(dir, filename)
+    return joinpath(DIR, filename)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -76,11 +78,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     artifacts_urls = get_release_asset_urls(jll_version)
 
-    dir = mktempdir()
-
     for artifact_url in artifacts_urls
 
-        artifact_path = download_asset(artifact_url, dir)
+        artifact_path = download_asset(artifact_url)
 
         m = match(TRIPLET_REGEX, basename(artifact_path))
         if isnothing(m)
