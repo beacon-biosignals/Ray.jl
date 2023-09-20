@@ -10,6 +10,7 @@ using Tar
 using wget_jll
 
 const DIR = mktempdir()
+const GITHUB_URL = "https://api.github.com/repos"
 
 const TRIPLET_REGEX = r"""
     ^ray_julia.v(?<jll_version>([0-9]\.){3})
@@ -46,9 +47,10 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-function get_release_asset_urls(jll_version)
-    # TODO: parse URL from pkg_url
-    assets_url = "https://api.github.com/repos/beacon-biosignals/Ray.jl/releases/tags/v$(jll_version)"
+function get_release_asset_urls(pkg_url, jll_version)
+    # e.g. "git@github.com:beacon-biosignals/ray.jl"
+    _, pkg = split(pkg_url, ":")
+    assets_url = joinpath(GITHUB_URL,"$pkg", "releases", "tags", "v$(jll_version)")
     io = IOBuffer()
     run(pipeline(`$(curl()) $assets_url`, `$(jq()) -r '.assets[].browser_download_url'`, io))
     assets = split(String(take!(io)), "\n"; keepempty=false)
