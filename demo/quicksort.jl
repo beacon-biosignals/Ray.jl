@@ -66,15 +66,16 @@ quick_sort_distributed_anon = function (collection)
     return quick_sort_distributed(collection)
 end
 
-
-for len in (200000, 4000000, 8000000)
-    println("Array length: $(len)")
-    unsorted = rand(Int, len)
-    s = time()
-    quick_sort(unsorted)
-    println("Sequential execution: $(time() - s)")
-    s = time()
-    Ray.get(Ray.submit_task(quick_sort_distributed_anon, (unsorted,); resources=Dict("CPU" => 0.01)))
-    println("Distributed execution: $(time() - s)")
-    println("--" ^ 10)
+if @__FILE__() == abspath(PROGRAM_FILE)
+    for len in (200000, 4000000, 8000000)
+        println("Array length: $(len)")
+        unsorted = rand(Int, len)
+        s = time()
+        quick_sort(unsorted)
+        println("Sequential execution: $(time() - s)")
+        s = time()
+        Ray.get(Ray.submit_task(quick_sort_distributed_anon, (unsorted,); resources=Dict("CPU" => 0.01)))
+        println("Distributed execution: $(time() - s)")
+        println("--" ^ 10)
+    end
 end
