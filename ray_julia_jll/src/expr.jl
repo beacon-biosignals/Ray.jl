@@ -1,32 +1,28 @@
-function _enum_getproperty_expr(base_type::Type, members)
-    body = Expr(:if, :(field === $(QuoteNode(members[1]))), members[1], nothing)
+function _enum_symbol_constructor_expr(base_type::Type, members)
+    base_type_sym = nameof(base_type)
+    body = Expr(:if, :(member === $(QuoteNode(members[1]))), members[1], nothing)
     ex = body
     for member in members[2:end]
-        ex.args[3] = Expr(:elseif, :(field === $(QuoteNode(member))), member, nothing)
+        ex.args[3] = Expr(:elseif, :(member === $(QuoteNode(member))), member, nothing)
         ex = ex.args[3]
     end
-    ex.args[3] = :(Base.getfield($(nameof(base_type)), field))
+    ex.args[3] = :(throw(ArgumentError("$($base_type_sym) has no member named: $member")))
+
 
     return quote
-        function Base.getproperty(::Type{$(nameof(base_type))}, field::Symbol)
+        function $base_type_sym(member::Symbol)
             $body
         end
     end
 end
 
-function _enum_propertynames_expr(base_type::Type, members)
-    public_properties = Expr(:tuple, QuoteNode.(members)...)
-    private_properties = Expr(:tuple,
-                              QuoteNode.(members)...,
-                              QuoteNode.(fieldnames(typeof(base_type)))...)
+function _enum_instances_expr(base_type::Type, members)
+    base_type_sym = nameof(base_type)
+    members_tuple = Expr(:tuple, members...)
 
     return quote
-        function Base.propertynames(::Type{$(nameof(base_type))}, private::Bool=false)
-            if private
-                $private_properties
-            else
-                $public_properties
-            end
+        function Base.instances(::Type{$base_type})
+            return $members_tuple
         end
     end
 end
