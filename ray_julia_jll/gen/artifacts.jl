@@ -17,10 +17,11 @@ const TRIPLET_REGEX = r"""
     """x
 
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
-^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
-releases/download/
-(?<tag>[^/]+)/(?<file_name>[^/]+)$
-"""x
+    ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
+    releases/download/
+    (?<tag>[^/]+)/(?<file_name>[^/]+)$
+    """x
+
 # Compute the Artifact.toml `git-tree-sha1`.
 function tree_hash_sha1(tarball_path)
     return open(GzipDecompressorStream, tarball_path, "r") do tar
@@ -102,7 +103,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
         host_wrapper = joinpath(wrappers_dir, "$platform_triplet-julia_version+$julia_version.jl")
         cp("wrapper.jl.tmp", host_wrapper; force=true)
     end
-
 
     @info "Committing and pushing changes to Artifacts.toml for $jll_version"
 
