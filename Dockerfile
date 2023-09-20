@@ -27,6 +27,10 @@ RUN if ! julia --history-file=no -e 'exit(0)'; then \
 # Reduces output from `apt-get`
 ENV DEBIAN_FRONTEND="noninteractive"
 
+# Set x86_64 targets for improved compatibility
+# https://docs.julialang.org/en/v1/devdocs/sysimg/#Specifying-multiple-system-image-targets
+ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"
+
 #####
 ##### deps stage
 #####
