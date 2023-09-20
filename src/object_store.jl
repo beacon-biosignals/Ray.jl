@@ -5,11 +5,14 @@ Store `data` in the object store. Returns an object reference which can used to 
 the `data` with [`Ray.get`](@ref).
 """
 function put(data)
-    bytes = serialize_to_bytes(data)
-    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    ray_obj = ray_jll.RayObject(buffer)
+    # bytes = serialize_to_bytes(data)
+    # buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
+    # ray_obj = ray_jll.RayObject(buffer)
+    ray_obj = serialize_to_ray_object(data)
+    nested_ids = ray_jll.GetNestedRefIds(ray_obj[])
+
     # `CoreWorker::Put` initializes the local ref count to 1
-    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}());
+    return ObjectRef(ray_jll.put(ray_obj, nested_ids);
                      add_local_ref=false)
 end
 

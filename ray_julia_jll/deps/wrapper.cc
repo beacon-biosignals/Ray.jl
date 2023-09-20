@@ -588,7 +588,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // class RayObject
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
-        .method("GetData", &RayObject::GetData);
+        .method("GetData", &RayObject::GetData)
+        .method("GetSize", &RayObject::GetSize)
+        .method("GetNestedRefIds", [](RayObject &obj) {
+            std::vector<ObjectID> nested_ids;
+            for (const auto &ref : obj.GetNestedRefs()) {
+                nested_ids.push_back(ObjectID::FromBinary(ref.object_id()));
+            }
+            return nested_ids;
+        });
 
     // Julia RayObject constructors make shared_ptrs
     mod.method("RayObject", [] (
