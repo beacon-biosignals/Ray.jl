@@ -31,24 +31,42 @@ end
 end
 
 @testset "Local reference counting" begin
-    using ray_julia_jll: Hex
-    obj = Ray.put(nothing)
-    oid = obj.oid_hex
-
     local_count(o::ObjectRef) = local_count(o.oid_hex)
     local_count(oid_hex) = first(get(Ray.get_all_reference_counts(), oid_hex, 0))
 
-    @test local_count(obj) == 1
+    @testset "put, deepcopy, and constructed object ref" begin
+        obj = Ray.put(nothing)
+        oid = obj.oid_hex
 
-    obj2 = deepcopy(obj)
-    @test local_count(obj) == 2
+        @test local_count(obj) == 1
 
-    finalize(obj2)
-    # insert yield point here to allow async task that makes the API call to run
-    yield()
-    @test local_count(obj) == 1
+        obj2 = deepcopy(obj)
+        @test local_count(obj) == 2
 
-    finalize(obj)
-    yield()
-    @test local_count(oid) == 0
+        finalize(obj2)
+        # insert yield point here to allow async task that makes the API call to run
+        yield()
+        @test local_count(obj) == 1
+
+        obj3 = ObjectRef(obj.oid_hex)
+        @test local_count(obj) == 2
+
+        finalize(obj3)
+        yield()
+        @test local_count(obj) == 1
+
+        finalize(obj)
+        yield()
+        @test local_count(oid) == 0
+    end
+
+    @testset "Task return object ref" begin
+        obj = Ray.submit_task(getpid, ())
+        oid = obj.oid_hex
+        @test local_count(oid) == 1
+
+        finalize(obj)
+        yield()
+        @test local_count(oid) == 0
+    end
 end
