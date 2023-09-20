@@ -50,3 +50,32 @@ end
         @test result == package_imports
     end
 end
+
+@testset "JobConfig" begin
+    @testset "defaults" begin
+        @test_throws UndefKeywordError Ray.JobConfig()
+
+        runtime_env_info = Ray.RuntimeEnvInfo(Ray.RuntimeEnv())
+        job_config = Ray.JobConfig(; runtime_env_info)
+        @test job_config.runtime_env_info isa Ray.RuntimeEnvInfo
+        @test job_config.runtime_env_info == runtime_env_info
+        @test job_config.metadata isa Dict{String,String}
+        @test isempty(job_config.metadata)
+    end
+
+    @testset "json_dict" begin
+        runtime_env_info = Ray.RuntimeEnvInfo(Ray.RuntimeEnv())
+        metadata = Dict("job_submission_id" => "raysubmit_BzncEsVBi6uA3LA9",
+                        "job_name" => "raysubmit_BzncEsVBi6uA3LA9")
+
+        job_config = Ray.JobConfig(; runtime_env_info, metadata)
+        json = Ray.json_dict(job_config)
+        @test json["runtime_env_info"] == Ray.json_dict(runtime_env_info)
+        @test json["metadata"] == metadata
+
+        job_config = Ray.JobConfig(; runtime_env_info)
+        json = Ray.json_dict(job_config)
+        @test json["runtime_env_info"] == Ray.json_dict(runtime_env_info)
+        @test !haskey(json, "metadata")
+    end
+end
