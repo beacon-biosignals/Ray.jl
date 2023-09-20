@@ -15,11 +15,13 @@ using LoggingExtras
 using Pkg
 using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
     reset_state, serialize, serialize_type, ser_version, writeheader
+using Sockets: IPAddr, getipaddr
 
 import ray_julia_jll as ray_jll
 
 export start_worker, submit_task, @ray_import, ObjectRef
 
+include("exceptions.jl")
 include("function_manager.jl")
 include("runtime_env.jl")
 include("remote_function.jl")
