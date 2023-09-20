@@ -43,12 +43,12 @@ end
     obj2 = deepcopy(obj)
     @test local_count(obj) == 2
 
-    obj2 = nothing
-    GC.gc()
+    finalize(obj2)
+    # insert yield point here to allow async task that makes the API call to run
+    yield()
     @test local_count(obj) == 1
 
-    obj = nothing
-    GC.gc()
+    finalize(obj)
+    yield()
     @test local_count(oid) == 0
-    
 end
