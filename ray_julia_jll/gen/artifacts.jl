@@ -9,12 +9,11 @@ using SHA: sha256
 using Tar
 using wget_jll
 
-# TODO: tidy up
 const TRIPLET_REGEX = r"""
-    ^ray_julia.v(?<jll_version>[0-9]\.[0-9]\.[0-9])\.
-    (?<triplet>[a-z, 0-9, \-, \_]+)
-    -julia_version\+(?<julia_version>[0-9]\.[0-9]\.[0-9])
-    .tar.gz$
+    ^ray_julia.v(?<jll_version>([0-9]\.){3})
+    (?<triplet>[a-z, 0-9, \-, \_,]+)
+    -julia_version\+(?<julia_version>([0-9]\.){3})
+    tar.gz$
     """x
 
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
