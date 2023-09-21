@@ -15,8 +15,8 @@ FROM rayproject/ray:${RAY_VERSION}-py310 as ray-base
 
 # Install Julia
 COPY --link --from=julia-base /usr/local/julia /usr/local/julia
-ENV JULIA_PATH /usr/local/julia
-ENV PATH $JULIA_PATH/bin:$PATH
+ENV JULIA_PATH=/usr/local/julia
+ENV PATH=$JULIA_PATH/bin:$PATH
 
 # Validate Julia executable is compatible with the container architecture
 RUN if ! julia --history-file=no -e 'exit(0)'; then \
@@ -39,7 +39,7 @@ ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,bas
 FROM ray-base as deps
 
 # Disable automatic package precompilation. We'll control when packages are precompiled.
-ENV JULIA_PKG_PRECOMPILE_AUTO "0"
+ENV JULIA_PKG_PRECOMPILE_AUTO="0"
 
 # Use the Git CLI when we are not using the Julia's PkgServer as otherwise Docker image
 # cross compilation can cause LibGit2 to run out of memory while cloning the General registry.
@@ -58,7 +58,7 @@ RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=1000,gid=100 \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
-ENV JULIA_PROJECT /Ray.jl
+ENV JULIA_PROJECT=/Ray.jl
 COPY --chown=ray *Project.toml *Manifest.toml ${JULIA_PROJECT}/
 
 # Generate a fake ray_julia_jll package just for instantiation
@@ -105,7 +105,7 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-ENV JULIA_PROJECT /Ray.jl
+ENV JULIA_PROJECT=/Ray.jl
 ARG JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
 RUN sudo mkdir -p ${JULIA_PROJECT} && \
     sudo chown ray ${JULIA_PROJECT}
