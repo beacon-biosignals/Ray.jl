@@ -2,6 +2,7 @@ using CxxWrap
 using CxxWrap.StdLib: StdVector, SharedPtr
 using libcxxwrap_julia_jll
 
+using InteractiveUtils: subtypes
 using Serialization
 
 JLLWrappers.@generate_wrapper_header("ray_julia")
@@ -167,8 +168,26 @@ FromNil(::Type{ObjectID}) = ObjectIDFromNil()
 
 ObjectID(str::AbstractString) = FromHex(ObjectID, str)
 
-Base.show(io::IO, x::ObjectID) = show(io, "ObjectID(\"$(Hex(x))\")")
-Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
+Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
+
+# cannot believe I'm doing this...
+# 
+# Because ObjectID is a CxxWrap-defined type, it has two subtypes:
+# `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
+# construct directly or return by value, the second when you pull a ref out of
+# say `std::vector<ObjectID>`.
+#
+# ObjectID is abstract, so the normal method definition:
+# 
+# Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
+#
+# is shadowed by more specific fallbacks defined by CxxWrap.
+for Ta in subtypes(ObjectID)
+    for Tb in subtypes(ObjectID)
+        @eval Base.:(==)(a::$Ta, b::$Tb) = Hex(a) == Hex(b)
+    end
+end
+
 Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
 
 #####
