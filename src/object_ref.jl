@@ -20,6 +20,8 @@ end
 
 function finalize_object_ref(obj::ObjectRef)
     @debug "Removing local ref for ObjectID $(obj.oid_hex)"
+    # XXX: should make sure core worker is still initialized before calling it
+    # to avoid segfaults
     worker = ray_jll.GetCoreWorker()
     oid = ray_jll.FromHex(ray_jll.ObjectID, obj.oid_hex)
     ray_jll.RemoveLocalReference(worker, oid)
