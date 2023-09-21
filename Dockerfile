@@ -13,6 +13,10 @@ FROM julia:${JULIA_VERSION}-bullseye as julia-base
 # otherwise the default is x86_64 (https://github.com/ray-project/ray/tree/master/docker/ray#tags)
 FROM rayproject/ray:${RAY_VERSION}-py310 as ray-base
 
+# User ID and Group ID for Docker USER
+ENV UID=1000
+ENV GID=100
+
 # Install Julia
 COPY --link --from=julia-base /usr/local/julia /usr/local/julia
 ENV JULIA_PATH=/usr/local/julia
@@ -53,7 +57,7 @@ ENV JULIA_PKG_USE_CLI_GIT="true"
 RUN ln -s /tmp/julia-cache ~/.julia
 
 # Install Julia package registries
-RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=1000,gid=100 \
+RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=${UID},gid=${GID} \
     mkdir -p /tmp/julia-cache && \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
@@ -65,12 +69,12 @@ COPY --chown=ray *Project.toml *Manifest.toml ${JULIA_PROJECT}/
 RUN mkdir -p ${JULIA_PROJECT}/ray_julia_jll/src && touch ${JULIA_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl
 
 # Note: The `timing` flag requires Julia 1.9
-RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=1000,gid=100 \
+RUN --mount=type=cache,sharing=locked,target=/tmp/julia-cache,uid=${UID},gid=${GID} \
     julia -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.build(); Pkg.precompile(strict=true, timing=true)'
 
 # Copy the shared ephemeral Julia depot into the image and remove any installed packages
 # not used by our Manifest.toml.
-RUN --mount=type=cache,target=/tmp/julia-cache,uid=1000,gid=100 \
+RUN --mount=type=cache,target=/tmp/julia-cache,uid=${UID},gid=${GID} \
     rm ~/.julia && \
     mkdir ~/.julia && \
     cp -rp /tmp/julia-cache/* ~/.julia && \
@@ -118,8 +122,8 @@ ARG RAY_GEN_CACHE_DIR=/mnt/ray-generated
 ARG RAY_CACHE_CLEAR=false
 RUN sudo mkdir -p ${RAY_ROOT} && \
     sudo chown ray ${RAY_ROOT}
-RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
-    --mount=type=cache,sharing=locked,target=${RAY_GEN_CACHE_DIR},uid=1000,gid=100 \
+RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=${UID},gid=${GID} \
+    --mount=type=cache,sharing=locked,target=${RAY_GEN_CACHE_DIR},uid=${UID},gid=${GID} \
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
     git -C ${RAY_ROOT} checkout ${RAY_COMMIT} && \
@@ -172,7 +176,7 @@ COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 # Setup ray_julia_jll
 ARG JLL_ROOT=/ray_julia_jll
 COPY --chown=ray ray_julia_jll ${JLL_ROOT}
-RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
+RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=${UID},gid=${GID} \
     set -eux && \
     ln -s ${RAY_ROOT} ${JLL_ROOT}/deps/ray && \
     ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT} && \
