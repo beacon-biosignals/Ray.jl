@@ -1,5 +1,5 @@
 using Base: BinaryPlatforms
-using CodecZlib: GzipCompressorStream, GzipDecompressorStream
+using CodecZlib: GzipCompressorStream
 using LibGit2: LibGit2
 using Pkg
 using Pkg.Types: read_project
@@ -61,6 +61,14 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
             LibGit2.url(remote)
         end
     end
+end
+
+function parse_git_remote_url(pkg_url)
+    m = match(URL_REGEX, pkg_url)
+    if m === nothing
+        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
+    end
+    return "https://" * joinpath(m[:host], m[:path])
 end
 
 function upload_to_github_release(
@@ -154,15 +162,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tarball_path = joinpath(tempdir(), tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
 
-    m = match(URL_REGEX, pkg_url)
-    if m === nothing
-        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
-    end
-
-    pkg_http_url = "https://" * joinpath(m[:host], m[:path])
+    pkg_http_url = parse_git_remote_url(pkg_url)
     tag = "v$(jll_version)"
     artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$(basename(tarball_path))"
 
+    @info "Uploading $(basename(tarball_path)) to $artifact_url"
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
     upload_to_github_release(tarball_path, artifact_url, branch)
 end
