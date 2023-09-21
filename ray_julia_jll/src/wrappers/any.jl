@@ -161,7 +161,9 @@ FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
 FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
 FromNil(::Type{ObjectID}) = ObjectIDFromNil()
 
-Base.show(io::IO, x::ObjectID) = show(io, "ObjectID: " * Hex(x))
+ObjectID(str::AbstractString) = FromHex(ObjectID, str)
+
+Base.show(io::IO, x::ObjectID) = show(io, "ObjectID(\"$(Hex(x))\")")
 Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
 Base.hash(x::ObjectID, h::UInt) = hash("ObjectID", hash(Hex(x), h))
 
