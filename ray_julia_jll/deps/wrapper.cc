@@ -589,6 +589,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
         .method("GetData", &RayObject::GetData)
+        .method("GetMetadata", &RayObject::GetMetadata)
         .method("GetSize", &RayObject::GetSize)
         .method("GetNestedRefIds", [](RayObject &obj) {
             std::vector<ObjectID> nested_ids;
