@@ -54,7 +54,7 @@ ENV JULIA_PKG_USE_CLI_GIT="true"
 # path used during package precompilation matches the final depot path used in the image.
 # If a source file no longer resides at the expected location the `.ji` is deemed stale and
 # will be recreated.
-ARG JULIA_DEPOT_CACHE=/tmp/julia-cache
+ARG JULIA_DEPOT_CACHE=/mnt/julia-cache
 RUN ln -s ${JULIA_DEPOT_CACHE} ~/.julia
 
 # Install Julia package registries
