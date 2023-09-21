@@ -126,6 +126,8 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
     git -C ${RAY_REPO} checkout ${RAY_COMMIT} && \
+    #
+    # Build using the final Ray.jl destination
     mkdir -p ${RAY_JLL_PROJECT}/deps && \
     ln -s ${RAY_REPO} ${RAY_JLL_PROJECT}/deps/ray && \
     cd ${RAY_JLL_PROJECT}/deps/ray && \
@@ -164,10 +166,7 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
     mkdir -p ${RAY_REPO_CACHE} && \
-    cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE} && \
-    #
-    # Remove directory to avoid conflict with a future COPY
-    rm -rf ${RAY_JLL_PROJECT}
+    cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE}
 
 # Copy over artifacts generated during the previous stages
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
@@ -177,9 +176,16 @@ ARG RAY_JLL_REPO=${HOME}/.julia/dev/ray_julia_jll
 COPY --chown=ray ray_julia_jll ${RAY_JLL_REPO}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
+    #
+    # Build using the final Ray.jl destination
     ln -s ${RAY_REPO} ${RAY_JLL_REPO}/deps/ray && \
+    rm -rf ${RAY_JLL_PROJECT} && \
     ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
+    #
+    # Build ray_julia_jll
     julia --project=${RAY_JLL_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
+    #
+    # Cleanup build data
     cp -rpL ${RAY_JLL_PROJECT}/deps/bazel-bin ${RAY_JLL_PROJECT}/deps/bin && \
     rm ${RAY_JLL_PROJECT}/deps/bazel-* && \
     rm ${RAY_JLL_PROJECT}
