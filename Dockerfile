@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# Dockerfile is currently only for x86_64
 
 # TODO: Cleanup uid/gid/user work arounds
 
