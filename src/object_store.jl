@@ -28,38 +28,12 @@ function get(obj_ref::ObjectRef)
     wait(obj_ref)
     ray_obj = ray_jll.get(obj_ref.oid, 0)
     isnull(ray_obj[]) && error("got null pointer after successful `wait`; this is a bug!")
-
-    bytes = take!(ray_jll.GetData(ray_obj[]))
-    return _get(bytes, obj_ref)
+    return deserialize_from_ray_object(ray_obj, obj_ref)
 end
 
-function get(ray_obj::SharedPtr{ray_jll.RayObject})
-    bytes = take!(ray_jll.GetData(ray_obj[]))
-    return _get(bytes, nothing)
-end
+# get(ray_obj::SharedPtr{ray_jll.RayObject}) = deserialize_from_ray_object(ray_obj, nothing)
 
 get(x) = x
-
-function _get(bytes::Vector{UInt8}, outer_obj_ref::Union{ObjectRef,Nothing})
-    serializer = RaySerializer(IOBuffer(bytes))
-
-    result = try
-        deserialize(serializer)
-    catch
-        @error "Unable to deserialize $outer_obj_ref bytes: $(bytes2hex(bytes))"
-        rethrow()
-    end
-
-    # TODO: This is disabled while we investigate how to implement properly
-    # https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
-    # for obj_ref in serializer.object_refs
-    #     _register_ownership(obj_ref, outer_obj_ref)
-    # end
-
-    # TODO: add an option to not rethrow
-    # https://github.com/beacon-biosignals/Ray.jl/issues/58
-    result isa RayTaskException ? throw(result) : return result
-end
 
 """
     Base.isready(obj_ref::ObjectRef)

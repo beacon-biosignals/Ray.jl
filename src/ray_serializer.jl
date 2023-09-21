@@ -69,3 +69,29 @@ function serialize_to_ray_object(x)
 end
 
 deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(bytes)))
+
+function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject}, outer=nothing)
+    return deserialize_from_ray_object(x[], outer)
+end
+
+function deserialize_from_ray_object(x::RayObject, outer_object_ref=nothing)
+    bytes = take!(ray_jll.GetData(x))
+    s = RaySerializer(IOBuffer(bytes))
+    result = try
+        deserialize(s)
+    catch
+        @error "Unable to deserialize $outer_obj_ref bytes: $(bytes2hex(bytes))"
+        rethrow()
+    end
+
+    if outer_object_ref != nothing
+        for inner_object_ref in s.object_refs
+            @debug "Registering ownership for $(inner_object_ref), contained in $(outer_object_ref)"
+            _register_ownership(inner_object_ref, outer_object_ref)
+        end
+    end
+
+    # TODO: add an option to not rethrow
+    # https://github.com/beacon-biosignals/Ray.jl/issues/58
+    result isa RayRemoteException ? throw(result) : return result
+end
