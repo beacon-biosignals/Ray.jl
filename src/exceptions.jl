@@ -17,6 +17,6 @@ function Base.showerror(io::IO, ex::RayTaskException, bt=nothing; backtrace=true
         println(io)
     end
     printstyled(io, "\nnested exception: ", color=Base.error_color())
-    # TODO: `showerror(io::IO, ex::CapturedException)` should accept `backtrace` keyword
+    # Call 3-argument `showerror` to allow specifying `backtrace`
     showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
 end
