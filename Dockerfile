@@ -63,7 +63,7 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
-ARG RAY_JL_PROJECT=/Ray.jl
+ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 COPY --chown=ray *Project.toml *Manifest.toml ${RAY_JL_PROJECT}/
 
 # Generate a fake ray_julia_jll package just for instantiation
@@ -111,19 +111,15 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-ARG RAY_JL_PROJECT=/Ray.jl
+ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
-RUN sudo mkdir -p ${JULIA_PROJECT} && \
-    sudo chown ray ${JULIA_PROJECT}
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-ARG RAY_REPO=/ray
+ARG RAY_REPO=${HOME}/ray
 ARG RAY_COMMIT=448a83caf4
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
-RUN sudo mkdir -p ${RAY_ROOT} && \
-    sudo chown ray ${RAY_ROOT}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
@@ -176,7 +172,7 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
 # Setup ray_julia_jll
-ARG RAY_JLL_REPO=/ray_julia_jll
+ARG RAY_JLL_REPO=${HOME}/.julia/dev/ray_julia_jll
 COPY --chown=ray ray_julia_jll ${RAY_JLL_REPO}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
