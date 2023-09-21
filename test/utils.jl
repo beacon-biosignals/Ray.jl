@@ -18,6 +18,9 @@ function setup_core_worker(body)
     try
         body()
     finally
+        # let object ref finalizers run...
+        GC.gc()
+        yield()
         ray_jll.shutdown_driver()
     end
 end
