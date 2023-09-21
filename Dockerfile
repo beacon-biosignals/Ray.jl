@@ -63,11 +63,11 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
-ENV JULIA_PROJECT=/Ray.jl
-COPY --chown=ray *Project.toml *Manifest.toml ${JULIA_PROJECT}/
+ARG RAY_JL_PROJECT=/Ray.jl
+COPY --chown=ray *Project.toml *Manifest.toml ${RAY_JL_PROJECT}/
 
 # Generate a fake ray_julia_jll package just for instantiation
-RUN mkdir -p ${JULIA_PROJECT}/ray_julia_jll/src && touch ${JULIA_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl
+RUN mkdir -p ${RAY_JL_PROJECT}/ray_julia_jll/src && touch ${RAY_JL_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl
 
 # Note: The `timing` flag requires Julia 1.9
 RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
@@ -111,14 +111,14 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-ENV JULIA_PROJECT=/Ray.jl
-ARG JLL_JULIA_PROJECT=${JULIA_PROJECT}/ray_julia_jll
+ARG RAY_JL_PROJECT=/Ray.jl
+ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
 RUN sudo mkdir -p ${JULIA_PROJECT} && \
     sudo chown ray ${JULIA_PROJECT}
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-ARG RAY_ROOT=/ray
+ARG RAY_REPO=/ray
 ARG RAY_COMMIT=448a83caf4
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
@@ -127,11 +127,11 @@ RUN sudo mkdir -p ${RAY_ROOT} && \
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
-    git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
-    git -C ${RAY_ROOT} checkout ${RAY_COMMIT} && \
-    mkdir -p ${JLL_JULIA_PROJECT}/deps && \
-    ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray && \
-    cd ${JLL_JULIA_PROJECT}/deps/ray && \
+    git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
+    git -C ${RAY_REPO} checkout ${RAY_COMMIT} && \
+    mkdir -p ${RAY_JLL_PROJECT}/deps && \
+    ln -s ${RAY_REPO} ${RAY_JLL_PROJECT}/deps/ray && \
+    cd ${RAY_JLL_PROJECT}/deps/ray && \
     #
     # Allow builders to clear just the Ray CLI cache.
     if [ "${RAY_CACHE_CLEAR}" != "false" ]; then \
@@ -151,57 +151,57 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
             python/ray/serve/generated \
             python/ray/core/src/ray/raylet/raylet \
             python/ray/core/src/ray/gcs \
-            ${RAY_ROOT} && \
+            ${RAY_REPO} && \
         cd -; \
     fi && \
     #
     # Build the dashboard
-    cd ${JLL_JULIA_PROJECT}/deps/ray/python/ray/dashboard/client && \
+    cd ${RAY_JLL_PROJECT}/deps/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
     #
     # Build Ray for Python
-    cd ${JLL_JULIA_PROJECT}/deps/ray/python && \
+    cd ${RAY_JLL_PROJECT}/deps/ray/python && \
     pip install --verbose . && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
     mkdir -p ${RAY_REPO_CACHE} && \
-    cp -rfp ${RAY_ROOT}/. ${RAY_REPO_CACHE} && \
+    cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE} && \
     #
     # Remove directory to avoid conflict with a future COPY
-    rm -rf ${JLL_JULIA_PROJECT}
+    rm -rf ${RAY_JLL_PROJECT}
 
 # Copy over artifacts generated during the previous stages
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
 # Setup ray_julia_jll
-ARG JLL_ROOT=/ray_julia_jll
-COPY --chown=ray ray_julia_jll ${JLL_ROOT}
+ARG RAY_JLL_REPO=/ray_julia_jll
+COPY --chown=ray ray_julia_jll ${RAY_JLL_REPO}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
-    ln -s ${RAY_ROOT} ${JLL_ROOT}/deps/ray && \
-    ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT} && \
-    julia --project=${JLL_JULIA_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
-    cp -rpL ${JLL_JULIA_PROJECT}/deps/bazel-bin ${JLL_JULIA_PROJECT}/deps/bin && \
-    rm ${JLL_JULIA_PROJECT}/deps/bazel-* && \
-    rm ${JLL_JULIA_PROJECT}
+    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/deps/ray && \
+    ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
+    julia --project=${RAY_JLL_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
+    cp -rpL ${RAY_JLL_PROJECT}/deps/bazel-bin ${RAY_JLL_PROJECT}/deps/bin && \
+    rm ${RAY_JLL_PROJECT}/deps/bazel-* && \
+    rm ${RAY_JLL_PROJECT}
 
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
+ray_julia = "${RAY_JL_PROJECT}/ray_julia_jll/deps/bin"
 EOF
 
-COPY --chown=ray . ${JULIA_PROJECT}/
+COPY --chown=ray . ${RAY_JL_PROJECT}/
 
 # Restore content from previously built ray_julia_jll directory
-RUN rm -rf ${JLL_JULIA_PROJECT} && \
-    ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT}
+RUN rm -rf ${RAY_JLL_PROJECT} && \
+    ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
 RUN julia -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
-WORKDIR ${JULIA_PROJECT}
+WORKDIR ${RAY_JL_PROJECT}
 
