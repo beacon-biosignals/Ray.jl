@@ -16,8 +16,6 @@ void initialize_driver(
     options.language = Language::JULIA;
     options.store_socket = store_socket;    // Required around `CoreWorkerClientPool` creation
     options.raylet_socket = raylet_socket;  // Required by `RayletClient`
-    // XXX: this is hard coded! very bad!!! should use global state accessor to
-    // get next job id instead
     options.job_id = job_id;
     options.gcs_options = gcs::GcsClientOptions(gcs_address);
     options.enable_logging = !logs_dir.empty();
@@ -460,8 +458,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
     mod.add_type<JobID>("JobID")
-        .method("ToInt", &JobID::ToInt)
-        .method("FromInt", &JobID::FromInt);
+        .method("JobIDFromInt", &JobID::FromInt)
+        .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
     mod.add_type<TaskID>("TaskID")
@@ -697,9 +695,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return retval;
     });
 
+    // class WorkerContext
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/context.h#L30
+    mod.add_type<ray::core::WorkerContext>("WorkerContext")
+        .method("GetCurrentJobConfig", &ray::core::WorkerContext::GetCurrentJobConfig);
+
     // class CoreWorker
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L284
     mod.add_type<ray::core::CoreWorker>("CoreWorker")
+        .method("GetWorkerContext", &ray::core::CoreWorker::GetWorkerContext)
         .method("GetCurrentJobId", &ray::core::CoreWorker::GetCurrentJobId)
         .method("GetCurrentTaskId", &ray::core::CoreWorker::GetCurrentTaskId)
         .method("GetRpcAddress", &ray::core::CoreWorker::GetRpcAddress)
