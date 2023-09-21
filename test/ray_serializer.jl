@@ -77,3 +77,21 @@ end
         @test deserialize(s) == x
     end
 end
+
+@testset "serialize_to_ray_object" begin
+    @testset "nested object ids" begin
+        obj1 = Ray.put(1)
+        obj2 = Ray.put(2)
+
+        objs = [obj1, obj2]
+        ray_obj = Ray.serialize_to_ray_object(objs)
+        nested_obj_ids = ray_jll.GetNestedRefIds(ray_obj[])
+
+        @test issetequal([o.oid for o in objs], nested_obj_ids)
+
+        ray_obj2 = Ray.serialize_to_ray_object([obj1, (obj2, obj1, "blah"), 1])
+        nested_obj_ids2 = ray_jll.GetNestedRefIds(ray_obj2[])
+        @test length(nested_obj_ids2) == 2
+        @test issetequal(nested_obj_ids2, nested_obj_ids)
+    end
+end
