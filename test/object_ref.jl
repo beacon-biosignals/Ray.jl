@@ -44,8 +44,8 @@ end
         @test local_count(obj) == 2
 
         finalize(obj2)
-        # insert yield point here to allow async task that makes the API call to run
-        yield()
+        yield()  # allows async task that makes the API call to run
+        
         @test local_count(obj) == 1
 
         obj3 = ObjectRef(obj.oid_hex)
