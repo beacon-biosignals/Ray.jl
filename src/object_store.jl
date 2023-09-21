@@ -56,7 +56,7 @@ function _get(bytes::Vector{UInt8}, outer_obj_ref::Union{ObjectRef,Nothing})
 
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
-    result isa RayRemoteException ? throw(result) : return result
+    result isa RayTaskException ? throw(result) : return result
 end
 
 """

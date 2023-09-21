@@ -20,17 +20,6 @@ function _ray_import(runtime_env::RuntimeEnv)
     return nothing
 end
 
-struct RayRemoteException <: Exception
-    pid::Int
-    task_name::String
-    captured::CapturedException
-end
-
-function Base.showerror(io::IO, re::RayRemoteException)
-    print(io, "on Ray task \"$(re.task_name)\" with PID $(re.pid): ")
-    showerror(io, re.captured)
-end
-
 """
     const GLOBAL_STATE_ACCESSOR::Ref{ray_jll.GlobalStateAccessor}
 
@@ -323,7 +312,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         is_retryable_error[] = ray_jll.CxxBool(false)
         @debug "push error status: $status"
 
-        result = RayRemoteException(getpid(), task_name, captured)
+        result = RayTaskException(task_name, captured)
     end
 
     # TODO: remove - useful for now for debugging
