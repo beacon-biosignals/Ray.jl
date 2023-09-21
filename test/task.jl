@@ -93,14 +93,12 @@ end
         return_ref = submit_task(Ray.put, (2,))
         remote_ref = Ray.get(return_ref)
         @test Ray.has_owner(return_ref)
-        @test_broken Ray.has_owner(remote_ref)
+        @test Ray.has_owner(remote_ref)
 
         # Convert address to string to compare
-        @test_broken begin
-            return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
-            remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
-            return_ref_addr != remote_ref_addr
-        end
+        return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
+        remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
+        @test return_ref_addr != remote_ref_addr
 
         @test_broken Ray.get(remote_ref) == 2
     end
