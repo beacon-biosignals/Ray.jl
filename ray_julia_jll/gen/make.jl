@@ -7,13 +7,11 @@ using Tar: Tar
 using URIs: URI
 using ghr_jll: ghr
 
-const ASSETS = Set(["external",
-                    "julia_core_worker_lib.so-2.params",
-                    "_objs",
-                    "julia_core_worker_lib.so.runfiles_manifest",
-                    "julia_core_worker_lib.so",
-                    "julia_core_worker_lib.so.cppmap",
-                    "julia_core_worker_lib.so.runfiles"])
+const SO_FILES = ["julia_core_worker_lib.so-2.params",
+                 "julia_core_worker_lib.so.runfiles_manifest",
+                 "julia_core_worker_lib.so",
+                 "julia_core_worker_lib.so.cppmap",
+                 "julia_core_worker_lib.so.runfiles"]
 
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
@@ -50,6 +48,12 @@ $
 """x
 
 function create_tarball(dir, tarball)
+
+    tmpdir = mktempdir()
+    for file in SO_FILES
+        cp(joinpath(dir, file), joinpath(tmpdir, file))
+    end
+
     return open(GzipCompressorStream, tarball, "w") do tar
         Tar.create(dir, tar)
     end
@@ -143,12 +147,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Building ray_julia_jll..."
     Pkg.build("ray_julia_jll"; verbose=true)
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
-
-    # Limit what we include in tarball
-    compiled_assets = Set(readdir(compiled_dir))
-    if compiled_assets ⊈ ASSETS
-        throw(ArgumentError("Unexpected JLL assets found: $compiled_assets"))
-    end
 
     # Read Project.toml
     jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
