@@ -327,16 +327,8 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
 
     # TODO: support multiple return values
     # https://github.com/beacon-biosignals/Ray.jl/issues/54
-    bytes = Vector{UInt8}()
-    serializer = RaySerializer(bytes)
-    writeheader(serializer)
-    serialize(serializer, result)
 
-    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    metadata = ray_jll.NullPtr(ray_jll.Buffer)
-    inlined_ids = StdVector(collect(serializer.object_ids))::StdVector{ray_jll.ObjectID}
-    inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
-    ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
+    ray_obj = serialize_to_ray_object(result)
     push!(returns, ray_obj)
 
     return nothing
