@@ -165,7 +165,7 @@ ObjectID(str::AbstractString) = FromHex(ObjectID, str)
 
 Base.show(io::IO, x::ObjectID) = show(io, "ObjectID(\"$(Hex(x))\")")
 Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
-Base.hash(x::ObjectID, h::UInt) = hash("ObjectID", hash(Hex(x), h))
+Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
 
 #####
 ##### TaskArg
