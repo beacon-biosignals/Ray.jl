@@ -64,14 +64,15 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
 
 # Instantiate the Julia project environment
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
-COPY --chown=ray *Project.toml *Manifest.toml ${RAY_JL_PROJECT}/
-
-# Generate a fake ray_julia_jll package just for instantiation
-RUN mkdir -p ${RAY_JL_PROJECT}/ray_julia_jll/src && touch ${RAY_JL_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl
-
-# Note: The `timing` flag requires Julia 1.9
+COPY --chown=ray *Project.toml *Manifest.toml /tmp/Ray.jl/
 RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
-    julia -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.build(); Pkg.precompile(strict=true, timing=true)'
+    # Move project content into temporary depot
+    rm -rf ${RAY_JL_PROJECT} && \
+    mv /tmp/Ray.jl ${RAY_JL_PROJECT} && \
+    # Generate a fake ray_julia_jll package just for instantiation
+    mkdir -p ${RAY_JL_PROJECT}/ray_julia_jll/src && touch ${RAY_JL_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl && \
+    # Note: The `timing` flag requires Julia 1.9
+    julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.build(); Pkg.precompile(strict=true, timing=true)'
 
 # Copy the shared ephemeral Julia depot into the image and remove any installed packages
 # not used by our Manifest.toml.
