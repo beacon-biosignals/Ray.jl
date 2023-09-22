@@ -23,4 +23,9 @@
 
     RemoveLocalReference(worker, oid)
     @test !has_count(oid)
+    @test local_count(oid) == 0
+    
+    RemoveLocalReference(worker, oid)
+    @test !has_count(oid)
+    @test local_count(oid) == 0    
 end
