@@ -4,7 +4,7 @@
 
     worker = GetCoreWorker()
     # need to convert to hex string because these are just pointers
-    has_count(oid) = oid in _keys(GetAllReferenceCounts(worker))
+    has_count(oid) = Hex(oid) in Hex.(_keys(GetAllReferenceCounts(worker)))
     local_count(oid) = first(_getindex(GetAllReferenceCounts(worker), oid))
 
     oid = FromRandom(ObjectID)
