@@ -12,10 +12,11 @@ mutable struct ObjectRef
             ray_jll.AddLocalReference(worker, objref.oid)
         end
         # finalizer(f, object) returns object
-        return finalizer(objref) do objref
+       finalizer(objref) do objref
             errormonitor(@async finalize_object_ref(objref))
             return nothing
         end
+        return objref
     end
 end
 
