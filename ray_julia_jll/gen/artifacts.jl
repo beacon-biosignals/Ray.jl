@@ -71,33 +71,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
         host_wrapper = joinpath(WRAPPERS_DIR, "$platform_triplet-julia_version+$julia_version.jl")
         cp("wrapper.jl.tmp", host_wrapper; force=true)
     end
-
-    @info "Committing and pushing changes to Artifacts.toml for $jll_version"
-
-    message = "Generate artifacts for $TAG"
-
-    # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
-    Base.shred!(LibGit2.CredentialPayload()) do credentials
-        LibGit2.with(LibGit2.GitRepo(repo_path)) do repo
-
-            # TODO: This allows empty commits
-            for file in readdir(wrappers_dir)
-                filepath = joinpath("ray_julia_jll", "src", "wrappers", file)
-                LibGit2.add!(repo, filepath)
-            end
-            LibGit2.add!(repo, joinpath("ray_julia_jll", "Artifacts.toml"))
-            LibGit2.commit(repo, message)
-
-            # Same as "refs/heads/$branch" but fails if branch doesn't exist locally
-            # TODO: Ensure no other files are staged before committing
-            # TODO: Ensure no changes between HEAD~main except to Artifacts.toml
-            branch = LibGit2.branch(repo)
-            branch_ref = LibGit2.lookup_branch(repo, branch)
-            refspecs = [LibGit2.name(branch_ref)]
-
-            # TODO: Expecting users to have their branch up to date. Pushing outdated
-            # branches will fail like normal git CLI
-            LibGit2.push(repo; refspecs, credentials)
-        end
-    end
 end
