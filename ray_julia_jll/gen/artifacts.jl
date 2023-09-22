@@ -1,5 +1,5 @@
 using Base: SHA1, BinaryPlatforms
-using CodecZlib: GzipCompressorStream
+using CodecZlib: GzipDecompressorStream
 using CURL_jll
 using jq_jll
 using Pkg.Artifacts: bind_artifact!
@@ -29,7 +29,7 @@ end
 function get_release_asset_urls()
     # e.g. "git@github.com:beacon-biosignals/ray.jl"
     _, pkg = split(PKG_URL, ":")
-    assets_url = joinpath(GITHUB_URL, "$pkg", "releases", "tags", "$TAG")
+    assets_url = joinpath(GITHUB_URL,"$pkg", "releases", "tags", "$TAG")
     io = IOBuffer()
     run(pipeline(`$(curl()) $assets_url`, `$(jq()) -r '.assets[].browser_download_url'`, io))
     assets = split(String(take!(io)), "\n"; keepempty=false)
