@@ -35,3 +35,7 @@ const WRAPPERS_DIR = joinpath(REPO_PATH, "ray_julia_jll", "src", "wrappers")
 
 const JLL_PROJECT = read_project(JLL_PROJECT_TOML)
 const TAG = "v$(JLL_PROJECT.version)"
+
+const GITHUB_URL = "https://api.github.com/repos"
+const _PKG = split(PKG_URL, ":")[2]
+const ASSETS_URL = joinpath(GITHUB_URL, "$_PKG", "releases", "tags", "$TAG")

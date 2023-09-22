@@ -1,14 +1,13 @@
 using Base: SHA1, BinaryPlatforms
 using CodecZlib: GzipDecompressorStream
-using CURL_jll
-using jq_jll
+using Downloads
+using JSON3
 using Pkg.Artifacts: bind_artifact!
 using SHA: sha256
 using Tar
-using wget_jll
+using URIs: unescapeuri
 
 const DIR = mktempdir()
-const GITHUB_URL = "https://api.github.com/repos"
 
 include("common.jl")
 
@@ -27,19 +26,10 @@ function sha256sum(tarball_path)
 end
 
 function get_release_asset_urls()
-    # e.g. "git@github.com:beacon-biosignals/ray.jl"
-    _, pkg = split(PKG_URL, ":")
-    assets_url = joinpath(GITHUB_URL,"$pkg", "releases", "tags", "$TAG")
     io = IOBuffer()
-    run(pipeline(`$(curl()) $assets_url`, `$(jq()) -r '.assets[].browser_download_url'`, io))
-    assets = split(String(take!(io)), "\n"; keepempty=false)
-    return assets
-end
-
-function download_asset(asset_url)
-    run(`$(wget()) $asset_url -P $DIR`)
-    filename = replace(basename(asset_url), "%2B" => "+") # TODO: better way to parse URL in unicode?
-    return joinpath(DIR, filename)
+    Downloads.download(ASSETS_URL, io)
+    json = JSON3.read(String(take!(io)))
+    return unescapeuri.(get.(json[:assets], :browser_download_url))
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -48,7 +38,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     for artifact_url in artifacts_urls
 
-        artifact_path = download_asset(artifact_url)
+        artifact_path = Downloads.download(artifact_url, joinpath(DIR, basename(artifact_url)))
 
         m = match(TARBALL_REGEX, basename(artifact_path))
         if isnothing(m)
