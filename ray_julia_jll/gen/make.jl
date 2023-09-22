@@ -8,12 +8,7 @@ using URIs: URI
 using ghr_jll: ghr
 
 const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
-
-const SO_FILES = ["julia_core_worker_lib.so-2.params",
-                 "julia_core_worker_lib.so.runfiles_manifest",
-                 "julia_core_worker_lib.so",
-                 "julia_core_worker_lib.so.cppmap",
-                 "julia_core_worker_lib.so.runfiles"]
+const SO_FILE = "julia_core_worker_lib.so"
 
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
@@ -50,14 +45,11 @@ $
 """x
 
 function create_tarball(dir, tarball)
-
-    tmpdir = mktempdir()
-    for file in SO_FILES
-        cp(joinpath(dir, file), joinpath(tmpdir, file))
-    end
-
-    return open(GzipCompressorStream, tarball, "w") do tar
-        Tar.create(dir, tar)
+    return mktempdir() do tmpdir
+        cp(joinpath(dir, SO_FILE), joinpath(tmpdir, SO_FILE))
+        return open(GzipCompressorStream, tarball, "w") do tar
+            Tar.create(tmpdir, tar)
+        end
     end
 end
 
@@ -139,6 +131,8 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
+    isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
+
     # Check for this now before we spend any time building the JLL
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
@@ -160,7 +154,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Creating tarball $tarball_name"
     compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
     tarball_path = joinpath(TARBALL_DIR, tarball_name)
-    isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
     create_tarball(readlink(compiled_dir), tarball_path)
 
     pkg_http_url = parse_git_remote_url(pkg_url)
