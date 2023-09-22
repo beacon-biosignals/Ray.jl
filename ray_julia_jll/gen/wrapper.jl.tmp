@@ -1,4 +1,4 @@
-using CxxWrap: @initcxx
+using CxxWrap
 using libcxxwrap_julia_jll
 
 JLLWrappers.@generate_wrapper_header("ray_julia")
