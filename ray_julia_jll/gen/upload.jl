@@ -126,7 +126,12 @@ if abspath(PROGRAM_FILE) == @__FILE__
         artifact_url = "$(pkg_http_url)/releases/download/$TAG/$tarball"
         branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
         @info "Uploading $tarball to $artifact_url"
-        upload_to_github_release(joinpath(TARBALL_DIR, tarball), artifact_url, branch)
+        try
+            upload_to_github_release(joinpath(TARBALL_DIR, tarball), artifact_url, branch)
+        catch e
+            # ghr() already prints an error message with diagnosis
+            @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
+        end
     end
 
 end
