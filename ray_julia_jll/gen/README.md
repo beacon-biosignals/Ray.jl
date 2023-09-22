@@ -1,7 +1,7 @@
 # Building and Publishing JLLs
 
 1. Run the `make.jl` script to build the tarball for the host platform and a given julia-version.
-Builds are required for `linux x86_64` and `macos-arm64` on julia `v1.8.0` and `v1.9.0`.
+Builds are required for `linux x86_64` and `macos-arm64` on julia `v1.8` and `v1.9`.
 It is advised you run this within the python virtual environment associated with the root package.
 Note: rerunning this script _will overwrite_ an existing tarball.
 ```
