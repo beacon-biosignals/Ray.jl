@@ -18,7 +18,12 @@ function setup_core_worker(body)
     try
         body()
     finally
-        # let object ref finalizers run...
+        # ObjectRef finalizers make core worker API call
+        # (`RemoveLocalReference`) that needs to complete before tearing down
+        # the core worker.  If we don't GC and insert a yield point here, we
+        # race conditions where the finalizers run at the same time as the core
+        # worker is being torn down, which leads to segfaults on ~50% of the
+        # runs.
         GC.gc()
         yield()
         ray_jll.shutdown_driver()
