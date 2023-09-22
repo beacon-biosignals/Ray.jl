@@ -1,5 +1,4 @@
 mutable struct ObjectRef
-    # oid::ray_jll.ObjectIDAllocated
     oid_hex::String
     owner_address::Union{ray_jll.AddressAllocated,Nothing}
     serialized_object_status::String
@@ -11,7 +10,6 @@ mutable struct ObjectRef
             worker = ray_jll.GetCoreWorker()
             ray_jll.AddLocalReference(worker, objref.oid)
         end
-        # finalizer(f, object) returns object
        finalizer(objref) do objref
             errormonitor(@async finalize_object_ref(objref))
             return nothing
