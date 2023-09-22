@@ -32,23 +32,21 @@ const STATUS_CODE_SYMBOLS = (:OK,
     :OutOfResource,
     :ObjectRefEndOfStream)
 
-@eval begin
-    $(_enum_getproperty_expr(StatusCode, STATUS_CODE_SYMBOLS))
-    $(_enum_propertynames_expr(StatusCode, STATUS_CODE_SYMBOLS))
-end
-
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
-
-@eval begin
-    $(_enum_getproperty_expr(Language, LANGUAGE_SYMBOLS))
-    $(_enum_propertynames_expr(Language, LANGUAGE_SYMBOLS))
-end
-
 const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
 
+# Generate the following methods for our wrapped enum types:
+# - A constructor allowing you to create a value via a `Symbol` (e.g. `StatusCode(:OK)`).
+# - A `instances` method allowing you to get a list of all enum values (e.g. `instances(StatusCode)`)
 @eval begin
-    $(_enum_getproperty_expr(WorkerType, WORKER_TYPE_SYMBOLS))
-    $(_enum_propertynames_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_symbol_constructor_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_instances_expr(StatusCode, STATUS_CODE_SYMBOLS))
+
+    $(_enum_symbol_constructor_expr(Language, LANGUAGE_SYMBOLS))
+    $(_enum_instances_expr(Language, LANGUAGE_SYMBOLS))
+
+    $(_enum_symbol_constructor_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_instances_expr(WorkerType, WORKER_TYPE_SYMBOLS))
 end
 
 function check_status(status::Status)
@@ -102,7 +100,7 @@ function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
 end
 
 Base.show(io::IO, status::Status) = print(io, ToString(status))
-Base.show(io::IO, jobid::JobID) = print(io, Int(ToInt(jobid)))
+Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
 
 const CORE_WORKER = Ref{CoreWorker}()
 
@@ -114,10 +112,32 @@ function GetCoreWorker()
 end
 
 #####
+##### Message
+#####
+
+function ParseFromString(::Type{T}, str::AbstractString) where {T<:Message}
+    message = T()
+    ParseFromString(message, str)
+    return message
+end
+
+function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
+    message = T()
+    JsonStringToMessage(json, CxxPtr(message))
+    return message
+end
+
+#####
 ##### Buffer
 #####
 
 NullPtr(::Type{Buffer}) = BufferFromNull()
+
+#####
+##### JobID
+#####
+
+FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
 
 #####
 ##### ObjectID
@@ -125,6 +145,7 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 
 FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
 FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
+Nil(::Type{ObjectID}) = ObjectIDFromNil()
 
 #####
 ##### TaskArg
