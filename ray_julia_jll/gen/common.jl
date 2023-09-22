@@ -14,7 +14,7 @@ const TARBALL_REGEX = r"""
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
     releases/download/
-    (?<tag>[^/]+)/(?<file_name>[^/]+)$
+    (?<tag>[^/]+)$
     """x
 
 function remote_url(repo_root::AbstractString, name::AbstractString="origin")
