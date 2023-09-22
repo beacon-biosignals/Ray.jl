@@ -18,9 +18,15 @@ function setup_core_worker(body)
     try
         body()
     finally
+        # let object ref finalizers run...
+        GC.gc()
+        yield()
         ray_jll.shutdown_driver()
     end
 end
+
+local_count(o::Ray.ObjectRef) = local_count(o.oid_hex)
+local_count(oid_hex) = first(get(Ray.get_all_reference_counts(), oid_hex, 0))
 
 # Useful in running tests which require us to re-run `Ray.init` which currently can only be
 # called once as it is infeasible to reset global `Ref`'s using `isassigned` conditionals.

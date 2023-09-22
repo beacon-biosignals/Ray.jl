@@ -8,7 +8,9 @@ function put(data)
     bytes = serialize_to_bytes(data)
     buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
     ray_obj = ray_jll.RayObject(buffer)
-    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}()))
+    # `CoreWorker::Put` initializes the local ref count to 1
+    return ObjectRef(ray_jll.put(ray_obj, StdVector{ray_jll.ObjectID}());
+                     add_local_ref=false)
 end
 
 put(obj_ref::ObjectRef) = obj_ref
@@ -77,4 +79,29 @@ function Base.wait(obj_ref::ObjectRef)
         sleep(0.1)
     end
     return nothing
+end
+
+#####
+##### Reference counting
+#####
+
+"""
+    get_all_reference_counts()
+
+For testing/debugging purposes, returns a
+`Dict{ray_jll.ObjectID,Tuple{Int,Int}}` containing the reference counts for each
+object ID that the local raylet knows about.  The first count is the "local
+reference" count, and the second is the count of submitted tasks depending on
+the object.
+"""
+function get_all_reference_counts()
+    worker = ray_jll.GetCoreWorker()
+    counts_raw = ray_jll.GetAllReferenceCounts(worker)
+
+    # we need to convert this to a dict we can actually work with.  we use the
+    # hex representation of the ID so we can avoid messing with the internal
+    # ObjectID representation...
+    counts = Dict(ray_jll.Hex(k) => Tuple(Int.(ray_jll._getindex(counts_raw, k)))
+                  for k in ray_jll._keys(counts_raw))
+    return counts
 end

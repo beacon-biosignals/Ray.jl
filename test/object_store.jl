@@ -29,4 +29,30 @@
         @test obj_ref1 === obj_ref2
         @test Ray.get(obj_ref1) == Ray.get(obj_ref2)
     end
+
+    @testset "Local ref count: put, deepcopy, and constructed object ref" begin
+        obj = Ray.put(nothing)
+        oid = obj.oid_hex
+
+        @test local_count(obj) == 1
+
+        obj2 = deepcopy(obj)
+        @test local_count(obj) == 2
+
+        finalize(obj2)
+        yield()  # allows async task that makes the API call to run
+
+        @test local_count(obj) == 1
+
+        obj3 = ObjectRef(obj.oid_hex)
+        @test local_count(obj) == 2
+
+        finalize(obj3)
+        yield()
+        @test local_count(obj) == 1
+
+        finalize(obj)
+        yield()
+        @test local_count(oid) == 0
+    end
 end

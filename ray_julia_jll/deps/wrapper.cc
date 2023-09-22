@@ -393,6 +393,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // the function. If you fail to do this you'll get a "No appropriate factory for type" upon
     // attempting to use the shared library in Julia.
 
+    // Resource map type wrapper
     mod.add_type<std::unordered_map<std::string, double>>("CxxMapStringDouble");
     mod.method("_setindex!", [](std::unordered_map<std::string, double> &map,
                                 double val,
@@ -473,7 +474,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<ObjectID>("ObjectID")
         .method("ObjectIDFromHex", &ObjectID::FromHex)
         .method("ObjectIDFromRandom", &ObjectID::FromRandom)
-        .method("ObjectIDFromNil", &ObjectID::Nil)
+        .method("ObjectIDFromNil", []() {
+            auto id = ObjectID::Nil();
+            ObjectID id_deref = id;
+            return id_deref;
+        })
         .method("Hex", &ObjectID::Hex);
 
     // enum Language
@@ -672,6 +677,24 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return std::unique_ptr<TaskArgByValue>(t);
         });
 
+    // ObjectID reference count map wrapper
+    typedef std::unordered_map<ObjectID, std::pair<size_t, size_t>> ReferenceCountMap;
+    mod.add_type<ReferenceCountMap>("CxxMapObjectIDPairIntInt");
+    mod.method("_keys", [](ReferenceCountMap &map) {
+        std::vector<ObjectID> keys(map.size());
+        for (auto kv : map) {
+            keys.push_back(kv.first);
+        }
+        return keys;
+    });
+    mod.method("_getindex", [](ReferenceCountMap &map, ObjectID &key) {
+        auto val = map[key];
+        std::vector<size_t> retval;
+        retval.push_back(val.first);
+        retval.push_back(val.second);
+        return retval;
+    });
+
     // class WorkerContext
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/context.h#L30
     mod.add_type<ray::core::WorkerContext>("WorkerContext")
@@ -687,7 +710,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
         .method("GetOwnershipInfo", &ray::core::CoreWorker::GetOwnershipInfo)
         .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs)
-        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture);
+        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture)
+        // .method("AddLocalReference", &ray::core::CoreWorker::AddLocalReference)
+        .method("AddLocalReference", [](ray::core::CoreWorker &worker, ObjectID &object_id) {
+            return worker.AddLocalReference(object_id);
+        })
+        .method("RemoveLocalReference", &ray::core::CoreWorker::RemoveLocalReference)
+        .method("GetAllReferenceCounts", &ray::core::CoreWorker::GetAllReferenceCounts);
     mod.method("_GetCoreWorker", &_GetCoreWorker);
 
     mod.method("_submit_task", &_submit_task);

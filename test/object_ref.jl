@@ -1,3 +1,5 @@
+# this runs inside setup_core_worker()
+
 function serialize_deserialize(x)
     io = IOBuffer()
     serialize(io, x)

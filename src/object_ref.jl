@@ -1,12 +1,59 @@
 mutable struct ObjectRef
-    oid::ray_jll.ObjectIDAllocated
+    oid_hex::String
     owner_address::Union{ray_jll.AddressAllocated,Nothing}
     serialized_object_status::String
+
+    function ObjectRef(oid_hex, owner_address, serialized_object_status;
+                       add_local_ref=true)
+        objref = new(oid_hex, owner_address, serialized_object_status)
+        if add_local_ref
+            worker = ray_jll.GetCoreWorker()
+            ray_jll.AddLocalReference(worker, objref.oid)
+        end
+       finalizer(objref) do objref
+            errormonitor(@async finalize_object_ref(objref))
+            return nothing
+        end
+        return objref
+    end
 end
 
-ObjectRef(oid::ray_jll.ObjectIDAllocated) = ObjectRef(oid, nothing, "")
-ObjectRef(hex_str::AbstractString) = ObjectRef(ray_jll.FromHex(ray_jll.ObjectID, hex_str))
-hex_identifier(obj_ref::ObjectRef) = String(ray_jll.Hex(obj_ref.oid))
+function finalize_object_ref(obj::ObjectRef)
+    @debug "Removing local ref for ObjectID $(obj.oid_hex)"
+    worker = ray_jll.GetCoreWorker()
+    oid = ray_jll.FromHex(ray_jll.ObjectID, obj.oid_hex)
+    ray_jll.RemoveLocalReference(worker, oid)
+    return nothing
+end
+
+function Base.getproperty(x::ObjectRef, prop::Symbol)
+    return if prop == :oid
+        ray_jll.FromHex(ray_jll.ObjectID, x.oid_hex)
+    else
+        getfield(x, prop)
+    end
+end
+
+# in order to actually increment the local ref count appropriately when we
+# `deepcopy` an ObjectRef and setup the appropriate finalizer, this
+# specialization calls the constructor after deepcopying the fields.
+function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
+    fieldnames = Base.fieldnames(typeof(x))
+    fieldcopies = ntuple(length(fieldnames)) do i
+        @debug "deep copying x.$(fieldnames[i])"
+        fieldval = getfield(x, fieldnames[i])
+        return Base.deepcopy_internal(fieldval, stackdict)
+    end
+
+    xcp = ObjectRef(fieldcopies...; add_local_ref=true)
+    stackdict[x] = xcp
+
+    return xcp
+end
+
+ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
+ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
+hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
 
 function Base.hash(obj_ref::ObjectRef, h::UInt)
@@ -47,7 +94,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
     outer_object_id = if outer_obj_ref !== nothing
         outer_obj_ref.oid
     else
-        ray_jll.Nil(ray_jll.ObjectID)
+        ray_jll.FromNil(ray_jll.ObjectID)
     end
 
     if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
@@ -87,12 +134,11 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     owner_address_str = deserialize(s)
     serialized_object_status = deserialize(s)
 
-    object_id = ray_jll.FromHex(ray_jll.ObjectID, hex_str)
     owner_address = nothing
     if !isempty(owner_address_str)
         owner_address = ray_jll.Address()
         ray_jll.ParseFromString(owner_address, owner_address_str)
     end
 
-    return ObjectRef(object_id, owner_address, serialized_object_status)
+    return ObjectRef(hex_str, owner_address, serialized_object_status)
 end

@@ -54,6 +54,16 @@ end
     @test Ray.get_task_id() != task_id != subtask_id
 end
 
+@testset "Local ref count: Task return object" begin
+    obj = Ray.submit_task(getpid, ())
+    oid = obj.oid_hex
+    @test local_count(oid) == 1
+
+    finalize(obj)
+    yield()
+    @test local_count(oid) == 0
+end
+
 @testset "object ownership" begin
     @testset "unknown owner" begin
         invalid_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
