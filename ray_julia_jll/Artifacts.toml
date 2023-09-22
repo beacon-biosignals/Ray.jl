@@ -1,34 +1,10 @@
 [[ray_julia]]
 arch = "aarch64"
 cxxstring_abi = "cxx11"
-git-tree-sha1 = "ace1c0d34f374ec6a6b39126c3cc765c0799edc2"
+git-tree-sha1 = "644b070427bbadf1a7b3f261144536dc91e12aca"
 libgfortran_version = "5.0.0"
 os = "macos"
 
     [[ray_julia.download]]
-    sha256 = "be18b898020d558a78dfeb8b5ef226ae7b20da9c0d3d1a684ccc8f77c387e04c"
-    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version%2B1.9.0.tar.gz"
-[[ray_julia]]
-arch = "x86_64"
-cxxstring_abi = "cxx11"
-git-tree-sha1 = "ddf0e8e9a15702ca4e1fde18de553e9f9d4b1b62"
-libc = "glibc"
-libgfortran_version = "5.0.0"
-libstdcxx_version = "3.4.29"
-os = "linux"
-
-    [[ray_julia.download]]
-    sha256 = "e28aceb988b007ee3632f78317c4aa815a4cc3eb814e4ea092c848f36393b7f9"
-    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx29-julia_version%2B1.8.0.tar.gz"
-[[ray_julia]]
-arch = "x86_64"
-cxxstring_abi = "cxx11"
-git-tree-sha1 = "73219c750af5e18cac0046a56d2267c626d50d6c"
-libc = "glibc"
-libgfortran_version = "5.0.0"
-libstdcxx_version = "3.4.30"
-os = "linux"
-
-    [[ray_julia.download]]
-    sha256 = "f8fdfaffeb1b3db0373e07a93c21fe0d8e8683f7dcbd934ab6af979247536829"
-    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version%2B1.9.0.tar.gz"
+    sha256 = "a4799c34b92761e2e2b90f81b50af86cdf9426876bcc56464c6afce677bb0209"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.aarch64-apple-darwin-libgfortran5-cxx11-julia_version%2B1.9.2.tar.gz"
