@@ -12,7 +12,8 @@ julia --project make.jl
 2. Once all tarballs have been built for a given host you can publish them as assets to a GitHub pre-release by running the `upload.jl` script, which requires a `GITHUB_TOKEN` environment variable.
 Note: reruning this script will only upload new tarballs and skip any that have already been published.
 ```
-export GITHUB_TOKEN="<github_token>"
+read -s GITHUB_TOKEN
+export GITHUB_TOKEN
 julia --project upload.jl
 ```
 
@@ -22,4 +23,4 @@ julia --project upload.jl
 4. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.
 Then update the GitHub release to point to the new tag.
 
-5. Register the new tag as normal.
+5. Register the new tag as normal with JuliaRegistrator.

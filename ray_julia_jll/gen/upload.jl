@@ -4,10 +4,10 @@ using ghr_jll: ghr
 include("common.jl")
 
 const TARBALL_REGEX = r"""
-    ^ray_julia.v(?<jll_version>([0-9]\.){3})
-    (?<triplet>[a-z, 0-9, \-, \_,]+)
-    -julia_version\+(?<julia_version>([0-9]\.){3})
-    tar.gz$
+    ^ray_julia\.v(?<jll_version>[0-9]+(\.[0-9]+){2})\.
+    (?<triplet>[a-z0-9_-]+)-
+    julia_version\+(?<julia_version>[0-9]+(\.[0-9]+){2})\.
+    tar\.gz$
     """x
 
 # Parse "GIT URLs" syntax (URLs and a scp-like syntax). For details see:
