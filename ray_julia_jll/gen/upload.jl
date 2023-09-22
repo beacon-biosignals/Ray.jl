@@ -103,10 +103,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
     isdir(TARBALL_DIR) || error("$TARBALL_DIR does not exist")
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
-    for tarball in readdir(TARBALL_DIR)
-        m = match(TARBALL_REGEX, tarball)
-        isnothing(m) && error("Unexpected file: $tarball")
-    end
+    # check that contents are tarballs with correct filename
+    all(t -> !isnothing(match(TARBALL_REGEX, t)), readdir(TARBALL_DIR))
 
     pkg_http_url = parse_git_remote_url(PKG_URL)
     artifact_url = "$(pkg_http_url)/releases/download/$TAG"
