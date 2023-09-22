@@ -99,14 +99,16 @@ end
         return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
         remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
         @test return_ref_addr != remote_ref_addr
+        @test remote_ref_addr == remote_ref.owner_address_string
 
-        @test_broken Ray.get(remote_ref) == 2
+        @test Ray.get(remote_ref) == 2
     end
 
     # TODO: When owner registration is enabled this test seems to corrupt other ObjectIDs
     # such that later tests return the wrong results.
     @testset "worker get on driver put" begin
         local_ref = Ray.put(3)
+        # XXX: getting empty address ID string here:
         return_ref = Ray.submit_task(Ray.get, (local_ref,))
         @test return_ref != local_ref
         @test Ray.has_owner(return_ref)

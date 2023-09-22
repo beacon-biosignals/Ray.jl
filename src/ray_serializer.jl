@@ -81,11 +81,8 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject}, outer_obje
         rethrow()
     end
 
-    if outer_object_ref != nothing
-        for inner_object_ref in s.object_refs
-            @debug "Registering ownership for $(inner_object_ref), contained in $(outer_object_ref)"
-            _register_ownership(inner_object_ref, outer_object_ref)
-        end
+    for inner_object_ref in s.object_refs
+        _register_ownership(inner_object_ref, outer_object_ref)
     end
 
     # TODO: add an option to not rethrow

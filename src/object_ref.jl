@@ -1,11 +1,14 @@
 mutable struct ObjectRef
     oid_hex::String
-    owner_address::Union{ray_jll.AddressAllocated,Nothing}
+    owner_address_string::Union{String,Nothing}
     serialized_object_status::String
 
-    function ObjectRef(oid_hex, owner_address, serialized_object_status;
+    function ObjectRef(oid_hex, owner_address_string, serialized_object_status;
                        add_local_ref=true)
-        objref = new(oid_hex, owner_address, serialized_object_status)
+        if owner_address_string !== nothing && isempty(owner_address_string)
+            owner_address_string = nothing
+        end
+        objref = new(oid_hex, owner_address_string, serialized_object_status)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
             ray_jll.AddLocalReference(worker, objref.oid)
@@ -28,9 +31,18 @@ function finalize_object_ref(obj::ObjectRef)
     return nothing
 end
 
+# we overload getproperty for :oid and :owner_address (from previous
+# implementation) which were replaced with String-serialized versions that are
+# safe references, instead of holding onto C++ managed memory
 function Base.getproperty(x::ObjectRef, prop::Symbol)
     return if prop == :oid
-        ray_jll.FromHex(ray_jll.ObjectID, x.oid_hex)
+        ray_jll.FromHex(ray_jll.ObjectID, getfield(x, :oid_hex))
+    elseif prop == :owner_address
+        owner_address_string = getfield(x, :owner_address_string)
+        isnothing(owner_address_string) && return nothing
+        owner_address = ray_jll.Address()
+        ray_jll.ParseFromString(owner_address, owner_address_string)
+        owner_address
     else
         getfield(x, prop)
     end
@@ -91,6 +103,10 @@ end
 # see https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
+    @debug """Registering ownership for $(obj_ref)
+              owner_address: $(obj_ref.owner_address_string)
+              status: $(obj_ref.serialized_object_status)
+              contained in $(outer_obj_ref)"""
     worker = ray_jll.GetCoreWorker()
 
     outer_object_id = if outer_obj_ref !== nothing
@@ -99,12 +115,18 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
         ray_jll.FromNil(ray_jll.ObjectID)
     end
 
-    if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
+    # we've overloaded getproperty for this one to create the actual owner ref
+    # owner_address = obj_ref.owner_address
+
+    if !isnothing(obj_ref.owner_address_string) && !has_owner(obj_ref)
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
         # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L543
-        ray_jll.RegisterOwnershipInfoAndResolveFuture(worker, obj_ref.oid, outer_object_id,
-                                                      obj_ref.owner_address,
+        ray_jll.RegisterOwnershipInfoAndResolveFuture(obj_ref.oid, outer_object_id,
+                                                      obj_ref.owner_address_string,
                                                       obj_ref.serialized_object_status)
+    else
+        isnothing(obj_ref.owner_address_string) && @debug "attempted to register ownership but owner address is nothign: $(obj_ref)"
+        has_owner(obj_ref) && @debug "attempted to regsiter ownership but object already has known owner: $(obj_ref)"
     end
 
     return nothing
@@ -136,11 +158,13 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     owner_address_str = deserialize(s)
     serialized_object_status = deserialize(s)
 
-    owner_address = nothing
-    if !isempty(owner_address_str)
-        owner_address = ray_jll.Address()
-        ray_jll.ParseFromString(owner_address, owner_address_str)
+    if isempty(owner_address_str)
+        owner_address_str = nothing
     end
+    # if !isempty(owner_address_str)
+    #     owner_address = ray_jll.Address()
+    #     ray_jll.ParseFromString(owner_address, owner_address_str)
+    # end
 
-    return ObjectRef(hex_str, owner_address, serialized_object_status)
+    return ObjectRef(hex_str, owner_address_str, serialized_object_status)
 end
