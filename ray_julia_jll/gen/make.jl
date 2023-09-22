@@ -7,6 +7,8 @@ using Tar: Tar
 using URIs: URI
 using ghr_jll: ghr
 
+const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
+
 const SO_FILES = ["julia_core_worker_lib.so-2.params",
                  "julia_core_worker_lib.so.runfiles_manifest",
                  "julia_core_worker_lib.so",
@@ -146,7 +148,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # Build JLL
     @info "Building ray_julia_jll..."
     Pkg.build("ray_julia_jll"; verbose=true)
-    compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
 
     # Read Project.toml
     jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
@@ -157,7 +158,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     tarball_name = "ray_julia.v$jll_version.$host_triplet.tar.gz"
 
     @info "Creating tarball $tarball_name"
-    tarball_path = joinpath(tempdir(), tarball_name)
+    compiled_dir = joinpath(repo_path, "ray_julia_jll", "deps", "bazel-bin")
+    tarball_path = joinpath(TARBALL_DIR, tarball_name)
+    isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
     create_tarball(readlink(compiled_dir), tarball_path)
 
     pkg_http_url = parse_git_remote_url(pkg_url)

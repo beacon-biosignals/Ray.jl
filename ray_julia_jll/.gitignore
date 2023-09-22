@@ -6,3 +6,4 @@ deps/ray
 deps/bazel-*
 deps/override
 /.dir-locals.el
+gen/tarballs
