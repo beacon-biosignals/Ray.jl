@@ -1,9 +1,7 @@
-using LibGit2: LibGit2
-using Pkg.Types: read_project
 using URIs: URI
 using ghr_jll: ghr
 
-const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
+include("common.jl")
 
 const TARBALL_REGEX = r"""
     ^ray_julia.v(?<jll_version>([0-9]\.){3})
@@ -45,14 +43,6 @@ const GH_RELEASE_ASSET_PATH_REGEX = r"""
     releases/download/
     (?<tag>[^/]+)/(?<file_name>[^/]+)$
     """x
-
-function remote_url(repo_root::AbstractString, name::AbstractString="origin")
-    return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
-        LibGit2.with(LibGit2.lookup_remote(repo, name)) do remote
-            LibGit2.url(remote)
-        end
-    end
-end
 
 function parse_git_remote_url(pkg_url)
     m = match(URL_REGEX, pkg_url)
@@ -124,27 +114,17 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
 
     isdir(TARBALL_DIR) || error("$TARBALL_DIR does not exist")
-
-    # Check for this now before we spend any time building the JLL
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
-    repo_path = abspath(joinpath(@__DIR__, "..", ".."))
-    pkg_url = remote_url(repo_path)
-    pkg_http_url = parse_git_remote_url(pkg_url)
-
-    # Read Project.toml
-    jll_project_toml = joinpath(repo_path, "ray_julia_jll", "Project.toml")
-    jll_project = read_project(jll_project_toml)
-    jll_version = jll_project.version
-    tag = "v$(jll_version)"
+    pkg_http_url = parse_git_remote_url(PKG_URL)
 
     for tarball in readdir(TARBALL_DIR)
 
         m = match(TARBALL_REGEX, tarball)
         isnothing(m) && continue
 
-        artifact_url = "$(pkg_http_url)/releases/download/$(tag)/$tarball"
-        branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(repo_path))
+        artifact_url = "$(pkg_http_url)/releases/download/$TAG/$tarball"
+        branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
         @info "Uploading $tarball to $artifact_url"
         upload_to_github_release(joinpath(TARBALL_DIR, tarball), artifact_url, branch)
     end
