@@ -41,7 +41,7 @@ $
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
     releases/download/
-    (?<tag>[^/]+)/(?<file_name>[^/]+)$
+    (?<tag>[^/]+)$
     """x
 
 function parse_git_remote_url(pkg_url)
@@ -75,20 +75,7 @@ function upload_to_github_release(archive_path::AbstractString, archive_uri::URI
         ))
     end
 
-    # The `ghr` utility uses the local file name for the release asset. In order to have
-    # have the asset match the specified URL we'll temporarily rename the file.
-    org_archive_name = nothing
-    if basename(archive_path) != m[:file_name]
-        org_archive_name = basename(archive_path)
-        archive_path = mv(archive_path, joinpath(dirname(archive_path), m[:file_name]))
-    end
-
     upload_to_github_release(m[:owner], m[:repo_name], commit, m[:tag], archive_path; kwargs...)
-
-    # Rename the archive back to the original name
-    if org_archive_name !== nothing
-        mv(archive_path, joinpath(dirname(archive_path), org_archive_name))
-    end
 
     return nothing
 end
@@ -116,22 +103,21 @@ if abspath(PROGRAM_FILE) == @__FILE__
     isdir(TARBALL_DIR) || error("$TARBALL_DIR does not exist")
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
-    pkg_http_url = parse_git_remote_url(PKG_URL)
-
     for tarball in readdir(TARBALL_DIR)
-
         m = match(TARBALL_REGEX, tarball)
-        isnothing(m) && continue
+        isnothing(m) && error("Unexpected file: $tarball")
+    end
 
-        artifact_url = "$(pkg_http_url)/releases/download/$TAG/$tarball"
-        branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
-        @info "Uploading $tarball to $artifact_url"
-        try
-            upload_to_github_release(joinpath(TARBALL_DIR, tarball), artifact_url, branch)
-        catch e
-            # ghr() already prints an error message with diagnosis
-            @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
-        end
+    pkg_http_url = parse_git_remote_url(PKG_URL)
+    artifact_url = "$(pkg_http_url)/releases/download/$TAG"
+    branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
+
+    @info "Uploading tarballs to $artifact_url"
+    try
+        upload_to_github_release(TARBALL_DIR, artifact_url, branch)
+    catch e
+        # ghr() already prints an error message with diagnosis
+        @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
     end
 
 end
