@@ -1,4 +1,4 @@
-Manifest.toml
+/Manifest.toml
 venv
 deps/build.log
 deps/WORKSPACE.bazel
@@ -6,3 +6,4 @@ deps/ray
 deps/bazel-*
 deps/override
 /.dir-locals.el
+gen/tarballs
