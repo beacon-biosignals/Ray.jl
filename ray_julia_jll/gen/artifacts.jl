@@ -34,10 +34,12 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
+    @info "Fetching assets for $TAG"
     artifacts_urls = get_release_asset_urls()
 
     for artifact_url in artifacts_urls
 
+        @info "Adding artifact for $(basename(artifact_url))"
         artifact_path = Downloads.download(artifact_url, joinpath(DIR, basename(artifact_url)))
 
         m = match(TARBALL_REGEX, basename(artifact_path))
