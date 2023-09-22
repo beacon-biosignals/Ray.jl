@@ -1,10 +1,8 @@
 using Base: SHA1, BinaryPlatforms
-using CodecZlib: GzipCompressorStream, GzipDecompressorStream
+using CodecZlib: GzipCompressorStream
 using CURL_jll
 using jq_jll
-using LibGit2: LibGit2
 using Pkg.Artifacts: bind_artifact!
-using Pkg.Types: read_project
 using SHA: sha256
 using Tar
 using wget_jll
@@ -12,18 +10,7 @@ using wget_jll
 const DIR = mktempdir()
 const GITHUB_URL = "https://api.github.com/repos"
 
-const TRIPLET_REGEX = r"""
-    ^ray_julia.v(?<jll_version>([0-9]\.){3})
-    (?<triplet>[a-z, 0-9, \-, \_,]+)
-    -julia_version\+(?<julia_version>([0-9]\.){3})
-    tar.gz$
-    """x
-
-const GH_RELEASE_ASSET_PATH_REGEX = r"""
-    ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
-    releases/download/
-    (?<tag>[^/]+)/(?<file_name>[^/]+)$
-    """x
+include("common.jl")
 
 # Compute the Artifact.toml `git-tree-sha1`.
 function tree_hash_sha1(tarball_path)
@@ -39,18 +26,10 @@ function sha256sum(tarball_path)
     end
 end
 
-function remote_url(repo_root::AbstractString, name::AbstractString="origin")
-    return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
-        LibGit2.with(LibGit2.lookup_remote(repo, name)) do remote
-            LibGit2.url(remote)
-        end
-    end
-end
-
-function get_release_asset_urls(pkg_url, jll_version)
+function get_release_asset_urls()
     # e.g. "git@github.com:beacon-biosignals/ray.jl"
-    _, pkg = split(pkg_url, ":")
-    assets_url = joinpath(GITHUB_URL,"$pkg", "releases", "tags", "v$(jll_version)")
+    _, pkg = split(PKG_URL, ":")
+    assets_url = joinpath(GITHUB_URL,"$pkg", "releases", "tags", "$TAG")
     io = IOBuffer()
     run(pipeline(`$(curl()) $assets_url`, `$(jq()) -r '.assets[].browser_download_url'`, io))
     assets = split(String(take!(io)), "\n"; keepempty=false)
@@ -65,26 +44,13 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
 
-    repo_path = abspath(joinpath(@__DIR__, "..", ".."))
-    pkg_url = remote_url(repo_path)
-
-    jll_path = joinpath(repo_path, "ray_julia_jll")
-    artifacts_toml = joinpath(jll_path, "Artifacts.toml")
-
-    # Read Project.toml
-    jll_project_toml = joinpath(jll_path, "Project.toml")
-    jll_project = read_project(jll_project_toml)
-    jll_version = jll_project.version
-
-    wrappers_dir = joinpath(jll_path, "src", "wrappers")
-
-    artifacts_urls = get_release_asset_urls(jll_version)
+    artifacts_urls = get_release_asset_urls()
 
     for artifact_url in artifacts_urls
 
         artifact_path = download_asset(artifact_url)
 
-        m = match(TRIPLET_REGEX, basename(artifact_path))
+        m = match(TARBALL_REGEX, basename(artifact_path))
         if isnothing(m)
             throw(ArgumentError("Could not parse host triplet from $(basename(artifact_path))"))
         end
@@ -94,7 +60,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
         platform = parse(BinaryPlatforms.Platform, platform_triplet)
 
         bind_artifact!(
-            artifacts_toml,
+            JLL_ARTIFACTS_TOML,
             "ray_julia",
             tree_hash_sha1(artifact_path);
             platform=platform,
@@ -102,13 +68,13 @@ if abspath(PROGRAM_FILE) == @__FILE__
             force=true
         )
 
-        host_wrapper = joinpath(wrappers_dir, "$platform_triplet-julia_version+$julia_version.jl")
+        host_wrapper = joinpath(WRAPPERS_DIR, "$platform_triplet-julia_version+$julia_version.jl")
         cp("wrapper.jl.tmp", host_wrapper; force=true)
     end
 
     @info "Committing and pushing changes to Artifacts.toml for $jll_version"
 
-    message = "Generate artifacts for v$(jll_version)"
+    message = "Generate artifacts for $TAG"
 
     # TODO: ghr and LibGit2 use different credential setups. Double check what BB does here.
     Base.shred!(LibGit2.CredentialPayload()) do credentials
