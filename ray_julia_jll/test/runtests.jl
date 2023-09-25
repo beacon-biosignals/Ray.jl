@@ -14,6 +14,7 @@ end
     include("buffer.jl")
     include("function_descriptor.jl")
     include("address.jl")
+    include("objectid.jl")
 
     setup_ray_head_node() do
         # GCS client only needs head node

@@ -64,6 +64,22 @@ end
     @test local_count(oid) == 0
 end
 
+@testset "Ref count: Task argument object ref" begin
+    task_dep_count(o::ObjectRef) = task_dep_count(o.oid_hex)
+    task_dep_count(oid_hex) = last(get(Ray.get_all_reference_counts(), oid_hex, 0))
+
+    obj = Ray.put(1)
+    # XXX: The "task dependency" ref count goes to 0 when the task is
+    # complete; Ray tests use an actor task which can be triggered to
+    # complete by sending a "signal" (via another task call) to avoid race
+    # conditions.  Here we're just hoping that the following test runs
+    # within ~3s.
+    ret_obj = Ray.submit_task(x -> (sleep(3); Ray.get(x)), (obj,))
+    @test !isready(ret_obj) && task_dep_count(obj) == 1
+    wait(ret_obj)
+    @test task_dep_count(obj) == 0
+end
+
 @testset "object ownership" begin
     @testset "unknown owner" begin
         invalid_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
