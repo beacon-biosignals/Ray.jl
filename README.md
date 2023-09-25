@@ -46,7 +46,7 @@ Ray versions before 2.6 only support pydantic 1.x; downgrade with `pip install "
 
 ## Setup
 
-Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`.  However, for the time being, it's still necessary to install the full build toolchain required to use Ray _and_ our Ray.jl wrappers.
+Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`. However, for the time being, it's still necessary to install the full build toolchain required to use Ray _and_ our Ray.jl wrappers.
 
 Start by cloning this repo.  The following instructions assume you start from the repository root as the working directory:
 
@@ -111,13 +111,15 @@ python -m pip install --upgrade pip wheel
 
 ### Install Ray CLI/server
 
-We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either [build from source](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) or install using our custom-build wheels.
+We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.
+Until these changes are upstreamed to the Ray project, you need to either [build from source](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) or install using our custom-built wheels.
 
 NOTE: make sure you've [activated the appropriate virtual environment](#prepare-python-environment) where you want to install the Ray CLI!
 
 #### Install from github release
 
-Find the appropriate binary wheel for your python version and system (currently supported are ARM MacOS, e.g. M1, and AND64/x86_64 linux) from the [releases page](https://github.com/beacon-biosignals/ray/releases), and install from the release URL.  For instance, to install Ray CLI for Linux running Python 3.9, run this command in the appropriate virtual environment:
+Find the appropriate binary wheel for your python version and system (currently supported are macOS ARM64 (M1), and Linux AMD64/x86_64) from the [releases page](https://github.com/beacon-biosignals/ray/releases), and install from the release URL.
+For instance, to install Ray CLI for Linux running Python 3.9, run this command in the appropriate virtual environment:
 
 ```sh
 pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/download/ray-2.5.1+1/ray-2.5.1-cp39-cp39-manylinux2014_x86_64.whl"
