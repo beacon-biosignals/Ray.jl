@@ -111,8 +111,12 @@ jobs:
         run: |
           using Pkg
           Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
-          Pkg.instantiate()
       - uses: julia-actions/julia-buildpkg@v1
+      - name: "Instantiate"
+        shell: julia --color=yes --project {0}
+        run:
+          using Pkg
+          Pkg.instantiate(verbose=true)
       - uses: julia-actions/julia-runtest@v1
         with:
           annotate: true
