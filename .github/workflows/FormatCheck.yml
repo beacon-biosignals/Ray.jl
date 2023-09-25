@@ -1,0 +1,50 @@
+name: Format Check
+on:
+  push:
+    branches:
+      - main
+    tags: ["*"]
+    paths:
+      - "**/*.jl"
+      - ".github/workflows/FormatCheck.yml"
+  pull_request:
+    paths:
+      - "**/*.jl"
+      - ".github/workflows/FormatCheck.yml"
+concurrency:
+  # Skip intermediate builds: always.
+  # Cancel intermediate builds: only if it is a pull request build.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+jobs:
+  format-check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        version:
+          - "1"
+        os:
+          - ubuntu-latest
+        arch: 
+          - x64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - uses: julia-actions/cache@v1
+      - name: Install JuliaFormatter
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.add(PackageSpec(name="JuliaFormatter", version="1"))
+      - name: Check formatting
+        shell: julia --color=yes {0}
+        run: |
+          using JuliaFormatter
+          formatted = format(".", verbose=true)
+          if !formatted
+              @error "Found some unformatted files:\n" * read(`git diff --name-only`, String)
+              exit(1)
+          end
