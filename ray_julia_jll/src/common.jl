@@ -3,34 +3,34 @@ using CxxWrap.StdLib: StdVector, SharedPtr
 using Serialization
 
 const STATUS_CODE_SYMBOLS = (:OK,
-    :OutOfMemory,
-    :KeyError,
-    :TypeError,
-    :Invalid,
-    :IOError,
-    :UnknownError,
-    :NotImplemented,
-    :RedisError,
-    :TimedOut,
-    :Interrupted,
-    :IntentionalSystemExit,
-    :UnexpectedSystemExit,
-    :CreationTaskError,
-    :NotFound,
-    :Disconnected,
-    :SchedulingCancelled,
-    :ObjectExists,
-    :ObjectNotFound,
-    :ObjectAlreadySealed,
-    :ObjectStoreFull,
-    :TransientObjectStoreFull,
-    :GrpcUnavailable,
-    :GrpcUnknown,
-    :OutOfDisk,
-    :ObjectUnknownOwner,
-    :RpcError,
-    :OutOfResource,
-    :ObjectRefEndOfStream)
+                             :OutOfMemory,
+                             :KeyError,
+                             :TypeError,
+                             :Invalid,
+                             :IOError,
+                             :UnknownError,
+                             :NotImplemented,
+                             :RedisError,
+                             :TimedOut,
+                             :Interrupted,
+                             :IntentionalSystemExit,
+                             :UnexpectedSystemExit,
+                             :CreationTaskError,
+                             :NotFound,
+                             :Disconnected,
+                             :SchedulingCancelled,
+                             :ObjectExists,
+                             :ObjectNotFound,
+                             :ObjectAlreadySealed,
+                             :ObjectStoreFull,
+                             :TransientObjectStoreFull,
+                             :GrpcUnavailable,
+                             :GrpcUnknown,
+                             :OutOfDisk,
+                             :ObjectUnknownOwner,
+                             :RpcError,
+                             :OutOfResource,
+                             :ObjectRefEndOfStream)
 
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
 const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
@@ -115,13 +115,13 @@ end
 ##### Message
 #####
 
-function ParseFromString(::Type{T}, str::AbstractString) where {T<:Message}
+function ParseFromString(::Type{T}, str::AbstractString) where T <: Message
     message = T()
     ParseFromString(message, str)
     return message
 end
 
-function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
+function JsonStringToMessage(::Type{T}, json::AbstractString) where T <: Message
     message = T()
     JsonStringToMessage(json, CxxPtr(message))
     return message
@@ -158,8 +158,8 @@ Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
 #####
 
 function CxxWrap.StdLib.UniquePtr(ptr::Union{Ptr{Nothing},
-    CxxPtr{<:TaskArgByReference},
-    CxxPtr{<:TaskArgByValue}})
+                                             CxxPtr{<:TaskArgByReference},
+                                             CxxPtr{<:TaskArgByValue}})
     return unique_ptr(ptr)
 end
 
@@ -176,7 +176,7 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
 end
 
 # Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
-function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where {T<:SharedPtr{RayObject}}
+function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{RayObject}
     return push!(v, CxxRef(el))
 end
 
@@ -210,8 +210,8 @@ end
 #####
 
 function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-    node_manager_port, startup_token, runtime_env_hash,
-    task_executor::Function)
+                           node_manager_port, startup_token, runtime_env_hash,
+                           task_executor::Function)
 
     # Note (omus): If you are trying to figure out what type to pass in here I recommend
     # starting with `Any`. This will cause failures at runtime that show up in the
@@ -223,14 +223,14 @@ function initialize_worker(raylet_socket, store_socket, ray_address, node_ip_add
     # ```
     # Using `ConstCxxRef` doesn't seem supported (i.e. `const &`)
     arg_types = (RayFunctionAllocated, Ptr{Cvoid}, Ptr{Cvoid},
-        CxxWrap.StdLib.StdStringAllocated, CxxPtr{CxxWrap.StdString},
-        CxxPtr{CxxBool})
+                 CxxWrap.StdLib.StdStringAllocated, CxxPtr{CxxWrap.StdString},
+                 CxxPtr{CxxBool})
     # need to use `@eval` since `task_executor` is only defined at runtime
     cfunc = @eval @cfunction($(task_executor), Cvoid, ($(arg_types...),))
 
     @info "cfunction generated!"
     result = initialize_worker(raylet_socket, store_socket, ray_address, node_ip_address,
-        node_manager_port, startup_token, runtime_env_hash, cfunc)
+                               node_manager_port, startup_token, runtime_env_hash, cfunc)
 
     @info "worker exiting `ray_julia_jll.initialize_worker`"
     return result
