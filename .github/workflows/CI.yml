@@ -111,22 +111,11 @@ jobs:
       - name: "Monorepo setup"
         shell: julia --color=yes --project {0}
         run: |
-          using Pkg
-          Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
-      - uses: julia-actions/julia-buildpkg@v1
-      - name: "Host Platform"
-        shell: julia --color=yes --project {0}
-        run: |
-          using Base.BinaryPlatforms
-          @show HostPlatform()
-      - name: "Instantiate"
-        shell: julia --color=yes --project {0}
-        run: |
           overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
           isfile(overrides_toml) && rm(overrides_toml)
           using Pkg
-          Pkg.instantiate(verbose=true)
-          Pkg.precompile()
+          Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
+      - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
           annotate: true
