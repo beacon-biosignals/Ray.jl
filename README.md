@@ -44,9 +44,9 @@ Check the raylet logs in `/tmp/ray/session_latest/logs/raylet.err`.  If you see 
 
 Ray versions before 2.6 only support pydantic 1.x; downgrade with `pip install "pydantic<2"`.
 
-## Setup (manual/dev build)
+## Setup
 
-Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`.  However, for the time being, it's still necessary to install the full build toolchain required to build Ray _and_ our Ray.jl wrappers.
+Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`.  However, for the time being, it's still necessary to install the full build toolchain required to use Ray _and_ our Ray.jl wrappers.
 
 Start by cloning this repo.  The following instructions assume you start from the repository root as the working directory:
 
@@ -109,45 +109,35 @@ python -m pip install --upgrade pip wheel
 
 (These are the same as the [upstream Ray instructions](https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#prepare-the-python-environment) but copied here for consistency.)
 
-### Build wrapper
-
-```sh
-source venv/bin/activate  # if not still activated from previous step
-
-# Build the required libraries
-julia --project=ray_julia_jll -e 'using Pkg; Pkg.build(verbose=true)'
-```
-
 ### Install Ray CLI/server
 
-We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either build from source or install using our custom-build wheels.
+We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either [build from source]() or install using our custom-build wheels.
 
 NOTE: make sure you've [activated the appropriate virtual environment](#prepare-python-environment) where you want to install the Ray CLI!
 
 #### Install from github release
 
-Find the appropriate binary wheel for your python version and system (currently supported are ARM MacOS, e.g. M1, and AND64/x86_64 linux) from the release page, and install from the release URL.  For instance, to install for Linux for Python 3.9, run this in the appropriate virtual environment:
+Find the appropriate binary wheel for your python version and system (currently supported are ARM MacOS, e.g. M1, and AND64/x86_64 linux) from the [releases page](https://github.com/beacon-biosignals/ray/releases), and install from the release URL.  For instance, to install Ray CLI for Linux running Python 3.9, run this command in the appropriate virtual environment:
 
 ```sh
-pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/download/ray-2.5.1-beacon/ray-2.5.1-cp39-cp39-manylinux2014_x86_64.whl"
+pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/download/ray-2.5.1+1/ray-2.5.1-cp39-cp39-manylinux2014_x86_64.whl"
 ```
 
 Replace the `https://` URL with the approriate release asset URL.
+Note: you may also need to increment the build number to get the latest wheels.
 
 (Installing `ray[default]` will also install additional dependencies that are necessary for the cluster status server and dashboard)
 
 #### Build from source
 
-```sh
-# Build the Ray CLI. Based upon these instructions:
-# https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-python -m pip install --upgrade pip wheel
-cd ray_julia_jll/deps/ray/python
-pip install ".[default]" --verbose
-cd -
-```
+Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) outlined in the Beacon fork of Ray.
 
-As with the pre-built wheels, if you don't need to status server/dashboard, you can omit the `[default]` and use `pip install . --verbose`.  If you intend to edit any python source files, use `pip install -e` to install in "editable" mode.
+
+### JLL Artifacts
+
+The `ray_julia_jll` artifacts are hosted in [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform when calling `Pkg.build()`.
+To rebuild the artifacts, you can follow the [build instructions](./ray_julia_jll/gen/README.md).
+
 
 ### Validate installation
 
