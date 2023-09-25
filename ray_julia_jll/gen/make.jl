@@ -19,7 +19,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
     @info "Building ray_julia_jll..."
-    run(`julia --project=$JLL_PATH $JLL_PATH/deps/build_jll.jl `)
+    run(`$(Base.julia_cmd()) --project=$JLL_PATH $JLL_PATH/deps/build_jll.jl `)
 
     host_triplet = BinaryPlatforms.host_triplet()
     tarball_name = "ray_julia.$TAG.$host_triplet.tar.gz"
