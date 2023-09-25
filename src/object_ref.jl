@@ -104,7 +104,7 @@ end
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
     @debug """Registering ownership for $(obj_ref)
-              owner_address: $(obj_ref.owner_address_string)
+              owner_address: $(ray_jll.ParseFromString(ray_jll.Address, obj_ref.owner_address_string))
               status: $(obj_ref.serialized_object_status)
               contained in $(outer_obj_ref)"""
     worker = ray_jll.GetCoreWorker()
@@ -142,7 +142,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
 
     # Prefer serializing ownership information from the core worker backend
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address), CxxPtr(serialized_object_status))
-    @debug "Serialize: owner address $(owner_address)"
+    @debug "serialize(, ::ObjectRef): owner address $(owner_address)"
     owner_address_str = String(ray_jll.SerializeAsString(owner_address))
     serialized_object_status = String(serialized_object_status)
 
@@ -162,10 +162,13 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     if isempty(owner_address_str)
         owner_address_str = nothing
     end
-    # if !isempty(owner_address_str)
-    #     owner_address = ray_jll.Address()
-    #     ray_jll.ParseFromString(owner_address, owner_address_str)
-    # end
+    if !isempty(owner_address_str)
+        owner_address = ray_jll.Address()
+        ray_jll.ParseFromString(owner_address, owner_address_str)
+        @debug "deserialize(, ::ObjectRef):\nowner address $(owner_address)\nraw string: $(owner_address_str)"
+    else
+        @debug "deserialize(, ::ObjectRef): empty `owner_address_str`"
+    end
 
     return ObjectRef(hex_str, owner_address_str, serialized_object_status)
 end

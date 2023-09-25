@@ -352,6 +352,19 @@ void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
     vector.push_back(el);
 }
 
+std::string address_string(const rpc::Address &addr) {
+    // there's annoying conversion from protobuf binary blobs for the
+    // "fields" so we handle it on the C++ side rather than wrapping
+    // NodeID and WorkerID
+    std::ostringstream addr_str;
+    addr_str << "Address("
+             << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
+             << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
+             << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
+             << ")";
+    return addr_str.str();
+}
+
 void _RegisterOwnershipInfoAndResolveFuture(const ObjectID &object_id,
                                             const ObjectID &outer_object_id,
                                             const std::string &owner_address_string,
@@ -360,10 +373,7 @@ void _RegisterOwnershipInfoAndResolveFuture(const ObjectID &object_id,
     rpc::Address owner_address;
     owner_address.ParseFromString(owner_address_string);
     std::cerr << "registering ownership for " << object_id.Hex()
-              << " owned by: raylet " << owner_address.raylet_id()
-              << " at ip " << owner_address.ip_address()
-              << ":" << owner_address.port()
-              << " (worker: " << owner_address.worker_id() << ")"
+              << " owned by: " << address_string(owner_address)
               << std::endl;
     worker.RegisterOwnershipInfoAndResolveFuture(object_id,
                                                  outer_object_id,
@@ -598,18 +608,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("ip_address", &rpc::Address::ip_address)
         .method("port", &rpc::Address::port)
         .method("worker_id", &rpc::Address::worker_id)
-        .method("_string", [](rpc::Address &addr) {
-            // there's annoying conversion from protobuf binary blobs for the
-            // "fields" so we handle it on the C++ side rather than wrapping
-            // NodeID and WorkerID
-            std::ostringstream addr_str;
-            addr_str << "Address("
-                     << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
-                     << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
-                     << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
-                     << ")";
-            return addr_str.str();
-        });
+        .method("_string", &address_string);
 
 
     // message JobConfig
