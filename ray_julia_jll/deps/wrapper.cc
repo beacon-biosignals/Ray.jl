@@ -597,7 +597,19 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("raylet_id", &rpc::Address::raylet_id)
         .method("ip_address", &rpc::Address::ip_address)
         .method("port", &rpc::Address::port)
-        .method("worker_id", &rpc::Address::worker_id);
+        .method("worker_id", &rpc::Address::worker_id)
+        .method("_string", [](rpc::Address &addr) {
+            // there's annoying conversion from protobuf binary blobs for the
+            // "fields" so we handle it on the C++ side rather than wrapping
+            // NodeID and WorkerID
+            std::ostringstream addr_str;
+            addr_str << "Address("
+                     << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
+                     << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
+                     << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
+                     << ")";
+            return addr_str.str();
+        });
 
 
     // message JobConfig

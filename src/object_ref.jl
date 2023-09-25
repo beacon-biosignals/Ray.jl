@@ -142,6 +142,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
 
     # Prefer serializing ownership information from the core worker backend
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address), CxxPtr(serialized_object_status))
+    @debug "Serialize: owner address $(owner_address)"
     owner_address_str = String(ray_jll.SerializeAsString(owner_address))
     serialized_object_status = String(serialized_object_status)
 

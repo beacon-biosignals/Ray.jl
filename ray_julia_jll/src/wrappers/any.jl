@@ -149,13 +149,9 @@ end
 ##### Address
 #####
 
-function Base.show(io::IO, addr::Address)
-    print(io, "rpc::Address(",
-          "raylet_id=", raylet_id(addr),
-          ", uri=", ip_address(addr), ":", port(addr),
-          ", worker_id=", worker_id(addr), ")")
-    return nothing
-end
+# there's annoying conversion from protobuf binary blobs for the "fields" so we
+# handle it on the C++ side rather than wrapping everything.
+Base.show(io::IO, addr::Address) = print(io, _string(addr))
 
 #####
 ##### Buffer
