@@ -60,6 +60,10 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v1
+        with:
+          cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.pkg.name }}-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}"
+          cache-compiled: true
+
       # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
       # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
       # https://github.com/beacon-biosignals/Ray.jl/issues/63
