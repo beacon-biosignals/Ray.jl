@@ -152,27 +152,50 @@ function parse_ray_args_from_raylet_out(session_dir)
 
     # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
     raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
-    raylet = raylet_match !== nothing ? String(raylet_match[1]) : error("Unable to find Raylet socket")
+    raylet = if raylet_match !== nothing
+        String(raylet_match[1])
+    else
+        error("Unable to find Raylet socket")
+    end
 
     # --object-store-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/plasma_store
     store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
-    store = store_match !== nothing ? String(store_match[1]) : error("Unable to find Object Store socket")
+    store = if store_match !== nothing
+        String(store_match[1])
+    else
+        error("Unable to find Object Store socket")
+    end
 
     # --gcs-address=127.0.0.1:6379
     gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
-    gcs_address = gcs_match !== nothing ? String(gcs_match[1]) : error("Unable to find GCS address")
+    gcs_address = if gcs_match !== nothing
+        String(gcs_match[1])
+    else
+        error("Unable to find GCS address")
+    end
 
     # --node-ip-address=127.0.0.1
     node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    node_ip = node_ip_match !== nothing ? String(node_ip_match[1]) : error("Unable to find Node IP address")
+    node_ip = if node_ip_match !== nothing
+        String(node_ip_match[1])
+    else
+        error("Unable to find Node IP address")
+    end
 
     # --node-manager-port=63639
     port_match = match(r"node-manager-port=([0-9]{1,5})", line)
-    node_port = port_match !== nothing ? parse(Int, port_match[1]) : error("Unable to find Node Manager port")
+    node_port = if port_match !== nothing
+        parse(Int, port_match[1])
+    else
+        error("Unable to find Node Manager port")
+    end
 
     # TODO: downgrade to debug
     # https://github.com/beacon-biosignals/Ray.jl/issues/53
-    @info "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, Node port: $node_port, GCS Address: $gcs_address"
+    @info begin
+        "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, " *
+        "Node port: $node_port, GCS Address: $gcs_address"
+    end
 
     return (raylet, store, gcs_address, node_ip, node_port)
 end
@@ -233,7 +256,6 @@ function serialize_args(args)
         # Inline arguments which are small and if there is room
         task_arg = if (serialized_arg_size <= put_threshold &&
                        serialized_arg_size + total_inlined <= rpc_inline_threshold)
-
             total_inlined += serialized_arg_size
             ray_jll.TaskArgByValue(ray_obj)
         else
@@ -292,7 +314,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         # https://docs.python.org/3/library/time.html#time.time
         timestamp = time()
         captured = CapturedException(e, catch_backtrace())
-        @error "Caught exception during task execution" exception=captured
+        @error "Caught exception during task execution" exception = captured
         # XXX: for some reason CxxWrap does not allow this:
         #
         # application_error[] = err_msg
@@ -336,6 +358,7 @@ julia -e 'using Ray; start_worker()' -- \
 function start_worker(args=ARGS)
     s = ArgParseSettings()
 
+    #! format: off
     # Worker options are generated in the Raylet function `BuildProcessCommandArgs`
     # (https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/raylet/worker_pool.cc#L232)
     # and are parsed in Python here:
@@ -350,37 +373,38 @@ function start_worker(args=ARGS)
         "--ray_address"  # "127.0.0.1:6379"
             dest_name = "address"
             arg_type = String
-            help="The ip address of the GCS"
+            help = "The ip address of the GCS"
         "--ray_node_manager_port"
             dest_name = "node_manager_port"
             arg_type = Int
         "--ray_node_ip_address"
             dest_name = "node_ip_address"
-            required=true
-            arg_type=String
-            help="The ip address of the worker's node"
+            required = true
+            arg_type = String
+            help = "The ip address of the worker's node"
         "--ray_redis_password"
             dest_name = "redis_password"
-            required=false
-            arg_type=String
-            default=""
-            help="the password to use for Redis"
+            required = false
+            arg_type = String
+            default = ""
+            help = "the password to use for Redis"
         "--ray_session_dir"
             dest_name = "session_dir"
         "--ray_logs_dir"
             dest_name = "logs_dir"
         "--runtime-env-hash"
-            dest_name="runtime_env_hash"
-            required=false
-            arg_type=Int
-            default=0
-            help="The computed hash of the runtime env for this worker"
+            dest_name = "runtime_env_hash"
+            required = false
+            arg_type = Int
+            default = 0
+            help = "The computed hash of the runtime env for this worker"
         "--startup_token"
-            dest_name="startup_token"
-            required=false
-            arg_type=Int
-            default=0
+            dest_name = "startup_token"
+            required = false
+            arg_type = Int
+            default = 0
     end
+    #! format: on
 
     parsed_args = parse_args(args, s)
 
@@ -404,11 +428,11 @@ function start_worker(args=ARGS)
     @info "Starting Julia worker runtime with args" parsed_args
 
     return ray_jll.initialize_worker(parsed_args["raylet_socket"],
-                                    parsed_args["store_socket"],
-                                    parsed_args["address"],
-                                    parsed_args["node_ip_address"],
-                                    parsed_args["node_manager_port"],
-                                    parsed_args["startup_token"],
-                                    parsed_args["runtime_env_hash"],
-                                    task_executor)
+                                     parsed_args["store_socket"],
+                                     parsed_args["address"],
+                                     parsed_args["node_ip_address"],
+                                     parsed_args["node_manager_port"],
+                                     parsed_args["startup_token"],
+                                     parsed_args["runtime_env_hash"],
+                                     task_executor)
 end

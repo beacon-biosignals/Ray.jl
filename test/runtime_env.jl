@@ -1,9 +1,11 @@
 @testset "process_import_statements" begin
+    #! format: off
     @test Ray.process_import_statements(:(using Test)) == :(using Test)
     @test Ray.process_import_statements(:(using Test: @test)) == :(using Test: @test)
     @test Ray.process_import_statements(:(import Test)) == :(import Test)
     @test Ray.process_import_statements(:(import Test: @test)) == :(import Test: @test)
     @test Ray.process_import_statements(:(import Test as T)) == :(import Test as T)
+    #! format: on
 
     block = quote
         using Test

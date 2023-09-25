@@ -8,10 +8,9 @@ function _enum_symbol_constructor_expr(base_type::Type, members)
     end
     ex.args[3] = :(throw(ArgumentError("$($base_type_sym) has no member named: $member")))
 
-
     return quote
         function $base_type_sym(member::Symbol)
-            $body
+            return $body
         end
     end
 end

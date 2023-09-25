@@ -4,13 +4,13 @@ function setup_ray_head_node_basic(body)
     prestarted = success(`ray status`)
     if !prestarted
         @info "Starting local head node"
-        run(pipeline(`ray start --head`, stdout=devnull))
+        run(pipeline(`ray start --head`; stdout=devnull))
     end
 
     try
         body()
     finally
-        !prestarted && run(pipeline(`ray stop`, stdout=devnull))
+        !prestarted && run(pipeline(`ray stop`; stdout=devnull))
     end
 end
 

@@ -11,12 +11,14 @@ function RayTaskException(task_name::AbstractString, captured::CapturedException
 end
 
 function Base.showerror(io::IO, ex::RayTaskException, bt=nothing; backtrace=true)
-    print(io, "RayTaskException: $(ex.task_name) (pid=$(ex.pid), ip=$(ex.ip), task_id=$(ex.task_id))")
+    print(io, "RayTaskException: $(ex.task_name) ")
+    print(io, "(pid=$(ex.pid), ip=$(ex.ip), task_id=$(ex.task_id))")
     if backtrace
         bt !== nothing && Base.show_backtrace(io, bt)
         println(io)
     end
-    printstyled(io, "\nnested exception: ", color=Base.error_color())
+    printstyled(io, "\nnested exception: "; color=Base.error_color())
     # Call 3-argument `showerror` to allow specifying `backtrace`
     showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
+    return nothing
 end

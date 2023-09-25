@@ -53,6 +53,8 @@ function check_status(status::Status)
     # TODO: Implement throw custom exception types like in:
     # _raylet.pyx:437
     error(msg)
+
+    return nothing
 end
 
 #####
@@ -118,13 +120,13 @@ end
 ##### Message
 #####
 
-function ParseFromString(::Type{T}, str::AbstractString) where T <: Message
+function ParseFromString(::Type{T}, str::AbstractString) where {T<:Message}
     message = T()
     ParseFromString(message, str)
     return message
 end
 
-function JsonStringToMessage(::Type{T}, json::AbstractString) where T <: Message
+function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
     message = T()
     JsonStringToMessage(json, CxxPtr(message))
     return message
@@ -204,7 +206,7 @@ function Base.take!(buffer::CxxWrap.CxxWrapCore.SmartPointer{<:Buffer})
 end
 
 # Work around this: https://github.com/JuliaInterop/CxxWrap.jl/issues/300
-function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where T <: SharedPtr{RayObject}
+function Base.push!(v::CxxPtr{StdVector{T}}, el::T) where {T<:SharedPtr{RayObject}}
     return push!(v, CxxRef(el))
 end
 

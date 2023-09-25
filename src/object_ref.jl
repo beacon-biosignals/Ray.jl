@@ -63,7 +63,10 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
     return xcp
 end
 
-ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
+function ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...)
+    return ObjectRef(ray_jll.Hex(oid); kwargs...)
+end
+
 ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
 hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
@@ -123,8 +126,12 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
                                                       owner_address,
                                                       obj_ref.serialized_object_status)
     else
-        isnothing(obj_ref.owner_address) && @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
-        has_owner(obj_ref) && @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
+        if isnothing(obj_ref.owner_address)
+            @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
+        end
+        if has_owner(obj_ref)
+            @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
+        end
     end
 
     return nothing
@@ -139,11 +146,12 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     serialized_object_status = StdString()
 
     # Prefer serializing ownership information from the core worker backend
-    ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address), CxxPtr(serialized_object_status))
+    ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address),
+                             CxxPtr(serialized_object_status))
     # XXX: we use ~~codeunits~~ JSON here because when there are null bytes
     # anywhere in the string, the `String` (or even `Vector{UInt8}`) conversion
     # from `CxxWrap.StdString` will truncate the string at the first null byte.
-    # 
+    #
     # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
     owner_address_json = String(ray_jll.MessageToJsonString(owner_address))
     @debug "serialize(, ::ObjectRef):\nowner address $(owner_address)"

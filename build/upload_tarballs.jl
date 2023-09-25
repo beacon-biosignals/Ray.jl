@@ -39,17 +39,17 @@ function parse_git_remote_url(pkg_url)
     return "https://" * joinpath(m[:host], m[:path])
 end
 
-function upload_to_github_release(
-    archive_path::AbstractString,
-    archive_url::AbstractString,
-    commit;
-    kwargs...
-)
-    return upload_to_github_release(archive_path, parse(URI, archive_url), commit; kwargs...)
+function upload_to_github_release(archive_path::AbstractString,
+                                  archive_url::AbstractString,
+                                  commit;
+                                  kwargs...)
+    return upload_to_github_release(archive_path, parse(URI, archive_url), commit;
+                                    kwargs...)
 end
 
 # TODO: Does this work properly with directories?
-function upload_to_github_release(archive_path::AbstractString, archive_uri::URI, commit; kwargs...)
+function upload_to_github_release(archive_path::AbstractString, archive_uri::URI, commit;
+                                  kwargs...)
     # uri = parse(URI, artifact_url)
     if archive_uri.host != "github.com"
         throw(ArgumentError("Artifact URL is not for github.com: $(archive_uri)"))
@@ -57,17 +57,17 @@ function upload_to_github_release(archive_path::AbstractString, archive_uri::URI
 
     m = match(GH_RELEASE_ASSET_PATH_REGEX, archive_uri.path)
     if m === nothing
-        throw(ArgumentError(
-            "Artifact URL is not a GitHub release asset path: $(archive_uri)"
-        ))
+        throw(ArgumentError("Artifact URL is not a GitHub release asset path: $(archive_uri)"))
     end
 
-    upload_to_github_release(m[:owner], m[:repo_name], commit, m[:tag], archive_path; kwargs...)
+    upload_to_github_release(m[:owner], m[:repo_name], commit, m[:tag], archive_path;
+                             kwargs...)
 
     return nothing
 end
 
-function upload_to_github_release(owner, repo_name, commit, tag, path; token=ENV["GITHUB_TOKEN"])
+function upload_to_github_release(owner, repo_name, commit, tag, path;
+                                  token=ENV["GITHUB_TOKEN"])
     # Based on: https://github.com/JuliaPackaging/BinaryBuilder.jl/blob/d40ec617d131a1787851559ef1a9f04efce19f90/src/AutoBuild.jl#L487
     # TODO: Passing in a directory path uploads multiple assets
     # TODO: Would be nice to perform parallel uploads
@@ -82,11 +82,10 @@ function upload_to_github_release(owner, repo_name, commit, tag, path; token=ENV
         $tag $path
     ```
 
-    run(cmd)
+    return run(cmd)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-
     isdir(TARBALL_DIR) || error("$TARBALL_DIR does not exist")
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
@@ -104,5 +103,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
         # ghr() already prints an error message with diagnosis
         @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
     end
-
 end

@@ -14,14 +14,14 @@ include("common.jl")
 # Compute the Artifact.toml `git-tree-sha1`.
 function tree_hash_sha1(tarball_path)
     return open(GzipDecompressorStream, tarball_path, "r") do tar
-        SHA1(Tar.tree_hash(tar))
+        return SHA1(Tar.tree_hash(tar))
     end
 end
 
 # Compute the Artifact.toml `sha256` from the compressed archive.
 function sha256sum(tarball_path)
     return open(tarball_path, "r") do tar
-        bytes2hex(sha256(tar))
+        return bytes2hex(sha256(tar))
     end
 end
 
@@ -33,14 +33,13 @@ function get_release_asset_urls()
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-
     @info "Fetching assets for $TAG"
     artifacts_urls = get_release_asset_urls()
 
     for artifact_url in artifacts_urls
-
         @info "Adding artifact for $(basename(artifact_url))"
-        artifact_path = Downloads.download(artifact_url, joinpath(DIR, basename(artifact_url)))
+        artifact_path = joinpath(DIR, basename(artifact_url))
+        Downloads.download(artifact_url, artifact_path)
 
         m = match(TARBALL_REGEX, basename(artifact_path))
         if isnothing(m)
@@ -52,13 +51,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
         platform_str = "$platform_triplet-julia_version+$julia_version"
         platform = parse(BinaryPlatforms.Platform, platform_str)
 
-        bind_artifact!(
-            JLL_ARTIFACTS_TOML,
-            "ray_julia",
-            tree_hash_sha1(artifact_path);
-            platform=platform,
-            download_info=[(artifact_url, sha256sum(artifact_path))],
-            force=true
-        )
+        bind_artifact!(JLL_ARTIFACTS_TOML,
+                       "ray_julia",
+                       tree_hash_sha1(artifact_path);
+                       platform=platform,
+                       download_info=[(artifact_url, sha256sum(artifact_path))],
+                       force=true)
     end
 end

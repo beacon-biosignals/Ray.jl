@@ -22,6 +22,7 @@ end
         setup_core_worker_basic() do
             include("put_get.jl")
             include("reference_counting.jl")
+            return nothing
         end
     end
 end

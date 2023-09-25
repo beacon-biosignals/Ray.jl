@@ -1,7 +1,6 @@
 @testset "object_store.jl" begin
-    @testset "Put/Get roundtrip for $(typeof(x))" for x in (
-        1, 1.23, "hello", (1, 2, 3), [1, 2, 3],
-    )
+    @testset "Put/Get roundtrip for $(typeof(x))" for x in (1, 1.23, "hello", (1, 2, 3),
+                                                            [1, 2, 3])
         obj_ref = Ray.put(x)
         @test obj_ref isa ObjectRef
         @test Ray.get(obj_ref) == x

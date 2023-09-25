@@ -9,7 +9,7 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     # Inlined object references encountered during serializing
     object_refs::Set{ObjectRef}
 
-    function RaySerializer{I}(io::I) where I<:IO
+    function RaySerializer{I}(io::I) where {I<:IO}
         return new(io, 0, IdDict(), Int[], Serialization.ser_version, Set{ObjectRef}())
     end
 end
@@ -32,11 +32,11 @@ end
 
 function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     push!(s.object_refs, obj_ref)
-    return invoke(serialize, Tuple{AbstractSerializer, ObjectRef}, s, obj_ref)
+    return invoke(serialize, Tuple{AbstractSerializer,ObjectRef}, s, obj_ref)
 end
 
 function Serialization.deserialize(s::RaySerializer, T::Type{ObjectRef})
-    obj_ref = invoke(deserialize, Tuple{AbstractSerializer, Type{ObjectRef}}, s, T)
+    obj_ref = invoke(deserialize, Tuple{AbstractSerializer,Type{ObjectRef}}, s, T)
     push!(s.object_refs, obj_ref)
     return obj_ref
 end
@@ -76,7 +76,8 @@ function log_deserialize_error(bytes)
     @error "Unable to deserialize $outer_object_ref bytes: $(bytes2hex(bytes))"
 end
 
-function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject}, outer_object_ref=nothing)
+function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
+                                     outer_object_ref=nothing)
     bytes = take!(ray_jll.GetData(x[]))
     s = RaySerializer(IOBuffer(bytes))
     result = try

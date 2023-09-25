@@ -20,7 +20,7 @@ const GH_RELEASE_ASSET_PATH_REGEX = r"""
 function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
         LibGit2.with(LibGit2.lookup_remote(repo, name)) do remote
-            LibGit2.url(remote)
+            return LibGit2.url(remote)
         end
     end
 end
