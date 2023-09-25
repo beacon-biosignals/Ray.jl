@@ -12,7 +12,7 @@
     @test obj2 !== obj
     @test obj2 == obj
 
-    obj_deref2 = CxxRef(obj2)[]
+    obj_deref2 = CxxRef(FromHex(ObjectID, Hex(obj)))[]
     @test obj_deref2 !== obj_deref
     # confirm C++ pointers are different too
     @test obj_deref2.cpp_object != obj_deref.cpp_object
@@ -20,5 +20,5 @@
 
     @test hash(obj_deref) == hash(obj)
 
-    @test issetequal([obj_deref, obj_deref2], [obj])
+    @test issetequal([obj_deref, obj_deref2, obj2], [obj])
 end
