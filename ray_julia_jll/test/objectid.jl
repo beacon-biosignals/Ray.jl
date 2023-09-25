@@ -1,7 +1,7 @@
 @testset "ObjectID" begin
     using ray_julia_jll: ObjectID, FromRandom, FromHex, Hex
     obj = FromRandom(ObjectID)
-    obj_deref = CxxRef(obj)[]
+    obj_deref = CxxRef(FromHex(ObjectID, Hex(obj)))[]
     @test obj_deref isa ray_julia_jll.ObjectIDDereferenced
     @test obj isa ray_julia_jll.ObjectIDAllocated
 
@@ -20,5 +20,5 @@
 
     @test hash(obj_deref) == hash(obj)
 
-    @test issetequal(objs, [obj])
+    @test issetequal([obj_deref, obj_deref2], [obj])
 end
