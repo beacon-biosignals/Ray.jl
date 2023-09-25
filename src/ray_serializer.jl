@@ -87,5 +87,5 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject}, outer_obje
 
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
-    result isa RayRemoteException ? throw(result) : return result
+    result isa RayTaskException ? throw(result) : return result
 end
