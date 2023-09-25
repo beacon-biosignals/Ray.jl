@@ -146,6 +146,18 @@ function JsonStringToMessage(::Type{T}, json::AbstractString) where T <: Message
 end
 
 #####
+##### Address
+#####
+
+function Base.show(io::IO, addr::Address)
+    print(io, "rpc::Address(",
+          "raylet_id=", raylet_id(addr),
+          ", uri=", ip_address(addr), ":", port(addr),
+          ", worker_id=", worker_id(addr), ")")
+    return nothing
+end
+
+#####
 ##### Buffer
 #####
 

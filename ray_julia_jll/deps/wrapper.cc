@@ -594,10 +594,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
     mod.add_type<rpc::Address>("Address", jlcxx::julia_base_type<google::protobuf::Message>())
         .constructor<>()
-        .method("raylet_id", &rpc::Adress::raylet_id)
-        .method("id_address", &rpc::Adress::id_address)
-        .method("port", &rpc::Adress::port)
-        .method("worker_id", &rpc::Adress::worker_id);
+        .method("raylet_id", &rpc::Address::raylet_id)
+        .method("ip_address", &rpc::Address::ip_address)
+        .method("port", &rpc::Address::port)
+        .method("worker_id", &rpc::Address::worker_id);
 
 
     // message JobConfig
