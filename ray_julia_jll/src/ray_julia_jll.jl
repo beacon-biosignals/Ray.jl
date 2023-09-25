@@ -1,12 +1,18 @@
 module ray_julia_jll
-using Base
-using Base: UUID
-import JLLWrappers
-using Pkg
+
+using Artifacts: @artifact_str
+using CxxWrap
+using CxxWrap.StdLib: StdVector, SharedPtr
+using Serialization
+using libcxxwrap_julia_jll
+
+@wrapmodule(joinpath(artifact"ray_julia", "julia_core_worker_lib.so"))
+
+function __init__()
+    @initcxx
+end  # __init__()
 
 include("expr.jl")
-
-JLLWrappers.@generate_main_file_header("ray_julia")
-JLLWrappers.@generate_main_file("ray_julia", UUID("c348cde4-7f22-4730-83d8-6959fb7a17ba"))
+include("common.jl")
 
 end  # module ray_julia_jll
