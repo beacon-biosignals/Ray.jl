@@ -2,7 +2,6 @@ using CxxWrap
 using CxxWrap.StdLib: StdVector, SharedPtr
 using libcxxwrap_julia_jll
 
-using InteractiveUtils: subtypes
 using Serialization
 
 JLLWrappers.@generate_wrapper_header("ray_julia")
@@ -182,10 +181,9 @@ Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
 # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
 #
 # is shadowed by more specific fallbacks defined by CxxWrap.
-for Ta in subtypes(ObjectID)
-    for Tb in subtypes(ObjectID)
-        @eval Base.:(==)(a::$Ta, b::$Tb) = Hex(a) == Hex(b)
-    end
+const ObjectIDTypes = (ObjectIDAllocated, ObjectIDDereferenced)
+for Ta in ObjectIDTypes, Tb in ObjectIDTypes
+    @eval Base.:(==)(a::$Ta, b::$Tb) = Hex(a) == Hex(b)
 end
 
 Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
