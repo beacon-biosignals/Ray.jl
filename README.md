@@ -111,7 +111,7 @@ python -m pip install --upgrade pip wheel
 
 ### Install Ray CLI/server
 
-We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either [build from source]() or install using our custom-build wheels.
+We currently rely on a patched version of upstream Ray server/CLI that is aware of Julia as a supported language and knows how to launch julia worker processes.  Until these changes are upstreamed to the Ray project, you need to either [build from source](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) or install using our custom-build wheels.
 
 NOTE: make sure you've [activated the appropriate virtual environment](#prepare-python-environment) where you want to install the Ray CLI!
 
