@@ -128,7 +128,7 @@ end
             return Ray.get(return_ref)
         end
         return_ref = Ray.submit_task(f, (4,))
-        @test_broken Ray.get(return_ref) == 4
+        @test Ray.get(return_ref) == 4
 
         g = function (x)
             return_ref = Ray.submit_task(Ray.put, (x,))
@@ -136,7 +136,7 @@ end
             return Ray.get(remote_ref)
         end
         return_ref = Ray.submit_task(g, (5,))
-        @test_broken Ray.get(return_ref) == 5
+        @test Ray.get(return_ref) == 5
     end
 
     @testset "driver get on worker return" begin
@@ -144,7 +144,7 @@ end
         return_ref = Ray.submit_task(f, (6,))
         inner_ref = Ray.get(return_ref)
         @test inner_ref isa ObjectRef
-        @test_broken Ray.get(inner_ref) == 6
+        @test Ray.get(inner_ref) == 6
     end
 end
 
