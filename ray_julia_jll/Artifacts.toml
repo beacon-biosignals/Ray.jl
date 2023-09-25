@@ -38,21 +38,3 @@ os = "linux"
     [[ray_julia.download]]
     sha256 = "cc430cc0b3b161ae3e8463a94e60cf96605708eb1fecf89f60e0e6b30433dc9b"
     url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version+1.9.0.tar.gz"
-[[ray_julia]]
-arch = "x64"
-git-tree-sha1 = "866ec110a3a499fc6faaf9796e73d5eaa4ad861f"
-julia_version = "1.8.0"
-os = "linux"
-
-    [[ray_julia.download]]
-    sha256 = "cc430cc0b3b161ae3e8463a94e60cf96605708eb1fecf89f60e0e6b30433dc9b"
-    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx29-julia_version+1.8.0.tar.gz"
-[[ray_julia]]
-arch = "x64"
-git-tree-sha1 = "866ec110a3a499fc6faaf9796e73d5eaa4ad861f"
-julia_version = "1.9.0"
-os = "linux"
-
-    [[ray_julia.download]]
-    sha256 = "cc430cc0b3b161ae3e8463a94e60cf96605708eb1fecf89f60e0e6b30433dc9b"
-    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version+1.9.0.tar.gz"
