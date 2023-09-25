@@ -107,6 +107,7 @@ jobs:
           overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
           isfile(overrides_toml) && rm(overrides_toml)
           using Pkg
+          Pkg.develop(path=".")
           Pkg.instantiate(verbose=true)
       - uses: julia-actions/julia-buildpkg@v1
         with:
