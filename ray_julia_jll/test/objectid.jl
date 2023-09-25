@@ -1,12 +1,7 @@
 @testset "ObjectID" begin
     using ray_julia_jll: ObjectID, FromRandom, FromHex, Hex
-    # need to get some ObjectIDDereferenced
-    objs = CxxWrap.StdVector{ObjectID}()
     obj = FromRandom(ObjectID)
-    push!(objs, obj)
-    push!(objs, obj)
-
-    obj_deref = objs[1]
+    obj_deref = CxxRef(obj)[]
     @test obj_deref isa ray_julia_jll.ObjectIDDereferenced
     @test obj isa ray_julia_jll.ObjectIDAllocated
 
@@ -17,7 +12,7 @@
     @test obj2 !== obj
     @test obj2 == obj
 
-    obj_deref2 = objs[2]
+    obj_deref2 = CxxRef(obj2)[]
     @test obj_deref2 !== obj_deref
     # confirm C++ pointers are different too
     @test obj_deref2.cpp_object != obj_deref.cpp_object

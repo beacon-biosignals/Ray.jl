@@ -227,18 +227,6 @@ function serialize_args(args)
         # always be a `Pair` (or a list in Python). I suspect this Python code path just
         # dead code so we'll exclude it from ours.
 
-        # serialized_arg = Vector{UInt8}()
-        # serializer = RaySerializer(serialized_arg)
-        # writeheader(serializer)
-        # serialize(serializer, arg)
-        # serialized_arg_size = sizeof(serialized_arg)
-
-        # buffer = ray_jll.LocalMemoryBuffer(serialized_arg, serialized_arg_size, true)
-        # metadata = ray_jll.NullPtr(ray_jll.Buffer)
-        # inlined_ids = StdVector(collect(serializer.object_ids))::StdVector{ray_jll.ObjectID}
-        # inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
-        # ray_obj = ray_jll.RayObject(buffer, metadata, inlined_refs, false)
-
         ray_obj = serialize_to_ray_object(arg)
         serialized_arg_size = ray_jll.GetSize(ray_obj[])
 
