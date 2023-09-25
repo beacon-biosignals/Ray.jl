@@ -49,7 +49,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
         platform_triplet = m[:triplet]
         julia_version = m[:julia_version]
-        platform = parse(BinaryPlatforms.Platform, platform_triplet)
+        platform_str = "$platform_triplet-julia_version+$julia_version"
+        platform = parse(BinaryPlatforms.Platform, platform_str)
 
         bind_artifact!(
             JLL_ARTIFACTS_TOML,
@@ -60,7 +61,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
             force=true
         )
 
-        host_wrapper = joinpath(WRAPPERS_DIR, "$platform_triplet-julia_version+$julia_version.jl")
+        host_wrapper = joinpath(WRAPPERS_DIR, "$platform_str.jl")
         cp("wrapper.jl.tmp", host_wrapper; force=true)
     end
 end
