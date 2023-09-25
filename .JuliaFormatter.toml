@@ -1,1 +1,9 @@
 style = "yas"
+margin = 92
+ignore = [
+    "ray_julia_jll/deps/bazel-bin",
+    "ray_julia_jll/deps/bazel-deps",
+    "ray_julia_jll/deps/bazel-out",
+    "ray_julia_jll/deps/bazel-testlogs",
+    "ray_julia_jll/deps/ray"
+]

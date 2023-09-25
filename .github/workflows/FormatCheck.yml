@@ -43,7 +43,16 @@ jobs:
         shell: julia --color=yes {0}
         run: |
           using JuliaFormatter
-          formatted = format(".", verbose=true)
+
+          # JuliaFormatter's `format(".")` hangs when traversing our directory structure
+          formatted = true
+          for (root, dirs, files) in walkdir(".")
+              for file in files
+                  if endswith(file, ".jl")
+                      formatted &= format_file(joinpath(root, file); verbose=true)
+                  end
+              end
+          end
           if !formatted
               @error "Found some unformatted files:\n" * read(`git diff --name-only`, String)
               exit(1)
