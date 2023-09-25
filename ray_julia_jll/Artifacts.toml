@@ -32,3 +32,11 @@ os = "linux"
     [[ray_julia.download]]
     sha256 = "789f1c64404eaf4a28adc5dc899bdcd88c512ec712694794f9aba42c2455246c"
     url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-gnu-libgfortran5-cxx11-libstdcxx30-julia_version+1.9.0.tar.gz"
+[[ray_julia]]
+arch = "x86_64"
+git-tree-sha1 = "dbe5cd345b6ced6c1bcc8dea08f6141ec73a6be0"
+os = "linux"
+
+    [[ray_julia.download]]
+    sha256 = "789f1c64404eaf4a28adc5dc899bdcd88c512ec712694794f9aba42c2455246c"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.1.0/ray_julia.v0.1.0.x86_64-linux-julia_version+1.8.0.tar.gz"
