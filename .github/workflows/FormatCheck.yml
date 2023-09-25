@@ -49,7 +49,7 @@ jobs:
           for (root, dirs, files) in walkdir(".")
               for file in files
                   if endswith(file, ".jl")
-                      formatted &= format_file(joinpath(root, file); verbose=true)
+                      global formatted &= format_file(joinpath(root, file); verbose=true)
                   end
               end
           end
