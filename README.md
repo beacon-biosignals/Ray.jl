@@ -3,10 +3,7 @@
 [![CI](https://github.com/beacon-biosignals/Ray.jl/workflows/CI/badge.svg?branch=main)](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/CI.yml?query=workflow%3ACI+branch%3Amain)
 [![codecov](https://codecov.io/gh/beacon-biosignals/Ray.jl/graph/badge.svg)](https://codecov.io/gh/beacon-biosignals/Ray.jl)
 
-The `ray_julia_jll` is the Julia C++ wrapper that interfaces with the Ray.io project's shared core worker library.
-
-At the moment the package requires that the shared libraries are built directly on the host system and does not provide any precreated cross-compiled libraries. We hope to turn this package into a full fledged JLL but this direct build process will work as we experiment with interfacing with the Ray core worker C++ interface.
-
+The Ray.jl provides a Julia language interface for [Ray.io](https://www.ray.io/) workloads.
 
 ## FAQ
 
