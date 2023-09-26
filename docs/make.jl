@@ -3,7 +3,7 @@ using Documenter
 
 pages = ["API Documentation" => "index.md",
          "Installation" => "installation.md",
-         # "Developer Guide" => "developer-guide.md",
+         "Developer Guide" => "developer-guide.md",
          "Building Artifacts" => "building-artifacts.md"]
 
 makedocs(; modules=[Ray],
