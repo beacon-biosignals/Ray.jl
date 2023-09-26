@@ -102,7 +102,7 @@ end
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
     @debug """Registering ownership for $(obj_ref)
-              owner_address: $(ray_jll.JsonStringToMessage(ray_jll.Address, obj_ref.owner_address_json))
+              owner_address: $(obj_ref.owner_address)
               status: $(bytes2hex(codeunits(obj_ref.serialized_object_status)))
               contained in $(outer_obj_ref)"""
 
@@ -123,7 +123,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
                                                       obj_ref.serialized_object_status)
     else
         isnothing(obj_ref.owner_address_json) && @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
-        has_owner(obj_ref) && @debug "attempted to regsiter ownership but object already has known owner: $(obj_ref)"
+        has_owner(obj_ref) && @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
     end
 
     return nothing
@@ -140,7 +140,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     # Prefer serializing ownership information from the core worker backend
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address), CxxPtr(serialized_object_status))
     # XXX: we use ~~codeunits~~ JSON here because when there are null bytes
-    # anywhere in teh string, the `String` (or even `Vector{UInt8}`) conversion
+    # anywhere in the string, the `String` (or even `Vector{UInt8}`) conversion
     # from `CxxWrap.StdString` will truncate the string at the first null byte.
     # 
     # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
