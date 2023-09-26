@@ -47,7 +47,7 @@ Ray versions before 2.6 only support pydantic 1.x; downgrade with `pip install "
 
 ## Installation
 
-Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`. However, at the moment some manual steps are required to install the and use Ray.jl. Most users should use the pre-built binaries which are provided for Linux x86_64 and macOS arm64 (Apple Silicon). If you want to help develop the Ray.jl or attempt to build the package on for an unsupported operating system/architecture you should follow the "from source" instructions
+Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`. However, at the moment some manual steps are required to install the and use Ray.jl. Most users should use the pre-built binaries which are provided for Linux x86_64 and macOS arm64 (Apple Silicon). If you want to help develop Ray.jl or attempt to build the package for an unsupported operating system/architecture you should follow the ["from source"](#building-ray.jl) instructions.
 
 ### Pre-built
 
@@ -135,7 +135,7 @@ python -m pip install --upgrade pip wheel
 
 #### Build Ray CLI/Server
 
-We currently rely on a patched version of upstream Ray CLI/Server that is aware of Julia as a supported language and knows how to launch Julia worker processes. Until these changes are upstreamed to the Ray project, you need to either [build from source](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) or install using our [pre-built custom wheels](https://github.com/beacon-biosignals/ray/releases) (see the ["Pre-built"](#pre-built) instructions for how to install these).
+We currently rely on a patched version of upstream Ray CLI/Server that is aware of Julia as a supported language and knows how to launch Julia worker processes. Until these changes are [upstreamed to the Ray project](https://github.com/ray-project/ray/issues/39637), you need to either [build from source](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) or install using our [pre-built custom wheels](https://github.com/beacon-biosignals/ray/releases) (see the ["Pre-built"](#pre-built) instructions for how to install these).
 
 ```sh
 source venv/bin/activate
@@ -148,15 +148,17 @@ cd -
 
 ```sh
 source venv/bin/activate
-julia --project=ray_julia_jll ray_julia_jll/deps/build_jll.jl
+julia --project=ray_julia_jll -e 'using Pkg; Pkg.instantiate(); include("ray_julia_jll/deps/build_jll.jl")'
 
 cat >> ~/.julia/artifacts/Overrides.toml <<-EOF
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
 ray_julia = "$(pwd)/ray_julia_jll/deps/bazel-bin"
 EOF
 
-julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll");'
+julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.instantiate()'
 ```
+
+Note: if you switch to using the pre-built Artifacts you will have to revert the modification to Overrides.toml.
 
 ## Updating pre-built binaries
 
