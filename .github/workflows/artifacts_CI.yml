@@ -32,10 +32,10 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-      env:
-        ray_julia_jll_dir: ./ray_julia_jll
-        ray_dir: ./ray_julia_jll/deps/ray
-      steps:
+    env:
+      ray_julia_jll_dir: ./ray_julia_jll
+      ray_dir: ./ray_julia_jll/deps/ray
+    steps:
         - uses: actions/checkout@v3
         - name: Clone Ray repository
           uses: actions/checkout@v3
