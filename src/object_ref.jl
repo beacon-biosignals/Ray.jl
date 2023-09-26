@@ -103,9 +103,8 @@ end
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
     @debug """Registering ownership for $(obj_ref)
               owner_address: $(ray_jll.JsonStringToMessage(ray_jll.Address, obj_ref.owner_address_json))
-              status: $(obj_ref.serialized_object_status)
+              status: $(bytes2hex(codeunits(obj_ref.serialized_object_status)))
               contained in $(outer_obj_ref)"""
-    worker = ray_jll.GetCoreWorker()
 
     outer_object_id = if outer_obj_ref !== nothing
         outer_obj_ref.oid
@@ -146,7 +145,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     # 
     # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
     owner_address_json = String(ray_jll.MessageToJsonString(owner_address))
-    @debug "serialize(, ::ObjectRef):\nowner address $(owner_address)\nserialized to string: $(owner_address_json)"
+    @debug "serialize(, ::ObjectRef):\nowner address $(owner_address)"
     serialized_object_status = String(serialized_object_status)
 
     serialize_type(s, typeof(obj_ref))
@@ -167,7 +166,7 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     end
     if !isempty(owner_address_json)
         owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
-        @debug "deserialize(, ::ObjectRef):\nowner address $(owner_address)\nraw string: $(owner_address_json)"
+        @debug "deserialize(, ::ObjectRef):\nowner address $(owner_address)"
     else
         @debug "deserialize(, ::ObjectRef): empty `owner_address_json`"
     end
