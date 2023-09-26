@@ -96,10 +96,10 @@ end
         @test Ray.has_owner(remote_ref)
 
         # Convert address to string to compare
-        return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
-        remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
+        return_ref_addr = ray_jll.MessageToJsonString(Ray.get_owner_address(return_ref))
+        remote_ref_addr = ray_jll.MessageToJsonString(Ray.get_owner_address(remote_ref))
         @test return_ref_addr != remote_ref_addr
-        @test remote_ref_addr == remote_ref.owner_address_string
+        @test remote_ref_addr == remote_ref.owner_address_json
 
         @test Ray.get(remote_ref) == 2
     end
@@ -116,7 +116,7 @@ end
 
         # TODO: When owner registration is enabled this causes tasks to be re-run due to
         # "lost objects"
-        @test_broken Ray.get(return_ref) == 3
+        @test Ray.get(return_ref) == 3
         @test Ray.get(local_ref) == 3
     end
 

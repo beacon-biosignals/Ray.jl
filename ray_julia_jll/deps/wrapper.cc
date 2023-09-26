@@ -367,11 +367,11 @@ std::string address_string(const rpc::Address &addr) {
 
 void _RegisterOwnershipInfoAndResolveFuture(const ObjectID &object_id,
                                             const ObjectID &outer_object_id,
-                                            const std::string &owner_address_string,
+                                            const std::string &owner_address_json,
                                             const std::string &serialized_object_status) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
     rpc::Address owner_address;
-    owner_address.ParseFromString(owner_address_string);
+    google::protobuf::util::JsonStringToMessage(owner_address_json, &owner_address);
     std::cerr << "registering ownership for " << object_id.Hex()
               << " owned by: " << address_string(owner_address)
               << std::endl;
