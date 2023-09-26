@@ -47,3 +47,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}  # Used when run by tagbot
+      - name: Preview URL
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          repo_name="${repo#*/}"
+          repo_owner="${repo%/*}"
+          echo "Preview documentation available at:"
+          echo "https://${repo_owner}.github.io/${repo_name}/previews/PR${PR}"
+        env:
+          repo: ${{ github.repository }}
+          PR: ${{ github.event.number }}
