@@ -33,6 +33,7 @@ jobs:
         run: |
           using Pkg
           Pkg.develop(PackageSpec(path="ray_julia_jll"))
+      # Use a separate step for instantiation to get more fine grained timing of steps
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
         run: |
@@ -42,7 +43,7 @@ jobs:
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-docdeploy@v1
         with:
-          install-package: false
+          install-package: false  # Avoid instantiating twice
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}  # Used when run by tagbot
