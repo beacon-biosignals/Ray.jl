@@ -1,16 +1,19 @@
 mutable struct ObjectRef
     oid_hex::String
-    owner_address::Union{ray_jll.AddressAllocated,Nothing}
+    owner_address_json::Union{String,Nothing}
     serialized_object_status::String
 
-    function ObjectRef(oid_hex, owner_address, serialized_object_status;
+    function ObjectRef(oid_hex, owner_address_json, serialized_object_status;
                        add_local_ref=true)
-        objref = new(oid_hex, owner_address, serialized_object_status)
+        if owner_address_json !== nothing && isempty(owner_address_json)
+            owner_address_json = nothing
+        end
+        objref = new(oid_hex, owner_address_json, serialized_object_status)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
             ray_jll.AddLocalReference(worker, objref.oid)
         end
-       finalizer(objref) do objref
+        finalizer(objref) do objref
             errormonitor(@async finalize_object_ref(objref))
             return nothing
         end
@@ -28,9 +31,16 @@ function finalize_object_ref(obj::ObjectRef)
     return nothing
 end
 
+# we overload getproperty for :oid and :owner_address (from previous
+# implementation) which were replaced with String-serialized versions that are
+# safe references, instead of holding onto C++ managed memory
 function Base.getproperty(x::ObjectRef, prop::Symbol)
     return if prop == :oid
-        ray_jll.FromHex(ray_jll.ObjectID, x.oid_hex)
+        ray_jll.FromHex(ray_jll.ObjectID, getfield(x, :oid_hex))
+    elseif prop == :owner_address
+        owner_address_json = getfield(x, :owner_address_json)
+        isnothing(owner_address_json) && return nothing
+        ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
     else
         getfield(x, prop)
     end
@@ -91,7 +101,10 @@ end
 # see https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
-    worker = ray_jll.GetCoreWorker()
+    @debug """Registering ownership for $(obj_ref)
+              owner_address: $(obj_ref.owner_address)
+              status: $(bytes2hex(codeunits(obj_ref.serialized_object_status)))
+              contained in $(outer_obj_ref)"""
 
     outer_object_id = if outer_obj_ref !== nothing
         outer_obj_ref.oid
@@ -99,12 +112,19 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
         ray_jll.FromNil(ray_jll.ObjectID)
     end
 
+    # we've overloaded getproperty for this one to create the actual owner ref
+    owner_address = obj_ref.owner_address
+
+    worker = ray_jll.GetCoreWorker()
     if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
         # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L543
         ray_jll.RegisterOwnershipInfoAndResolveFuture(worker, obj_ref.oid, outer_object_id,
-                                                      obj_ref.owner_address,
+                                                      owner_address,
                                                       obj_ref.serialized_object_status)
+    else
+        isnothing(obj_ref.owner_address) && @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
+        has_owner(obj_ref) && @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
     end
 
     return nothing
@@ -120,12 +140,18 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
 
     # Prefer serializing ownership information from the core worker backend
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address), CxxPtr(serialized_object_status))
-    owner_address_str = String(ray_jll.SerializeAsString(owner_address))
+    # XXX: we use ~~codeunits~~ JSON here because when there are null bytes
+    # anywhere in the string, the `String` (or even `Vector{UInt8}`) conversion
+    # from `CxxWrap.StdString` will truncate the string at the first null byte.
+    # 
+    # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
+    owner_address_json = String(ray_jll.MessageToJsonString(owner_address))
+    @debug "serialize(, ::ObjectRef):\nowner address $(owner_address)"
     serialized_object_status = String(serialized_object_status)
 
     serialize_type(s, typeof(obj_ref))
     serialize(s, hex_str)
-    serialize(s, owner_address_str)
+    serialize(s, owner_address_json)
     serialize(s, serialized_object_status)
 
     return nothing
@@ -133,14 +159,17 @@ end
 
 function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     hex_str = deserialize(s)
-    owner_address_str = deserialize(s)
+    owner_address_json = deserialize(s)
     serialized_object_status = deserialize(s)
 
-    owner_address = nothing
-    if !isempty(owner_address_str)
-        owner_address = ray_jll.Address()
-        ray_jll.ParseFromString(owner_address, owner_address_str)
+    # this if/else block only exists for debug logging
+    if owner_address_json === nothing || isempty(owner_address_json)
+        owner_address_json = nothing
+        @debug "deserialize(, ::ObjectRef): empty `owner_address_json`"
+    else
+        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
+        @debug "deserialize(, ::ObjectRef):\nowner address $(owner_address)"
     end
 
-    return ObjectRef(hex_str, owner_address, serialized_object_status)
+    return ObjectRef(hex_str, owner_address_json, serialized_object_status)
 end

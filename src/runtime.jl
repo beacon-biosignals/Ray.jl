@@ -274,7 +274,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
                                 ray_jll.unwrap_function_descriptor(fd),
                                 get_job_id())
 
-        flattened = map(Ray.get, task_args)
+        flattened = map(Ray.deserialize_from_ray_object, task_args)
         args, kwargs = recover_args(flattened)
 
         @info begin

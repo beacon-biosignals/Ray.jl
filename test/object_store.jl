@@ -55,6 +55,15 @@
         yield()
         @test local_count(oid) == 0
     end
+
+    @testset "Object owner" begin
+        obj = Ray.put(1)
+        # ownership only embedded in ObjectRef on serialization
+        obj_rt = Ray.deserialize_from_ray_object(Ray.serialize_to_ray_object(obj))
+        addr_json = ray_jll.MessageToJsonString(Ray.get_owner_address(obj))
+        addr_rt_json = ray_jll.MessageToJsonString(obj_rt.owner_address)
+        @test addr_json == addr_rt_json == obj_rt.owner_address_json
+    end
 end
 
 @testset "serialize_to_ray_object" begin
@@ -68,7 +77,7 @@ end
         nested_obj_ids = ray_jll.GetNestedRefIds(ray_obj[])
 
         @test issetequal([o.oid for o in objs], nested_obj_ids)
-        @test Ray.get(ray_obj) == objs
+        @test Ray.deserialize_from_ray_object(ray_obj) == objs
 
         stuff2 = [obj1, (obj2, obj1, "blah"), 1]
         ray_obj2 = Ray.serialize_to_ray_object(stuff2)
@@ -76,6 +85,6 @@ end
         @test length(nested_obj_ids2) == 2
         @test issetequal(nested_obj_ids2, nested_obj_ids)
 
-        @test Ray.get(ray_obj2) == stuff2
+        @test Ray.deserialize_from_ray_object(ray_obj2) == stuff2
     end
 end

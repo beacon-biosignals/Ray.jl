@@ -352,6 +352,21 @@ void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
     vector.push_back(el);
 }
 
+std::string address_string(const rpc::Address &addr) {
+    // getting printable string representations of the raylet_id and worker_id
+    // fields requires constructing the `NodeID` and `WorkerID` instances from
+    // these protobuf-serialized fields.  we're not using them anywhere else
+    // other than printing an Address, so rather than wrapping them and doing
+    // this shuffle on the julia side, we do it here directly.
+    std::ostringstream addr_str;
+    addr_str << "Address("
+             << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
+             << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
+             << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
+             << ")";
+    return addr_str.str();
+}
+
 namespace jlcxx
 {
     // Needed for upcasting
@@ -574,7 +589,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // message Address
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
     mod.add_type<rpc::Address>("Address", jlcxx::julia_base_type<google::protobuf::Message>())
-        .constructor<>();
+        .constructor<>()
+        .method("raylet_id", &rpc::Address::raylet_id)
+        .method("ip_address", &rpc::Address::ip_address)
+        .method("port", &rpc::Address::port)
+        .method("worker_id", &rpc::Address::worker_id)
+        .method("_string", &address_string);
+
 
     // message JobConfig
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L324
@@ -589,6 +610,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
         .method("GetData", &RayObject::GetData)
+        .method("GetMetadata", &RayObject::GetMetadata)
         .method("GetSize", &RayObject::GetSize)
         .method("GetNestedRefIds", [](RayObject &obj) {
             std::vector<ObjectID> nested_ids;
