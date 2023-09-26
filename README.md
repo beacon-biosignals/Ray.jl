@@ -162,7 +162,7 @@ Note: if you switch to using the pre-built Artifacts you will have to revert the
 
 ## Updating pre-built binaries
 
-#### Ray CLI/Server
+### Ray CLI/Server
 
 Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-main/python/README-building-wheels.md) outlined in the Beacon fork of Ray.
 
