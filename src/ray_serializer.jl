@@ -72,7 +72,6 @@ deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(b
 
 function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject}, outer_object_ref=nothing)
     bytes = take!(ray_jll.GetData(x[]))
-    @debug "deserializing for $(outer_object_ref):\n$(bytes2hex(bytes))"
     s = RaySerializer(IOBuffer(bytes))
     result = try
         deserialize(s)
