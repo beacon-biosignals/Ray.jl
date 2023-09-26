@@ -148,13 +148,12 @@ cd -
 
 ```sh
 source venv/bin/activate
-julia --project=ray_julia_jll/deps -e 'using Pkg; Pkg.instantiate(); include("ray_julia_jll/deps/build_jll.jl")'
+julia --project=ray_julia_jll/deps -e 'using Pkg; Pkg.instantiate()'
 
-cat >> ~/.julia/artifacts/Overrides.toml <<-EOF
-[c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "$(pwd)/ray_julia_jll/deps/bazel-bin"
-EOF
+# Adds an entry in "~/.julia/artifacts/Overrides.toml" unless `--no-override` is passed
+julia --project=ray_julia_jll/deps ray_julia_jll/deps/build_jll.jl
 
+# Use local "ray_julia_jll" when working on "Ray.jl"
 julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.instantiate()'
 ```
 

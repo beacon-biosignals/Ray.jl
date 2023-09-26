@@ -112,11 +112,6 @@ jobs:
           using Pkg
           Pkg.instantiate()
           include("${{ env.ray_julia_jll_dir }}/deps/build_jll.jl")
-
-          cat >> ~/.julia/artifacts/Overrides.toml <<-EOF
-          [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-          ray_julia = "$(pwd)/ray_julia_jll/deps/bazel-bin"
-          EOF
       - name: "Monorepo setup"
         shell: julia --color=yes --project {0}
         run: |
