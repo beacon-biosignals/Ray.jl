@@ -159,7 +159,7 @@ end
 
 function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     hex_str = deserialize(s)
-    owner_address_json = String(deserialize(s))
+    owner_address_json = deserialize(s)
     serialized_object_status = deserialize(s)
 
     # this if/else block only exists for debug logging
