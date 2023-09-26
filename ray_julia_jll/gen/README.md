@@ -5,7 +5,7 @@ Builds are required for `linux x86_64` and `macos-arm64` on julia `v1.8` and `v1
 It is advised you run this within the python virtual environment associated with the root package.
 Note: rerunning this script _will overwrite_ an existing tarball.
 ```
-julia --project -e 'using Pkg; Pkg.instantiate()'
+julia --project -e 'using Pkg; Pkg.develop(path=".."); Pkg.instantiate()'
 julia --project make.jl
 ```
 
@@ -17,7 +17,11 @@ export GITHUB_TOKEN
 julia --project upload.jl
 ```
 
-3. Once all assets are uploaded, create a PR which updates the Artifacts.toml with the corresponding artifact URLs. 
+3. Once all assets are uploaded, checkout a new branch (from `main`) and run the `artifacts.jl` script _once_.
+This will update the `Artifacts.toml` with the new artifact(s), create the corresponding wrapper script(s), and push these changes to your branch, after which you can open a PR to `main`.
+```
+julia --project artifacts.jl
+```
 <!-- TODO: The CI workflows for this PR can run successfully and the referenced artifacts will be accessible. -->
 
 4. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.

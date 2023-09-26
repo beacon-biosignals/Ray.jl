@@ -1,25 +1,3 @@
-using CxxWrap
-using CxxWrap.StdLib: StdVector, SharedPtr
-using libcxxwrap_julia_jll
-
-using Serialization
-
-JLLWrappers.@generate_wrapper_header("ray_julia")
-JLLWrappers.@declare_library_product(ray_julia, "julia_core_worker_lib.so")
-@wrapmodule(joinpath(artifact"ray_julia", "julia_core_worker_lib.so"))
-
-function __init__()
-    JLLWrappers.@generate_init_header(libcxxwrap_julia_jll)
-    JLLWrappers.@init_library_product(
-        ray_julia,
-        "julia_core_worker_lib.so",
-        RTLD_GLOBAL,
-    )
-
-    JLLWrappers.@generate_init_footer()
-    @initcxx
-end  # __init__()
-
 const STATUS_CODE_SYMBOLS = (:OK,
                              :OutOfMemory,
                              :KeyError,
@@ -170,14 +148,14 @@ ObjectID(str::AbstractString) = FromHex(ObjectID, str)
 Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
 
 # cannot believe I'm doing this...
-# 
+#
 # Because ObjectID is a CxxWrap-defined type, it has two subtypes:
 # `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
 # construct directly or return by value, the second when you pull a ref out of
 # say `std::vector<ObjectID>`.
 #
 # ObjectID is abstract, so the normal method definition:
-# 
+#
 # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
 #
 # is shadowed by more specific fallbacks defined by CxxWrap.
