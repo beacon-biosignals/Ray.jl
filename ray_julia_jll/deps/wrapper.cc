@@ -372,9 +372,6 @@ void _RegisterOwnershipInfoAndResolveFuture(const ObjectID &object_id,
     auto &worker = CoreWorkerProcess::GetCoreWorker();
     rpc::Address owner_address;
     google::protobuf::util::JsonStringToMessage(owner_address_json, &owner_address);
-    std::cerr << "registering ownership for " << object_id.Hex()
-              << " owned by: " << address_string(owner_address)
-              << std::endl;
     worker.RegisterOwnershipInfoAndResolveFuture(object_id,
                                                  outer_object_id,
                                                  owner_address,
