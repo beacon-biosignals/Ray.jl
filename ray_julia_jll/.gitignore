@@ -1,4 +1,4 @@
-/Manifest.toml
+Manifest.toml
 venv
 deps/build.log
 deps/WORKSPACE.bazel
