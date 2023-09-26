@@ -108,7 +108,7 @@ jobs:
           @show readdir()
           using Pkg
           Pkg.instantiate()
-          include("build_jll.jl")
+          include("${{ env.build_dir }}/build_jll.jl")
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
         with:
