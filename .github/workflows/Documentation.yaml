@@ -28,6 +28,11 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1"
+      - name: Configure Monorepo
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg
+          Pkg.develop(PackageSpec(path="ray_julia_jll"))
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
         run: |
