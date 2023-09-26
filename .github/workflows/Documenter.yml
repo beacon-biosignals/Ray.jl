@@ -52,8 +52,8 @@ jobs:
         run: |
           repo_name="${repo#*/}"
           repo_owner="${repo%/*}"
-          echo "Preview documentation available at:"
-          echo "https://${repo_owner}.github.io/${repo_name}/previews/PR${PR}"
+          echo "Documentation preview available at:" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "https://${repo_owner}.github.io/${repo_name}/previews/PR${PR}" | tee -a "$GITHUB_STEP_SUMMARY"
         env:
           repo: ${{ github.repository }}
           PR: ${{ github.event.number }}
