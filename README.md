@@ -57,7 +57,7 @@ case $(uname -s) in
     Linux)
         OS=manylinux2014
         ;;
-    aarch64)
+    Darwin)
         OS=macosx_13_0
         ;;
 esac
