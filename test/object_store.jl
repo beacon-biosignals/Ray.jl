@@ -68,7 +68,7 @@ end
         nested_obj_ids = ray_jll.GetNestedRefIds(ray_obj[])
 
         @test issetequal([o.oid for o in objs], nested_obj_ids)
-        @test Ray.get(ray_obj) == objs
+        @test Ray.deserialize_from_ray_object(ray_obj) == objs
 
         stuff2 = [obj1, (obj2, obj1, "blah"), 1]
         ray_obj2 = Ray.serialize_to_ray_object(stuff2)
@@ -76,6 +76,6 @@ end
         @test length(nested_obj_ids2) == 2
         @test issetequal(nested_obj_ids2, nested_obj_ids)
 
-        @test Ray.get(ray_obj2) == stuff2
+        @test Ray.deserialize_from_ray_object(ray_obj2) == stuff2
     end
 end
