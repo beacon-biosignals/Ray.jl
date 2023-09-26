@@ -34,7 +34,7 @@ if !isfile(joinpath(artifact_dir, library_name))
 end
 
 # Add entry to depot Overrides.toml
-if "--no-override" in ARGS
+if !("--no-override" in ARGS)
     overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
     overrides_dict = isfile(overrides_toml) ? TOML.parsefile(overrides_toml) : Dict{String,Any}()
     overrides_dict[pkg_uuid] = Dict("ray_julia" => abspath(artifact_dir))
