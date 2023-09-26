@@ -34,6 +34,7 @@ jobs:
           - x64
     env:
       ray_julia_jll_dir: ./ray_julia_jll
+      build_dir: ./ray_julia_jll/deps
       ray_dir: ./ray_julia_jll/deps/ray
     steps:
       - uses: actions/checkout@v3
@@ -100,12 +101,13 @@ jobs:
           mkdir -p "$RAY_GEN_CACHE_DIR"
           cp -rfp . "$RAY_GEN_CACHE_DIR"
         working-directory: ${{ env.ray_dir }}
-
-      - name: "JLL setup"
+      - name: Build ray_julia library
         shell: julia --color=yes --project {0}
         run: |
-          overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
-          isfile(overrides_toml) && rm(overrides_toml)
+          using Pkg
+          Pkg.instantiate()
+          include(joinpath(pwd(), "build_jll.jl"))
+        working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
         with:
           project: ${{ env.ray_julia_jll_dir }}
