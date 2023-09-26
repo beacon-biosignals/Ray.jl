@@ -100,12 +100,17 @@ jobs:
           mkdir -p "$RAY_GEN_CACHE_DIR"
           cp -rfp . "$RAY_GEN_CACHE_DIR"
         working-directory: ${{ env.ray_dir }}
-
-      - name: "JLL setup"
-        shell: julia --color=yes --project {0}
+      - name: Build ray_julia library
+        shell: julia --color=yes --project=${{ env.ray_julia_jll_dir }}/deps {0}
         run: |
-          overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
-          isfile(overrides_toml) && rm(overrides_toml)
+          using Pkg
+          Pkg.instantiate()
+          include("${{ env.ray_julia_jll_dir }}/deps/build_jll.jl")
+
+          cat >> ~/.julia/artifacts/Overrides.toml <<-EOF
+          [c348cde4-7f22-4730-83d8-6959fb7a17ba]
+          ray_julia = "$(pwd)/ray_julia_jll/deps/bazel-bin"
+          EOF
       - uses: julia-actions/julia-buildpkg@v1
         with:
           project: ${{ env.ray_julia_jll_dir }}

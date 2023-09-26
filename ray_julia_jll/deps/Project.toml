@@ -1,0 +1,10 @@
+[deps]
+CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
+Mustache = "ffc61752-8dc7-55ee-8c37-f3e9cdd09e70"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+[compat]
+CxxWrap = "0.13.4"
+Mustache = "1"
+TOML = "1"
+julia = "1.6"
