@@ -353,9 +353,11 @@ void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
 }
 
 std::string address_string(const rpc::Address &addr) {
-    // there's annoying conversion from protobuf binary blobs for the
-    // "fields" so we handle it on the C++ side rather than wrapping
-    // NodeID and WorkerID
+    // getting printable string representations of the raylet_id and worker_id
+    // fields requires constructing the `NodeID` and `WorkerID` instances from
+    // these protobuf-serialized fields.  we're not using them anywhere else
+    // other than printing an Address, so rather than wrapping them and doing
+    // this shuffle on the julia side, we do it here directly.
     std::ostringstream addr_str;
     addr_str << "Address("
              << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
