@@ -47,7 +47,7 @@ Ray versions before 2.6 only support pydantic 1.x; downgrade with `pip install "
 
 ## Installation
 
-Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`. However, at the moment some manual steps are required to install the and use Ray.jl. Most users should use the pre-built binaries which are provided for Linux x86_64 and macOS arm64 (Apple Silicon). If you want to help develop Ray.jl or attempt to build the package for an unsupported operating system/architecture you should follow the ["from source"](#building-ray.jl) instructions.
+Ultimately our aim is to make installing Ray.jl as simple as `Pkg.add("Ray")`. However, at the moment some manual steps are required to install the and use Ray.jl. Most users should use the pre-built binaries which are provided for Linux x86_64 and macOS arm64 (Apple Silicon). If you want to help develop Ray.jl or attempt to build the package for an unsupported operating system/architecture you should follow the ["from source"](#building-rayjl) instructions.
 
 ### Pre-built
 
