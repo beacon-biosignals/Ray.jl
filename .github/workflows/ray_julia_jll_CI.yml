@@ -101,7 +101,7 @@ jobs:
           cp -rfp . "$RAY_GEN_CACHE_DIR"
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
-        shell: julia --color=yes --project=${{ env.ray_julia_jll_dir }}/deps {0}
+        shell: julia --color=yes --project=./ray_julia_jll/deps {0}
         run: |
           using Pkg
           Pkg.instantiate()
