@@ -7,9 +7,11 @@ on:
     tags: ["*"]
     paths:
       - "ray_julia_jll/Artifacts.toml"
+      - ".github/workflows/artifacts_CI.yml"
   pull_request:
     paths:
       - "ray_julia_jll/Artifacts.toml"
+      - ".github/workflows/artifacts_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -106,7 +108,12 @@ jobs:
           using Pkg
           Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
       - uses: julia-actions/julia-buildpkg@v1
+      - name: "ray_julia_jll tests"
       - uses: julia-actions/julia-runtest@v1
         with:
           annotate: true
-  
+          project: ${{ env.ray_julia_jll_dir }}
+      - name: "Ray.jl tests"
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          annotate: true
