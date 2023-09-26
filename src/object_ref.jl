@@ -113,16 +113,17 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
     end
 
     # we've overloaded getproperty for this one to create the actual owner ref
-    # owner_address = obj_ref.owner_address
+    owner_address = obj_ref.owner_address
 
-    if !isnothing(obj_ref.owner_address_json) && !has_owner(obj_ref)
+    worker = ray_jll.GetCoreWorker()
+    if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
         # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L543
-        ray_jll.RegisterOwnershipInfoAndResolveFuture(obj_ref.oid, outer_object_id,
-                                                      obj_ref.owner_address_json,
+        ray_jll.RegisterOwnershipInfoAndResolveFuture(worker, obj_ref.oid, outer_object_id,
+                                                      owner_address,
                                                       obj_ref.serialized_object_status)
     else
-        isnothing(obj_ref.owner_address_json) && @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
+        isnothing(obj_ref.owner_address) && @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
         has_owner(obj_ref) && @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
     end
 

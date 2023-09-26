@@ -365,19 +365,6 @@ std::string address_string(const rpc::Address &addr) {
     return addr_str.str();
 }
 
-void _RegisterOwnershipInfoAndResolveFuture(const ObjectID &object_id,
-                                            const ObjectID &outer_object_id,
-                                            const std::string &owner_address_json,
-                                            const std::string &serialized_object_status) {
-    auto &worker = CoreWorkerProcess::GetCoreWorker();
-    rpc::Address owner_address;
-    google::protobuf::util::JsonStringToMessage(owner_address_json, &owner_address);
-    worker.RegisterOwnershipInfoAndResolveFuture(object_id,
-                                                 outer_object_id,
-                                                 owner_address,
-                                                 serialized_object_status);
-}
-
 namespace jlcxx
 {
     // Needed for upcasting
@@ -751,7 +738,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetOwnerAddress", &ray::core::CoreWorker::GetOwnerAddress)
         .method("GetOwnershipInfo", &ray::core::CoreWorker::GetOwnershipInfo)
         .method("GetObjectRefs", &ray::core::CoreWorker::GetObjectRefs)
-        .method("RegisterOwnershipInfoAndResolveFuture", &_RegisterOwnershipInfoAndResolveFuture)
+        .method("RegisterOwnershipInfoAndResolveFuture", &ray::core::CoreWorker::RegisterOwnershipInfoAndResolveFuture)
         // .method("AddLocalReference", &ray::core::CoreWorker::AddLocalReference)
         .method("AddLocalReference", [](ray::core::CoreWorker &worker, ObjectID &object_id) {
             return worker.AddLocalReference(object_id);
