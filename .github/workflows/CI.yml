@@ -40,6 +40,7 @@ jobs:
           - x64
     env:
       ray_julia_jll_dir: ./ray_julia_jll
+      build_dir: ./ray_julia_jll/deps
       ray_dir: ./ray_julia_jll/deps/ray
     steps:
       - uses: actions/checkout@v3
@@ -107,11 +108,12 @@ jobs:
           cp -rfp . "$RAY_GEN_CACHE_DIR"
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
-        shell: julia --color=yes --project=./ray_julia_jll/deps {0}
+        shell: julia --color=yes --project {0}
         run: |
           using Pkg
           Pkg.instantiate()
-          include("${{ env.ray_julia_jll_dir }}/deps/build_jll.jl")
+          include("build_jll.jl")
+        working-directory: ${{ env.build_dir }}
       - name: "Monorepo setup"
         shell: julia --color=yes --project {0}
         run: |
