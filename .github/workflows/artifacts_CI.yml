@@ -40,10 +40,10 @@ jobs:
             version: ${{ matrix.version }}
             arch: ${{ matrix.arch }}
         - name: Install Ray CLI
-        run: |
-          pip install --upgrade pip wheel
-          PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
-          pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
+          run: |
+            pip install --upgrade pip wheel
+            PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
+            pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
         - name: "Monorepo setup"
           shell: julia --color=yes --project {0}
           run: |
