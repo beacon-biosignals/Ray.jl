@@ -1,5 +1,5 @@
-ray_julia_jll/deps/build.log
-ray_julia_jll/deps/WORKSPACE.bazel
-ray_julia_jll/deps/ray
-ray_julia_jll/deps/bazel-*
+ray_julia_jll/build/WORKSPACE.bazel
+ray_julia_jll/build/ray
+ray_julia_jll/buid/bazel-*
+ray_julia_jll/build/tarballs
 Dockerfile

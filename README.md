@@ -142,7 +142,7 @@ We currently rely on a patched version of upstream Ray CLI/Server that is aware 
 
 ```sh
 source venv/bin/activate
-cd ray_julia_jll/deps/ray/python
+cd ray_julia_jll/build/ray/python
 pip install --verbose .
 cd -
 ```
@@ -151,10 +151,10 @@ cd -
 
 ```sh
 source venv/bin/activate
-julia --project=ray_julia_jll/deps -e 'using Pkg; Pkg.instantiate()'
+julia --project=ray_julia_jll/build -e 'using Pkg; Pkg.instantiate()'
 
 # Adds an entry in "~/.julia/artifacts/Overrides.toml" unless `--no-override` is passed
-julia --project=ray_julia_jll/deps ray_julia_jll/deps/build_jll.jl
+julia --project=ray_julia_jll/build ray_julia_jll/build/build.jl
 
 # Use local "ray_julia_jll" when working on "Ray.jl"
 julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.instantiate()'
@@ -170,4 +170,4 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### JLL Artifacts
 
-The `ray_julia_jll` artifacts are hosted in [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To rebuild the artifacts, you can follow the [build instructions](./ray_julia_jll/gen/README.md).
+The `ray_julia_jll` artifacts are hosted in [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To rebuild the artifacts, you can follow the [build instructions](./ray_julia_jll/build/README.md).

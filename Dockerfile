@@ -122,9 +122,9 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_ROOT} && \
     git -C ${RAY_ROOT} checkout ${RAY_COMMIT} && \
-    mkdir -p ${JLL_JULIA_PROJECT}/deps && \
-    ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/deps/ray && \
-    cd ${JLL_JULIA_PROJECT}/deps/ray && \
+    mkdir -p ${JLL_JULIA_PROJECT}/build && \
+    ln -s ${RAY_ROOT} ${JLL_JULIA_PROJECT}/build/ray && \
+    cd ${JLL_JULIA_PROJECT}/build/ray && \
     #
     # Allow builders to clear just the Ray CLI cache.
     if [ "${RAY_CACHE_CLEAR}" != "false" ]; then \
@@ -149,12 +149,12 @@ RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     fi && \
     #
     # Build the dashboard
-    cd ${JLL_JULIA_PROJECT}/deps/ray/python/ray/dashboard/client && \
+    cd ${JLL_JULIA_PROJECT}/build/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
     #
     # Build Ray for Python
-    cd ${JLL_JULIA_PROJECT}/deps/ray/python && \
+    cd ${JLL_JULIA_PROJECT}/build/ray/python && \
     pip install --verbose . && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
@@ -173,17 +173,17 @@ ARG JLL_ROOT=/ray_julia_jll
 COPY --chown=ray ray_julia_jll ${JLL_ROOT}
 RUN --mount=type=cache,sharing=locked,target=/mnt/bazel-cache,uid=1000,gid=100 \
     set -eux && \
-    ln -s ${RAY_ROOT} ${JLL_ROOT}/deps/ray && \
+    ln -s ${RAY_ROOT} ${JLL_ROOT}/build/ray && \
     ln -s ${JLL_ROOT} ${JLL_JULIA_PROJECT} && \
     julia --project=${JLL_JULIA_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
-    cp -rpL ${JLL_JULIA_PROJECT}/deps/bazel-bin ${JLL_JULIA_PROJECT}/deps/bin && \
-    rm ${JLL_JULIA_PROJECT}/deps/bazel-* && \
+    cp -rpL ${JLL_JULIA_PROJECT}/build/bazel-bin ${JLL_JULIA_PROJECT}/build/bin && \
+    rm ${JLL_JULIA_PROJECT}/build/bazel-* && \
     rm ${JLL_JULIA_PROJECT}
 
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${JULIA_PROJECT}/ray_julia_jll/deps/bin"
+ray_julia = "${JULIA_PROJECT}/ray_julia_jll/build/bin"
 EOF
 
 COPY --chown=ray . ${JULIA_PROJECT}/
