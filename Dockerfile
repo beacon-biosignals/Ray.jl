@@ -68,6 +68,7 @@ COPY --chown=ray *Project.toml *Manifest.toml /tmp/Ray.jl/
 RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
+    mkdir -p ${RAY_JL_PROJECT} && \
     mv /tmp/Ray.jl ${RAY_JL_PROJECT} && \
     # Generate a fake ray_julia_jll package just for instantiation
     mkdir -p ${RAY_JL_PROJECT}/ray_julia_jll/src && touch ${RAY_JL_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl && \
@@ -114,6 +115,7 @@ RUN node --version && \
 
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
+ARG BUILD_PROJECT=${RAY_JLL_PROJECT}/deps
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
@@ -128,9 +130,9 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     git -C ${RAY_REPO} checkout ${RAY_COMMIT} && \
     #
     # Build using the final Ray.jl destination
-    mkdir -p ${RAY_JLL_PROJECT}/deps && \
-    ln -s ${RAY_REPO} ${RAY_JLL_PROJECT}/deps/ray && \
-    cd ${RAY_JLL_PROJECT}/deps/ray && \
+    mkdir -p ${BUILD_PROJECT} && \
+    ln -s ${RAY_REPO} ${BUILD_PROJECT}/ray && \
+    cd ${BUILD_PROJECT}/ray && \
     #
     # Allow builders to clear just the Ray CLI cache.
     if [ "${RAY_CACHE_CLEAR}" != "false" ]; then \
@@ -154,13 +156,12 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
         cd -; \
     fi && \
     #
-    # Build the dashboard
-    cd ${RAY_JLL_PROJECT}/deps/ray/python/ray/dashboard/client && \
+    cd ${BUILD_PROJECT}/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
     #
     # Build Ray for Python
-    cd ${RAY_JLL_PROJECT}/deps/ray/python && \
+    cd ${BUILD_PROJECT}/ray/python && \
     pip install --verbose . && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
@@ -182,12 +183,14 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     rm -rf ${RAY_JLL_PROJECT} && \
     ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
     #
-    # Build ray_julia_jll
-    julia --project=${RAY_JLL_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
+    # Build ray_julia library
+    date && \
+    julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
+    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_jll.jl && \
     #
     # Cleanup build data
-    cp -rpL ${RAY_JLL_PROJECT}/deps/bazel-bin ${RAY_JLL_PROJECT}/deps/bin && \
-    rm ${RAY_JLL_PROJECT}/deps/bazel-* && \
+    cp -rpL ${BUILD_PROJECT}/bazel-bin ${BUILD_PROJECT}/bin && \
+    rm ${BUILD_PROJECT}/bazel-* && \
     rm ${RAY_JLL_PROJECT}
 
 # Overwrite the Overrides.toml created during Pkg.build
