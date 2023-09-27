@@ -112,7 +112,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "build_jll.jl"))
+          include(joinpath(pwd(), "build.jl"))
         working-directory: ${{ env.build_dir }}
       - name: "Monorepo setup"
         shell: julia --color=yes --project {0}

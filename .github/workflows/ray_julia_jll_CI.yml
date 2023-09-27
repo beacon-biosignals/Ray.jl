@@ -106,7 +106,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "build_jll.jl"))
+          include(joinpath(pwd(), "build.jl"))
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
         with:
