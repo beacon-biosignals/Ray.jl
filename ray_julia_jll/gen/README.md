@@ -5,7 +5,7 @@ Builds are required for `linux x86_64` and `macos-arm64` on julia `v1.8` and `v1
 It is advised you run this within the python virtual environment associated with the root package.
 Note: rerunning this script _will overwrite_ an existing tarball.
 ```
-julia --project -e 'using Pkg; Pkg.develop(path=".."); Pkg.instantiate()'
+julia --project -e 'using Pkg; Pkg.instantiate()'
 julia --project make.jl
 ```
 

@@ -93,22 +93,22 @@ end
         return_ref = submit_task(Ray.put, (2,))
         remote_ref = Ray.get(return_ref)
         @test Ray.has_owner(return_ref)
-        @test_broken Ray.has_owner(remote_ref)
+        @test Ray.has_owner(remote_ref)
 
         # Convert address to string to compare
-        @test_broken begin
-            return_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(return_ref))
-            remote_ref_addr = ray_jll.SerializeAsString(Ray.get_owner_address(remote_ref))
-            return_ref_addr != remote_ref_addr
-        end
+        return_ref_addr = ray_jll.MessageToJsonString(Ray.get_owner_address(return_ref))
+        remote_ref_addr = ray_jll.MessageToJsonString(Ray.get_owner_address(remote_ref))
+        @test return_ref_addr != remote_ref_addr
+        @test remote_ref_addr == remote_ref.owner_address_json
 
-        @test_broken Ray.get(remote_ref) == 2
+        @test Ray.get(remote_ref) == 2
     end
 
     # TODO: When owner registration is enabled this test seems to corrupt other ObjectIDs
     # such that later tests return the wrong results.
     @testset "worker get on driver put" begin
         local_ref = Ray.put(3)
+        # XXX: getting empty address ID string here:
         return_ref = Ray.submit_task(Ray.get, (local_ref,))
         @test return_ref != local_ref
         @test Ray.has_owner(return_ref)
@@ -116,7 +116,7 @@ end
 
         # TODO: When owner registration is enabled this causes tasks to be re-run due to
         # "lost objects"
-        @test_broken Ray.get(return_ref) == 3
+        @test Ray.get(return_ref) == 3
         @test Ray.get(local_ref) == 3
     end
 
@@ -128,7 +128,7 @@ end
             return Ray.get(return_ref)
         end
         return_ref = Ray.submit_task(f, (4,))
-        @test_broken Ray.get(return_ref) == 4
+        @test Ray.get(return_ref) == 4
 
         g = function (x)
             return_ref = Ray.submit_task(Ray.put, (x,))
@@ -136,7 +136,7 @@ end
             return Ray.get(remote_ref)
         end
         return_ref = Ray.submit_task(g, (5,))
-        @test_broken Ray.get(return_ref) == 5
+        @test Ray.get(return_ref) == 5
     end
 
     @testset "driver get on worker return" begin
@@ -144,7 +144,7 @@ end
         return_ref = Ray.submit_task(f, (6,))
         inner_ref = Ray.get(return_ref)
         @test inner_ref isa ObjectRef
-        @test_broken Ray.get(inner_ref) == 6
+        @test Ray.get(inner_ref) == 6
     end
 end
 
