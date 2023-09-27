@@ -68,20 +68,17 @@ The initial Ray.jl build can be done as follows:
 
 ```sh
 source venv/bin/activate
-julia --project=ray_julia_jll/build -e 'using Pkg; Pkg.instantiate()'
+julia --project=build -e 'using Pkg; Pkg.instantiate()'
 
 # Build "ray_julia" library. Will adds an entry in "~/.julia/artifacts/Overrides.toml" unless `--no-override` is specified
-julia --project=ray_julia_jll/build ray_julia_jll/build/build_library.jl
-
-# Use local "ray_julia_jll" when working on "Ray.jl"
-julia --project -e 'using Pkg; Pkg.develop(; path="./ray_julia_jll"); Pkg.instantiate()'
+julia --project=build build/build_library.jl
 ```
 
 Subsequent builds can done via:
 
 ```sh
 source venv/bin/activate
-julia --project=ray_julia_jll/build ray_julia_jll/build/build_library.jl && julia --project 'using ray_julia_jll' && julia --project
+julia --project=build build/build_library.jl && julia --project 'using Ray' && julia --project
 ```
 
 If you decide to switch back to using the the pre-built binaries you will have to revert the modification to your `~/.julia/artifacts/Overrides.toml`.
@@ -92,7 +89,7 @@ We currently rely on a patched version of upstream Ray CLI that is aware of Juli
 
 ```sh
 source venv/bin/activate
-cd ray_julia_jll/build/ray/python
+cd build/ray/python
 pip install --verbose .
 cd -
 ```

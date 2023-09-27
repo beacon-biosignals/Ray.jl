@@ -7,12 +7,6 @@ The Ray.jl provides a Julia language interface for [Ray.io](https://www.ray.io/)
 
 ## FAQ
 
-### Why am I seeing "expected `ray_julia_jll` to be registered when I use Ray.jl?
-
-You need to `Pkg.develop` _both_ Ray.jl _and_ `ray_julia_jll` in any project that uses Ray.jl.
-
-Currently neither Ray.jl nor the `ray_julia_jll` package are registered since they're under heavy development, and because automated builds of the JLL are not possible using the existing Julia BinaryBuilder infrastructure.
-
 ### How do I start/stop the ray backend?
 
 Make sure the appropriate Python environment (i.e. `source venv/bin/activate`) is active (wherever you [`pip install`ed the Ray CLI](./docs/src/installation.md)) and then do:
