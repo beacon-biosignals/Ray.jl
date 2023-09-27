@@ -53,7 +53,6 @@ jobs:
             isfile(overrides_toml) && rm(overrides_toml)
             using Pkg
             Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
-          working-directory: ${{ env.ray_julia_jll_dir }}
         - uses: julia-actions/julia-buildpkg@v1
         - name: "ray_julia_jll tests"
           uses: julia-actions/julia-runtest@v1
