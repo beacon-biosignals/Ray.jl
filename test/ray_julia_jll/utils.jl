@@ -1,6 +1,6 @@
 using .ray_julia_jll: initialize_driver, shutdown_driver, FromInt, JobID
 
-function _setup_ray_head_node(body)
+function setup_ray_head_node_basic(body)
     prestarted = success(`ray status`)
     if !prestarted
         @info "Starting local head node"
@@ -28,7 +28,7 @@ function node_manager_port()
     return m !== nothing ? parse(Int, m[1]) : error("Unable to find port")
 end
 
-function _setup_core_worker(body)
+function setup_core_worker_basic(body)
     initialize_driver("/tmp/ray/session_latest/sockets/raylet",
                       "/tmp/ray/session_latest/sockets/plasma_store",
                       "127.0.0.1:6379",
