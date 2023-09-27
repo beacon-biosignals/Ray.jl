@@ -196,7 +196,7 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${RAY_JLL_PROJECT}/build/bin"
+ray_julia = "${BUILD_PROJECT}/bin"
 EOF
 
 COPY --chown=ray . ${RAY_JL_PROJECT}/
