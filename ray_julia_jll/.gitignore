@@ -3,5 +3,5 @@ venv
 /.dir-locals.el
 build/WORKSPACE.bazel
 build/ray
-buid/bazel-*
+build/bazel-*
 build/tarballs
