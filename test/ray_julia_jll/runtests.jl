@@ -16,12 +16,12 @@ end
     include("address.jl")
     include("objectid.jl")
 
-    # setup_ray_head_node() do
+    _setup_ray_head_node() do
         # GCS client only needs head node
         include("gcs_client.jl")
-        # setup_core_worker() do
+        _setup_core_worker() do
             include("put_get.jl")
             include("reference_counting.jl")
-        # end
-    # end
+        end
+    end
 end

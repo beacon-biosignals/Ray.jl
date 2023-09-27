@@ -20,6 +20,7 @@ include("utils.jl")
         Aqua.test_all(Ray; ambiguities=false)
     end
 
+    include("ray_julia_jll/runtests.jl")
 
     include("exceptions.jl")
     include("runtime_env.jl")
@@ -33,9 +34,6 @@ include("utils.jl")
             include("runtime.jl")
             include("object_store.jl")
             include("task.jl")
-
-            # TODO: Testing ray_julia_jll after Ray is wrong
-            include("ray_julia_jll/runtests.jl")
         end
     end
 end
