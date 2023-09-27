@@ -1,7 +1,0 @@
-Manifest.toml
-venv
-/.dir-locals.el
-build/WORKSPACE.bazel
-build/ray
-build/bazel-*
-build/tarballs

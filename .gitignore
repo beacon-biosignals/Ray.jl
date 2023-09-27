@@ -3,4 +3,7 @@ venv
 /.dir-locals.el
 
 # Ignore dependencies that are built
-docs/build
+build/WORKSPACE.bazel
+build/ray
+buid/bazel-*
+build/tarballs

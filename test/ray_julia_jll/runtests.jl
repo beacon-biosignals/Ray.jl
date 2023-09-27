@@ -2,7 +2,7 @@ using Base64: base64encode
 using CxxWrap
 using JSON3: JSON3
 using Test
-using ray_julia_jll: ray_julia_jll
+using Ray: ray_julia_jll
 
 include("utils.jl")
 
