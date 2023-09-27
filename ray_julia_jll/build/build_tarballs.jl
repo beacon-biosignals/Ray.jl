@@ -18,8 +18,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
-    @info "Building ray_julia_jll..."
-    include("build.jl")
+    @info "Building ray_julia library..."
+    include("build_library.jl")
 
     host_triplet = BinaryPlatforms.host_triplet()
     tarball_name = "ray_julia.$TAG.$host_triplet.tar.gz"
