@@ -115,7 +115,7 @@ RUN node --version && \
 
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
-ARG BUILD_PROJECT=${RAY_JLL_PROJECT}/deps
+ARG BUILD_PROJECT=${RAY_JLL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
@@ -156,6 +156,7 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
         cd -; \
     fi && \
     #
+    # Build the dashboard
     cd ${BUILD_PROJECT}/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
@@ -179,14 +180,13 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     set -eux && \
     #
     # Build using the final Ray.jl destination
-    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/deps/ray && \
+    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/build/ray && \
     rm -rf ${RAY_JLL_PROJECT} && \
     ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
     #
     # Build ray_julia library
-    date && \
     julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
-    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_jll.jl && \
+    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl && \
     #
     # Cleanup build data
     cp -rpL ${BUILD_PROJECT}/bazel-bin ${BUILD_PROJECT}/bin && \
@@ -196,7 +196,7 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${RAY_JLL_PROJECT}/deps/bin"
+ray_julia = "${RAY_JLL_PROJECT}/build/bin"
 EOF
 
 COPY --chown=ray . ${RAY_JL_PROJECT}/

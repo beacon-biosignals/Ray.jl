@@ -34,8 +34,8 @@ jobs:
           - x64
     env:
       ray_julia_jll_dir: ./ray_julia_jll
-      build_dir: ./ray_julia_jll/deps
-      ray_dir: ./ray_julia_jll/deps/ray
+      build_dir: ./ray_julia_jll/build
+      ray_dir: ./ray_julia_jll/build/ray
     steps:
       - uses: actions/checkout@v3
       - name: Clone Ray repository
@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache/restore@v3
         id: build-cache
         with:
-          key: build-cache.ray_julia_jll-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('deps/WORKSPACE.bazel.tpl', 'deps/BUILD.bazel') }}
+          key: build-cache.ray_julia_jll-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('ray_julia_jll/build/WORKSPACE.bazel.tpl', 'ray_julia_jll/build/BUILD.bazel') }}
           path: ~/.cache
           restore-keys: |
             build-cache.ray_julia_jll-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
@@ -109,7 +109,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "build_jll.jl"))
+          include(joinpath(pwd(), "build_library.jl"))
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
         with:
