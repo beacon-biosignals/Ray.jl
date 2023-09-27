@@ -9,14 +9,12 @@ on:
       - "src/**"
       - "test/**"
       - "Project.toml"
-      - "ray_julia_jll/**"
       - ".github/workflows/CI.yml"
   pull_request:
     paths:
       - "src/**"
       - "test/**"
       - "Project.toml"
-      - "ray_julia_jll/**"
       - ".github/workflows/CI.yml"
 concurrency:
   # Skip intermediate builds: always.
@@ -39,9 +37,8 @@ jobs:
         arch:
           - x64
     env:
-      ray_julia_jll_dir: ./ray_julia_jll
-      build_dir: ./ray_julia_jll/build
-      ray_dir: ./ray_julia_jll/build/ray
+      build_dir: ./build
+      ray_dir: ./build/ray
     steps:
       - uses: actions/checkout@v3
       - name: Clone Ray repository
@@ -52,10 +49,9 @@ jobs:
       - name: Determine Ray commit
         id: ray-commit
         run: |
-           cd ${{ env.ray_dir }}
            head_sha="$(git rev-parse HEAD)"
            echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
-        working-directory: ${{ env.ray_julia_jll-directory }}
+        working-directory: ${{ env.ray_dir }}
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -118,11 +114,6 @@ jobs:
           Pkg.instantiate()
           include(joinpath(pwd(), "build_library.jl"))
         working-directory: ${{ env.build_dir }}
-      - name: "Monorepo setup"
-        shell: julia --color=yes --project {0}
-        run: |
-          using Pkg
-          Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         with:
