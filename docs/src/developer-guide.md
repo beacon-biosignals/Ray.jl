@@ -78,7 +78,7 @@ Subsequent builds can done via:
 
 ```sh
 source venv/bin/activate
-julia --project=build build/build_library.jl && julia --project 'using Ray' && julia --project
+julia --project=build build/build_library.jl && julia --project -e 'using Ray' && julia --project
 ```
 
 If you decide to switch back to using the the pre-built binaries you will have to revert the modification to your `~/.julia/artifacts/Overrides.toml`.
