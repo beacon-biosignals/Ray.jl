@@ -1,3 +1,6 @@
 Manifest.toml
 venv
 /.dir-locals.el
+
+# Ignore dependencies that are built
+docs/build
