@@ -12,11 +12,11 @@ case $(uname -s) in
     Darwin) OS=macosx_13_0;;
 esac
 ARCH=$(uname -m)
-RELEASE="latest/download"  # Alternatively "download/ray-2.5.1+1"
-pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/$RELEASE/ray-2.5.1-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
+RELEASE="ray-2.5.1+1"
+pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/download/$RELEASE/${RELEASE%+*}-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
 
 # Install the Julia packages "ray_julia_jll" and "Ray"
-julia -e 'using Pkg; Pkg.add([PackageSpec(url="https://github.com/beacon-biosignals/Ray.jl", subdir="ray_julia_jll"), PackageSpec(url="https://github.com/beacon-biosignals/Ray.jl")])'
+TAG="v0.1.0" julia -e 'using Pkg; Pkg.add([PackageSpec(url="https://github.com/beacon-biosignals/Ray.jl", subdir="ray_julia_jll", rev=ENV["TAG"]), PackageSpec(url="https://github.com/beacon-biosignals/Ray.jl", rev=ENV["TAG"])])'
 ```
 
 Users attempting to use Ray.jl on other platforms can attempt to [build the package from source](./developer-guide.md).
