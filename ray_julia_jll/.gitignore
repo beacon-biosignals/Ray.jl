@@ -1,9 +1,7 @@
 Manifest.toml
 venv
-deps/build.log
-deps/WORKSPACE.bazel
-deps/ray
-deps/bazel-*
-deps/override
 /.dir-locals.el
-gen/tarballs
+build/WORKSPACE.bazel
+build/ray
+build/bazel-*
+build/tarballs

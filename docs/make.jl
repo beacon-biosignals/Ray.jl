@@ -10,7 +10,8 @@ makedocs(; modules=[Ray],
          format=Documenter.HTML(; prettyurls=get(ENV, "CI", nothing) == "true"),
          sitename="Ray.jl",
          authors="Beacon Biosignals",
-         linkcheck=true,
+         # Disable until we incorporate `ray_julia_jll/build/README.md` documentation here
+         # linkcheck=true,
          pages)
 
 deploydocs(; repo="github.com/beacon-biosignals/Ray.jl.git", push_preview=true,

@@ -18,14 +18,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
-    @info "Building ray_julia_jll..."
-    run(`$(Base.julia_cmd()) --project=$JLL_PATH $JLL_PATH/deps/build_jll.jl `)
+    @info "Building ray_julia library..."
+    include("build_library.jl")
 
     host_triplet = BinaryPlatforms.host_triplet()
     tarball_name = "ray_julia.$TAG.$host_triplet.tar.gz"
 
     @info "Creating tarball $tarball_name"
-    compiled_dir = joinpath(REPO_PATH, "ray_julia_jll", "deps", "bazel-bin")
+    compiled_dir = joinpath(REPO_PATH, "ray_julia_jll", "build", "bazel-bin")
     tarball_path = joinpath(TARBALL_DIR, tarball_name)
     create_tarball(readlink(compiled_dir), tarball_path)
 end

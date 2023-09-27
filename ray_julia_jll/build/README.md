@@ -1,26 +1,28 @@
 # Building and Publishing JLLs
 
-1. Run the `make.jl` script to build the tarball for the host platform and a given julia-version.
+1. Run the `build_tarballs.jl` script to build the tarball for the host platform and a given julia-version.
 Builds are required for `linux x86_64` and `macos-arm64` on julia `v1.8` and `v1.9`.
 It is advised you run this within the python virtual environment associated with the root package.
 Note: rerunning this script _will overwrite_ an existing tarball.
-```
+
+```sh
 julia --project -e 'using Pkg; Pkg.instantiate()'
-julia --project make.jl
+julia --project build_tarballs.jl
 ```
 
-2. Run the `upload.jl` script to publish the tarball(s) as asset(s) of a GitHub pre-release, which requires a `GITHUB_TOKEN` environment variable.
+2. Run the `upload_tarballs.jl` script to publish the tarball(s) as asset(s) of a GitHub pre-release, which requires a `GITHUB_TOKEN` environment variable.
 Note: you can run this script after building each tarball, or after you've built them all. Rerunning it will only upload new tarballs and skip any that have already been published.
-```
+
+```sh
 read -s GITHUB_TOKEN
 export GITHUB_TOKEN
-julia --project upload.jl
+julia --project upload_tarballs.jl
 ```
 
-3. Once all assets are uploaded, checkout a new branch (from `main`) and run the `artifacts.jl` script _once_.
-This will update the `Artifacts.toml` with the new artifact(s), create the corresponding wrapper script(s), and push these changes to your branch, after which you can open a PR to `main`.
-```
-julia --project artifacts.jl
+3. Once all assets are uploaded, checkout a new branch (based off of `main`) and run the `bind_artifacts.jl`. This will modify the local `Artifacts.toml` with the new artifact(s). After running this you should commit and push the changes to a new PR.
+
+```sh
+julia --project bind_artifacts.jl
 ```
 <!-- TODO: The CI workflows for this PR can run successfully and the referenced artifacts will be accessible. -->
 

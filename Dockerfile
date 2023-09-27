@@ -128,9 +128,9 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     git -C ${RAY_REPO} checkout ${RAY_COMMIT} && \
     #
     # Build using the final Ray.jl destination
-    mkdir -p ${RAY_JLL_PROJECT}/deps && \
-    ln -s ${RAY_REPO} ${RAY_JLL_PROJECT}/deps/ray && \
-    cd ${RAY_JLL_PROJECT}/deps/ray && \
+    mkdir -p ${RAY_JLL_PROJECT}/build && \
+    ln -s ${RAY_REPO} ${RAY_JLL_PROJECT}/build/ray && \
+    cd ${RAY_JLL_PROJECT}/build/ray && \
     #
     # Allow builders to clear just the Ray CLI cache.
     if [ "${RAY_CACHE_CLEAR}" != "false" ]; then \
@@ -155,12 +155,12 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     fi && \
     #
     # Build the dashboard
-    cd ${RAY_JLL_PROJECT}/deps/ray/python/ray/dashboard/client && \
+    cd ${RAY_JLL_PROJECT}/build/ray/python/ray/dashboard/client && \
     npm ci && \
     npm run build && \
     #
     # Build Ray for Python
-    cd ${RAY_JLL_PROJECT}/deps/ray/python && \
+    cd ${RAY_JLL_PROJECT}/build/ray/python && \
     pip install --verbose . && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
@@ -178,22 +178,22 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     set -eux && \
     #
     # Build using the final Ray.jl destination
-    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/deps/ray && \
+    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/build/ray && \
     rm -rf ${RAY_JLL_PROJECT} && \
     ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
     #
     # Build ray_julia_jll
-    julia --project=${RAY_JLL_PROJECT} -e 'using Pkg; Pkg.build(verbose=true); Pkg.precompile(strict=true)' && \
+    julia --project=${RAY_JLL_PROJECT} -e 'using Pkg; Pkg.build(); Pkg.precompile(strict=true)' && \
     #
     # Cleanup build data
-    cp -rpL ${RAY_JLL_PROJECT}/deps/bazel-bin ${RAY_JLL_PROJECT}/deps/bin && \
-    rm ${RAY_JLL_PROJECT}/deps/bazel-* && \
+    cp -rpL ${RAY_JLL_PROJECT}/build/bazel-bin ${RAY_JLL_PROJECT}/build/bin && \
+    rm ${RAY_JLL_PROJECT}/build/bazel-* && \
     rm ${RAY_JLL_PROJECT}
 
 # Overwrite the Overrides.toml created during Pkg.build
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [c348cde4-7f22-4730-83d8-6959fb7a17ba]
-ray_julia = "${RAY_JLL_PROJECT}/deps/bin"
+ray_julia = "${RAY_JLL_PROJECT}/build/bin"
 EOF
 
 COPY --chown=ray . ${RAY_JL_PROJECT}/
