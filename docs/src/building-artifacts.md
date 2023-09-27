@@ -8,4 +8,4 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### JLL Artifacts
 
-The `ray_julia_jll` artifacts are hosted in [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To rebuild the artifacts, you can follow the [build instructions](https://github.com/beacon-biosignals/Ray.jl/tree/main/src/ray_julia_jll/gen/README.md).
+The `ray_julia_jll` artifacts are hosted in [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To rebuild the artifacts, you can follow the [build instructions](https://github.com/beacon-biosignals/Ray.jl/blob/main/ray_julia_jll/gen/README.md).
