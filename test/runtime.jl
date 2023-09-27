@@ -84,7 +84,8 @@
 
         json_str = withenv("RAY_JOB_CONFIG_JSON_ENV_VAR" => JSON3.write(job_config_json)) do
              @process_eval begin
-                using Ray, ray_julia_jll, JSON3
+                using Ray, JSON3
+                using Ray: ray_julia_jll
                 Ray.init()
                 worker = ray_julia_jll.GetCoreWorker()
                 worker_context = ray_julia_jll.GetWorkerContext(worker)
