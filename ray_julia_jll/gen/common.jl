@@ -32,7 +32,6 @@ const PKG_URL = remote_url(REPO_PATH)
 const JLL_PATH = joinpath(REPO_PATH, "ray_julia_jll")
 const JLL_PROJECT_TOML = joinpath(JLL_PATH, "Project.toml")
 const JLL_ARTIFACTS_TOML = joinpath(JLL_PATH, "Artifacts.toml")
-const WRAPPERS_DIR = joinpath(JLL_PATH, "src", "wrappers")
 
 const JLL_PROJECT = read_project(JLL_PROJECT_TOML)
 const TAG = "v$(JLL_PROJECT.version)"

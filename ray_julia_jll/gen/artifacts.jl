@@ -60,8 +60,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
             download_info=[(artifact_url, sha256sum(artifact_path))],
             force=true
         )
-
-        host_wrapper = joinpath(WRAPPERS_DIR, "$platform_str.jl")
-        cp("wrapper.jl.tmp", host_wrapper; force=true)
     end
 end
