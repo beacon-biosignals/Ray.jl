@@ -185,9 +185,8 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
     #
     # Build ray_julia library
-    date && \
     julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
-    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_jll.jl && \
+    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl && \
     #
     # Cleanup build data
     cp -rpL ${BUILD_PROJECT}/bazel-bin ${BUILD_PROJECT}/bin && \
