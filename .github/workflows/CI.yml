@@ -38,20 +38,8 @@ jobs:
           - x64
     env:
       build_dir: ./build
-      ray_dir: ./build/ray
     steps:
       - uses: actions/checkout@v3
-      - name: Clone Ray repository
-        uses: actions/checkout@v3
-        with:
-          repository: beacon-biosignals/ray
-          path: ${{ env.ray_dir }}
-      - name: Determine Ray commit
-        id: ray-commit
-        run: |
-           head_sha="$(git rev-parse HEAD)"
-           echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
-        working-directory: ${{ env.ray_dir }}
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -60,53 +48,11 @@ jobs:
         with:
           cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.pkg.name }}-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}"
           cache-compiled: true
-
-      # TODO: We shouldn't require separate caches per Julia version but allow cache restores to work
-      # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
-      # https://github.com/beacon-biosignals/Ray.jl/issues/63
-      - name: Restore build cache
-        uses: actions/cache/restore@v3
-        id: build-cache
-        with:
-          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('ray_julia_jll/build/WORKSPACE.bazel.tpl', 'ray_julia_jll/build/BUILD.bazel') }}
-          path: ~/.cache
-          restore-keys: |
-            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
-            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
-
-      # Based upon:
-      # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-      - name: Build Ray CLI
+      - name: Install Ray CLI
         run: |
           pip install --upgrade pip wheel
-
-          # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
-          # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
-          # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
-          # saving/restoring these files we can work around this.
-          RAY_GEN_CACHE_DIR=~/.cache/ray-generated
-          if [ -d "$RAY_GEN_CACHE_DIR" ]; then
-              dest=$(pwd)
-              pushd $RAY_GEN_CACHE_DIR
-              cp -rp --parents \
-                  python/ray/_raylet.so \
-                  python/ray/core/generated \
-                  python/ray/serve/generated \
-                  python/ray/core/src/ray/raylet/raylet \
-                  python/ray/core/src/ray/gcs \
-                  $dest
-              popd
-          fi
-
-          pushd python
-          pip install . --verbose  # Fresh build takes ~50 minutes on basic GH runner
-          popd
-
-          # By copying the entire Ray worktree we can easily restore missing files without having to
-          # delete the cache and build from scratch.
-          mkdir -p "$RAY_GEN_CACHE_DIR"
-          cp -rfp . "$RAY_GEN_CACHE_DIR"
-        working-directory: ${{ env.ray_dir }}
+          PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
+          pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
         run: |
@@ -124,11 +70,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
           flags: Ray.jl
-
-      # https://github.com/actions/cache/tree/main/save#always-save-cache
-      - name: Save build cache
-        uses: actions/cache/save@v3
-        if: always() && steps.build-cache.outputs.cache-hit != 'true'
-        with:
-          key: ${{ steps.build-cache.outputs.cache-primary-key }}
-          path: ~/.cache
