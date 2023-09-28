@@ -23,7 +23,8 @@ const REQUIRED_JULIA_VERSIONS = (v"1.8", v"1.9")
 const REQUIRED_PLATFORMS = let
     base_platforms = parse.(Platform, REQUIRED_BASE_TRIPLETS)
     base_tags = [(; julia_version=string(v)) for v in REQUIRED_JULIA_VERSIONS]
-    [Platform(arch(p), platform_name(p); tags...) for p in base_platforms, tags in base_tags][:]
+    [Platform(arch(p), platform_name(p); tags...)
+     for p in base_platforms, tags in base_tags][:]
 end
 
 function remote_url(repo_root::AbstractString, name::AbstractString="origin")

@@ -29,7 +29,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     for platform in REQUIRED_PLATFORMS
         artifact_name = gen_artifact_filename(; tag=TAG, platform)
-        artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG, filename=artifact_name)
+        artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG,
+                                        filename=artifact_name)
 
         @info "Dowloading artifact $artifact_url"
         artifact_path = joinpath(TARBALL_DIR, artifact_name)
