@@ -1,3 +1,4 @@
+using Base.BinaryPlatforms
 using LibGit2: LibGit2
 using Pkg.Types: read_project
 
@@ -14,8 +15,16 @@ const TARBALL_REGEX = r"""
 const GH_RELEASE_ASSET_PATH_REGEX = r"""
     ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
     releases/download/
-    (?<tag>[^/]+)$
+    (?<tag>[^/]+)/?$
     """x
+
+const REQUIRED_BASE_TRIPLETS = ("x86_64-linux-gnu", "aarch64-apple-darwin")
+const REQUIRED_JULIA_VERSIONS = (v"1.8", v"1.9")
+const REQUIRED_PLATFORMS = let
+    base_platforms = parse.(Platform, REQUIRED_BASE_TRIPLETS)
+    base_tags = [(; julia_version=string(v)) for v in REQUIRED_JULIA_VERSIONS]
+    [Platform(arch(p), platform_name(p); tags...) for p in base_platforms, tags in base_tags][:]
+end
 
 function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
@@ -25,16 +34,41 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
-const PKG_URL = remote_url(REPO_PATH)
+function set_url_scheme(url, scheme)
+    m = match(LibGit2.URL_REGEX, url)
+    if m === nothing
+        throw(ArgumentError("URL is not a valid SCP or HTTP(S) URL: $(url)"))
+    end
+    return LibGit2.git_url(; scheme="https", username=something(m[:user], ""),
+                           host=something(m[:host], ""), port=something(m[:port], ""),
+                           path=something(m[:path], ""))
+end
 
-# Read Project.toml
-const PROJECT_TOML = joinpath(REPO_PATH, "Project.toml")
+# Used to convert `HostPlatform` into something contained in
+# `BinaryBuilder.support_platforms()`
+function supported_platform(p::Platform)
+    support_tags = filter((k, v)::Pair -> k in ("call_abi", "libc"), tags(p))
+    support_tags["julia_version"] = string(Base.thisminor(VERSION))
+    support_tags = [Symbol(k) => v for (k, v) in support_tags]
+    return Platform(arch(p), platform_name(p); support_tags...)
+end
+
+function gen_artifact_url(; repo_url, tag, filename)
+    return join([repo_url, "releases", "download", tag, filename], '/')
+end
+
+function gen_artifact_filename(; tag::AbstractString, platform::Platform)
+    return "ray_julia.$tag.$(triplet(platform)).tar.gz"
+end
+
+const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
+const REPO_HTTPS_URL = set_url_scheme(remote_url(REPO_PATH), "https")
+const COMPILED_DIR = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
+
 const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
 
-const PROJECT = read_project(PROJECT_TOML)
-const TAG = "v$(PROJECT.version)"
-
-const GITHUB_URL = "https://api.github.com/repos"
-const _PKG = split(PKG_URL, ":")[2]
-const ASSETS_URL = joinpath(GITHUB_URL, "$_PKG", "releases", "tags", "$TAG")
+const TAG = let
+    project_toml = joinpath(REPO_PATH, "Project.toml")
+    project = read_project(project_toml)
+    "v$(project.version)"
+end
