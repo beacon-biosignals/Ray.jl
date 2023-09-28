@@ -35,7 +35,6 @@ The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/be
    ```sh
    julia --project bind_artifacts.jl
    ```
-   <!-- TODO: The CI workflows for this PR can run successfully and the referenced artifacts will be accessible. -->
 
 6. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.
 Then update the GitHub release to point to the new tag.
