@@ -22,6 +22,7 @@ jobs:
     env:
       # Reference the HEAD commit which triggered this workflow. By default PRs use a merge commit
       SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      TAG: ray-jl:latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,8 +35,17 @@ jobs:
           # Use Path context to ensure that the `.git` directory is included in the image.
           # https://github.com/docker/build-push-action#git-context
           context: .
+          load: true
           push: false
+          tags: ${{ env.TAG }}
           file: Dockerfile
           # TODO: May want to switch to another cache type as GHA have a 10 GB limit
           cache-from: type=gha
           cache-to: type=gha,mode=min
+      # https://docs.docker.com/build/ci/github-actions/export-docker/
+      - name: Export to Docker
+        run: docker image inspect ${{ env.TAG }}
+      - name: Report Docker image size
+        run: |
+          size=$(docker images ${{ env.TAG }} --format "{{.Size}}")
+          echo ":whale: Docker image size: $size" | tee -a "$GITHUB_STEP_SUMMARY"
