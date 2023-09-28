@@ -3,7 +3,7 @@ using Mustache
 using TOML
 
 build_dir = @__DIR__()
-pkg_uuid = TOML.parsefile(joinpath(build_dir, "..", "Project.toml"))["uuid"]
+project_toml = joinpath(build_dir, "..", "Project.toml")
 artifact_dir = joinpath(build_dir, "bazel-bin")
 ray_dir = joinpath(build_dir, "ray")
 library_name = "julia_core_worker_lib.so"
@@ -35,6 +35,8 @@ end
 
 # Add entry to depot Overrides.toml
 if !("--no-override" in ARGS)
+    pkg_uuid = TOML.parsefile(project_toml)["uuid"]
+
     overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
     overrides_dict = isfile(overrides_toml) ? TOML.parsefile(overrides_toml) : Dict{String,Any}()
     overrides_dict[pkg_uuid] = Dict("ray_julia" => abspath(artifact_dir))
