@@ -2,6 +2,8 @@ using CxxWrap
 using Mustache
 using TOML
 
+ray_commit = "448a83caf44108fc1bc44fa7c6c358cffcfcb0d7"
+
 build_dir = @__DIR__()
 project_toml = joinpath(build_dir, "..", "Project.toml")
 artifact_dir = joinpath(build_dir, "bazel-bin")
@@ -23,6 +25,12 @@ end
 # Clone "ray" repo when the directory is missing or empty
 isdir(ray_dir) && !isempty(readdir(ray_dir)) || cd(dirname(ray_dir)) do
     run(`git clone https://github.com/beacon-biosignals/ray $(basename(ray_dir))`)
+end
+
+# Ensure that library is always built against the same version of ray
+if !("--no-checkout" in ARGS)
+    run(`git -C $ray_dir fetch origin`)
+    run(`git -C $ray_dir checkout $ray_commit`)
 end
 
 cd(build_dir) do
