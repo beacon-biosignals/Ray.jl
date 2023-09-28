@@ -20,10 +20,10 @@ Building the Ray.jl project requires the following tools to be installed. This l
 4. Navigate to the root of the Ray.jl repo
 5. Install [Ray dependencies](https://docs.ray.io/en/latest/ray-contribute/development.html#preparing-to-build-ray-on-macos):
 
-```sh
-brew update
-brew install bazelisk wget
-```
+   ```sh
+   brew update
+   brew install bazelisk wget
+   ```
 
 ### Install dependencies on Linux
 
@@ -32,24 +32,24 @@ brew install bazelisk wget
 3. Navigate to the root of the Ray.jl repo
 4. Install [Ray dependencies](https://docs.ray.io/en/latest/ray-contribute/development.html#preparing-to-build-ray-on-linux):
 
-```sh
-# Add a PPA containing gcc-9 for older versions of Ubuntu.
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-sudo apt-get update
-sudo apt-get install -y build-essential curl git gcc-9 g++-9 pkg-config psmisc unzip
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 \
-  --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
-  --slave /usr/bin/gcov gcov /usr/bin/gcov-9
+   ```sh
+   # Add a PPA containing gcc-9 for older versions of Ubuntu.
+   sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+   sudo apt-get update
+   sudo apt-get install -y build-essential curl git gcc-9 g++-9 pkg-config psmisc unzip
+   sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 90 \
+     --slave /usr/bin/g++ g++ /usr/bin/g++-9 \
+     --slave /usr/bin/gcov gcov /usr/bin/gcov-9
 
-# Install Bazelisk
-case $(uname -m) in
-  x86_64) ARCH=amd64;;
-  aarch64) ARCH=arm64;;
-esac
+   # Install Bazelisk
+   case $(uname -m) in
+     x86_64) ARCH=amd64;;
+     aarch64) ARCH=arm64;;
+   esac
 
-curl -fsSLo bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-${ARCH}
-sudo install bazel /usr/local/bin
-```
+   curl -fsSLo bazel https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-${ARCH}
+   sudo install bazel /usr/local/bin
+   ```
 
 ### Prepare Python virtual environment
 
