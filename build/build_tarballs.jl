@@ -19,11 +19,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Building ray_julia library..."
     include("build_library.jl")
 
-    host_triplet = triplet(supported_platform(HostPlatform()))
-    tarball_name = "ray_julia.$TAG.$host_triplet.tar.gz"
+    host = triplet(supported_platform(HostPlatform()))
+    tarball_name = gen_artifact_filename(; tag=TAG, platform=host)
 
     @info "Creating tarball $tarball_name"
-    compiled_dir = joinpath(REPO_PATH, "build", "bazel-bin")
     tarball_path = joinpath(TARBALL_DIR, tarball_name)
-    create_tarball(readlink(compiled_dir), tarball_path)
+    create_tarball(COMPILED_DIR, tarball_path)
 end
