@@ -41,17 +41,17 @@ jobs:
       ray_dir: ./build/ray
     steps:
       - uses: actions/checkout@v3
+      - name: Determine Ray commit
+        id: ray-commit
+        run: |
+           sha="$(cat build/ray_commit)"
+           echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
       - name: Clone Ray repository
         uses: actions/checkout@v3
         with:
           repository: beacon-biosignals/ray
           path: ${{ env.ray_dir }}
-      - name: Determine Ray commit
-        id: ray-commit
-        run: |
-           head_sha="$(git rev-parse HEAD)"
-           echo "head_sha=$head_sha" | tee -a "$GITHUB_OUTPUT"
-        working-directory: ${{ env.ray_dir }}
+          ref: ${{ steps.ray-commit.outputs.sha }}
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -68,10 +68,10 @@ jobs:
         uses: actions/cache/restore@v3
         id: build-cache
         with:
-          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.hash-${{ hashFiles('ray_julia_jll/build/WORKSPACE.bazel.tpl', 'ray_julia_jll/build/BUILD.bazel') }}
+          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.hash-${{ hashFiles('ray_julia_jll/build/WORKSPACE.bazel.tpl', 'ray_julia_jll/build/BUILD.bazel') }}
           path: ~/.cache
           restore-keys: |
-            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.head_sha }}.
+            build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
 
       # Based upon:
