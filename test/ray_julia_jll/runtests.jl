@@ -19,7 +19,7 @@ end
     setup_ray_head_node_basic() do
         # GCS client only needs head node
         include("gcs_client.jl")
-        setup_core_worker_basid() do
+        setup_core_worker_basic() do
             include("put_get.jl")
             include("reference_counting.jl")
         end
