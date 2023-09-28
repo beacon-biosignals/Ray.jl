@@ -126,8 +126,9 @@ COPY --chown=${UID} build/ray_commit /tmp/ray_commit
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
+    read -r ray_commit < /tmp/ray_commit && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
-    git -C ${RAY_REPO} checkout $(cat /tmp/ray_commit) && \
+    git -C ${RAY_REPO} checkout ${ray_commit} && \
     #
     # Build using the final Ray.jl destination
     mkdir -p ${BUILD_PROJECT} && \

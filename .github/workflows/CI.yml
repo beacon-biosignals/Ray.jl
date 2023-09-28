@@ -44,8 +44,8 @@ jobs:
       - name: Determine Ray commit
         id: ray-commit
         run: |
-           sha="$(cat build/ray_commit)"
-           echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
+          read -r sha < build/ray
+          echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
       - name: Clone Ray repository
         uses: actions/checkout@v3
         with:

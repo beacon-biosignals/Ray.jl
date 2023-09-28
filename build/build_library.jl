@@ -6,7 +6,7 @@ build_dir = @__DIR__()
 project_toml = joinpath(build_dir, "..", "Project.toml")
 artifact_dir = joinpath(build_dir, "bazel-bin")
 ray_dir = joinpath(build_dir, "ray")
-ray_commit = read(joinpath(build_dir, "ray_commit"), String)
+ray_commit = readchomp(joinpath(build_dir, "ray_commit"))
 library_name = "julia_core_worker_lib.so"
 
 dict = Dict(
