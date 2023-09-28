@@ -25,16 +25,15 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-const REPO_PATH = abspath(joinpath(@__DIR__, "..", ".."))
+const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
 const PKG_URL = remote_url(REPO_PATH)
 
 # Read Project.toml
-const JLL_PATH = joinpath(REPO_PATH, "ray_julia_jll")
-const JLL_PROJECT_TOML = joinpath(JLL_PATH, "Project.toml")
-const JLL_ARTIFACTS_TOML = joinpath(JLL_PATH, "Artifacts.toml")
+const PROJECT_TOML = joinpath(REPO_PATH, "Project.toml")
+const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
 
-const JLL_PROJECT = read_project(JLL_PROJECT_TOML)
-const TAG = "v$(JLL_PROJECT.version)"
+const PROJECT = read_project(PROJECT_TOML)
+const TAG = "v$(PROJECT.version)"
 
 const GITHUB_URL = "https://api.github.com/repos"
 const _PKG = split(PKG_URL, ":")[2]
