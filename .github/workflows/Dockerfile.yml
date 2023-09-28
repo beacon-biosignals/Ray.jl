@@ -2,9 +2,10 @@ name: Dockerfile
 on:
   pull_request:
     paths:
-      - Dockerfile
-      - .dockerignore
-      - .github/workflows/Dockerfile.yml
+      - "build/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/Dockerfile.yml"
 
 # Each PR and each commit on `main` use distinct concurrency groups. Note canceling workflows in
 # progress may result in having to rebuild layers as the Docker layer caching is only uploaded
