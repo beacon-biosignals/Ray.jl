@@ -1,4 +1,3 @@
-using Base: BinaryPlatforms
 using CodecZlib: GzipCompressorStream
 using Pkg
 using Tar: Tar
@@ -20,7 +19,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Building ray_julia library..."
     include("build_library.jl")
 
-    host_triplet = BinaryPlatforms.host_triplet()
+    host_triplet = triplet(supported_platform(HostPlatform()))
     tarball_name = "ray_julia.$TAG.$host_triplet.tar.gz"
 
     @info "Creating tarball $tarball_name"

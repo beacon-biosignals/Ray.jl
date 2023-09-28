@@ -1,3 +1,4 @@
+using Base.BinaryPlatforms
 using LibGit2: LibGit2
 using Pkg.Types: read_project
 
@@ -23,6 +24,14 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
             return LibGit2.url(remote)
         end
     end
+end
+
+# Used to convert `HostPlatform` into something contained in
+# `BinaryBuilder.support_platforms()`
+function supported_platform(p::Platform)
+    support_tags = filter((k, v)::Pair -> k in ("call_abi", "libc"), tags(p))
+    support_tags = [Symbol(k) => v for (k, v) in support_tags]
+    return Platform(arch(p), platform_name(p); support_tags...)
 end
 
 const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
