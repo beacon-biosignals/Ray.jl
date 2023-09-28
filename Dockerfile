@@ -208,8 +208,8 @@ RUN rm -rf ${BUILD_PROJECT} && \
 # Note: The `timing` flag requires Julia 1.9
 RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true, timing=true); using Ray'
 
-# # Add Ray.jl to the default Julia environment
-# RUN JULIA_PROJECT="" julia -e 'using Pkg; Pkg.develop(path=ENV["RAY_JL_PROJECT"])'
+# Add Ray.jl to the default Julia environment
+RUN JULIA_PROJECT="" julia -e 'using Pkg; Pkg.develop(path=ENV["RAY_JL_PROJECT"])'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 WORKDIR ${RAY_JL_PROJECT}
