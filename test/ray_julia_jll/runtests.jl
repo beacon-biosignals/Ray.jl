@@ -2,7 +2,7 @@ using Base64: base64encode
 using CxxWrap
 using JSON3: JSON3
 using Test
-using ray_julia_jll: ray_julia_jll
+using Ray: ray_julia_jll
 
 include("utils.jl")
 
@@ -16,10 +16,10 @@ end
     include("address.jl")
     include("objectid.jl")
 
-    setup_ray_head_node() do
+    setup_ray_head_node_basic() do
         # GCS client only needs head node
         include("gcs_client.jl")
-        setup_core_worker() do
+        setup_core_worker_basic() do
             include("put_get.jl")
             include("reference_counting.jl")
         end

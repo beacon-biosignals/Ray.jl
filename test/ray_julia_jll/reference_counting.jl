@@ -1,6 +1,7 @@
 @testset "Reference counting" begin
-    using ray_julia_jll: FromRandom, ObjectID, Hex, AddLocalReference, RemoveLocalReference,
-                         GetAllReferenceCounts, _keys, _getindex, GetCoreWorker
+    using .ray_julia_jll: FromRandom, ObjectID, Hex, AddLocalReference,
+                          RemoveLocalReference, GetAllReferenceCounts, _keys, _getindex,
+                          GetCoreWorker
 
     worker = GetCoreWorker()
     # need to convert to hex string because these are just pointers

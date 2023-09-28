@@ -1,5 +1,7 @@
-ray_julia_jll/build/WORKSPACE.bazel
-ray_julia_jll/build/ray
-ray_julia_jll/buid/bazel-*
-ray_julia_jll/build/tarballs
 Dockerfile
+
+# Ignore dependencies that are built
+build/WORKSPACE.bazel
+build/ray
+build/bazel-*
+build/tarballs

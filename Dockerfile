@@ -115,7 +115,7 @@ RUN node --version && \
 
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
-ARG BUILD_PROJECT=${RAY_JLL_PROJECT}/build
+ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
@@ -173,37 +173,37 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
 # Copy over artifacts generated during the previous stages
 COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
-# Setup ray_julia_jll
-ARG RAY_JLL_REPO=${HOME}/.julia/dev/ray_julia_jll
-COPY --chown=ray ray_julia_jll ${RAY_JLL_REPO}
+# Setup ray_julia library
+ARG BUILD_ROOT=${HOME}/build
+COPY --chown=ray build ${BUILD_ROOT}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
     #
     # Build using the final Ray.jl destination
-    ln -s ${RAY_REPO} ${RAY_JLL_REPO}/build/ray && \
-    rm -rf ${RAY_JLL_PROJECT} && \
-    ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT} && \
+    ln -s ${RAY_REPO} ${BUILD_ROOT}/ray && \
+    rm -rf ${BUILD_PROJECT} && \
+    ln -s ${BUILD_ROOT} ${BUILD_PROJECT} && \
     #
     # Build ray_julia library
     julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
-    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl && \
+    julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl --no-override && \
     #
     # Cleanup build data
-    cp -rpL ${BUILD_PROJECT}/bazel-bin ${BUILD_PROJECT}/bin && \
-    rm ${BUILD_PROJECT}/bazel-* && \
-    rm ${RAY_JLL_PROJECT}
+    cp -rpL ${BUILD_ROOT}/bazel-bin ${BUILD_ROOT}/bin && \
+    rm ${BUILD_ROOT}/bazel-* && \
+    rm ${BUILD_PROJECT}
 
-# Overwrite the Overrides.toml created during Pkg.build
+# Specify the location of the "ray_julia" library via Overrides.toml
 COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
-[c348cde4-7f22-4730-83d8-6959fb7a17ba]
+[3f779ece-f0b6-4c4f-a81a-0cb2add9eb95]
 ray_julia = "${BUILD_PROJECT}/bin"
 EOF
 
 COPY --chown=ray . ${RAY_JL_PROJECT}/
 
-# Restore content from previously built ray_julia_jll directory
-RUN rm -rf ${RAY_JLL_PROJECT} && \
-    ln -s ${RAY_JLL_REPO} ${RAY_JLL_PROJECT}
+# Restore content from previous build directory
+RUN rm -rf ${BUILD_PROJECT} && \
+    ln -s ${BUILD_ROOT} ${BUILD_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
 RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'

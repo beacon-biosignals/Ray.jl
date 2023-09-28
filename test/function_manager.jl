@@ -1,6 +1,6 @@
 @testset "function manager" begin
     using Ray: FunctionManager, export_function!, import_function!, timedwait_for_function
-    using ray_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
+    using .ray_julia_jll: JuliaGcsClient, Connect, function_descriptor, JuliaFunctionDescriptor, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
     Connect(client)

@@ -98,13 +98,20 @@ end
 Base.show(io::IO, status::Status) = print(io, ToString(status))
 Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
 
-const CORE_WORKER = Ref{CoreWorker}()
+const CORE_WORKER = Ref{Union{CoreWorker,Nothing}}()
 
 function GetCoreWorker()
-    if !isassigned(CORE_WORKER)
+    if !isassigned(CORE_WORKER) || isnothing(CORE_WORKER[])
         CORE_WORKER[] = _GetCoreWorker()[]
     end
-    return CORE_WORKER[]
+    return CORE_WORKER[]::CoreWorker
+end
+
+function shutdown_driver()
+    _shutdown_driver()
+    CORE_WORKER[] = nothing
+
+    return nothing
 end
 
 #####

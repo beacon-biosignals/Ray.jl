@@ -6,11 +6,11 @@ on:
       - main
     tags: ["*"]
     paths:
-      - "ray_julia_jll/Artifacts.toml"
+      - "Artifacts.toml"
       - ".github/workflows/artifacts_CI.yml"
   pull_request:
     paths:
-      - "ray_julia_jll/Artifacts.toml"
+      - "Artifacts.toml"
       - ".github/workflows/artifacts_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
@@ -32,8 +32,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-    env:
-      ray_julia_jll_dir: ./ray_julia_jll
     steps:
         - uses: actions/checkout@v3
         - uses: julia-actions/setup-julia@v1
@@ -46,20 +44,12 @@ jobs:
             pip install --upgrade pip wheel
             PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
             pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
-        - name: "Monorepo setup"
+        - name: Delete Overrides.toml
           shell: julia --color=yes --project {0}
           run: |
             overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
             isfile(overrides_toml) && rm(overrides_toml)
-            using Pkg
-            Pkg.develop(PackageSpec(; path="${{ env.ray_julia_jll_dir }}"))
         - uses: julia-actions/julia-buildpkg@v1
-        - name: "ray_julia_jll tests"
-          uses: julia-actions/julia-runtest@v1
-          with:
-            annotate: true
-            project: ${{ env.ray_julia_jll_dir }}
-        - name: "Ray.jl tests"
-          uses: julia-actions/julia-runtest@v1
+        - uses: julia-actions/julia-runtest@v1
           with:
             annotate: true

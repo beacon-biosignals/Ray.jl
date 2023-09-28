@@ -1,4 +1,4 @@
-using ray_julia_jll: Address
+using .ray_julia_jll: Address
 
 @testset "Address" begin
     @testset "json round-trip" begin

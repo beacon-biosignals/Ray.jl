@@ -8,7 +8,7 @@ using Serialization
 using Sockets: @ip_str
 using Test
 
-import ray_julia_jll as ray_jll
+using Ray: ray_julia_jll, ray_julia_jll as ray_jll
 
 include("setup.jl")
 include("utils.jl")
@@ -19,6 +19,8 @@ include("utils.jl")
     @testset "Aqua" begin
         Aqua.test_all(Ray; ambiguities=false)
     end
+
+    include("ray_julia_jll/runtests.jl")
 
     include("exceptions.jl")
     include("runtime_env.jl")
