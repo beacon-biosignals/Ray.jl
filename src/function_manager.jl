@@ -66,8 +66,9 @@ function _init_global_function_manager(gcs_address)
     @info "Connecting function manager to GCS at $gcs_address..."
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
     ray_jll.Connect(gcs_client)
-    FUNCTION_MANAGER[] = FunctionManager(; gcs_client,
-                                         functions=Dict{String,Any}())
+    FUNCTION_MANAGER[] = FunctionManager(; gcs_client, functions=Dict{String,Any}())
+
+    return nothing
 end
 
 function function_key(fd::ray_jll.JuliaFunctionDescriptor, job_id=get_job_id())

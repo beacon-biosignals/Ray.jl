@@ -83,7 +83,7 @@
         job_config_json = Dict(:metadata => Dict(:job_name => "test"))
 
         json_str = withenv("RAY_JOB_CONFIG_JSON_ENV_VAR" => JSON3.write(job_config_json)) do
-             @process_eval begin
+            @process_eval begin
                 using Ray, JSON3
                 using Ray: ray_julia_jll
                 Ray.init()
@@ -121,13 +121,13 @@ end
         @test length(task_args) == 2
         @test task_args[1] isa ray_jll.TaskArgByValue
         @test task_args[2] isa ray_jll.TaskArgByReference
-        map(UniquePtr ∘ CxxPtr , task_args)  # Add finalizer for memory cleanup
+        map(UniquePtr ∘ CxxPtr, task_args)  # Add finalizer for memory cleanup
 
         task_args = Ray.serialize_args([b, a])
         @test length(task_args) == 2
         @test task_args[1] isa ray_jll.TaskArgByReference
         @test task_args[2] isa ray_jll.TaskArgByValue
-        map(UniquePtr ∘ CxxPtr , task_args)  # Add finalizer for memory cleanup
+        map(UniquePtr ∘ CxxPtr, task_args)  # Add finalizer for memory cleanup
     end
 
     @testset "inline threshold" begin
@@ -136,7 +136,7 @@ end
         task_args = Ray.serialize_args(args)
         @test all(t -> t isa ray_jll.TaskArgByValue, task_args[1:(end - 1)])
         @test task_args[end] isa ray_jll.TaskArgByReference
-        map(UniquePtr ∘ CxxPtr , task_args)  # Add finalizer for memory cleanup
+        map(UniquePtr ∘ CxxPtr, task_args)  # Add finalizer for memory cleanup
     end
 end
 
@@ -144,5 +144,5 @@ end
     task_args = Ray.serialize_args(Ray.flatten_args([1, 2, 3], (;)))
     result = Ray.transform_task_args(task_args)
     @test result isa StdVector{CxxPtr{ray_jll.TaskArg}}
-    map(UniquePtr ∘ CxxPtr , task_args)  # Add finalizer for memory cleanup
+    map(UniquePtr ∘ CxxPtr, task_args)  # Add finalizer for memory cleanup
 end

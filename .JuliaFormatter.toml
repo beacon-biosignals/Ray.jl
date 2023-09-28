@@ -1,0 +1,9 @@
+style = "yas"
+margin = 92
+ignore = [
+    "build/bazel-bin",
+    "build/bazel-deps",
+    "build/bazel-out",
+    "build/bazel-testlogs",
+    "build/ray"
+]

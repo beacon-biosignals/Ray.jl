@@ -221,7 +221,8 @@ end
             end
             driver_using = setdiff(using_modules(), pre_using_modules)
             Ray.init()
-            worker_using = setdiff(Ray.get(submit_task(using_modules, ())), pre_using_modules)
+            worker_using = Ray.get(submit_task(using_modules, ()))
+            worker_using = setdiff(worker_using, pre_using_modules)
             return driver_using, worker_using
         end
 
@@ -312,6 +313,7 @@ end
     default_resources = Ray.get(submit_task(gimme_resources, ()))
     @test default_resources["CPU"] == 1.0
 
-    custom_resources = Ray.get(submit_task(gimme_resources, (); resources=Dict("CPU" => 0.5)))
+    resources = Dict("CPU" => 0.5)
+    custom_resources = Ray.get(submit_task(gimme_resources, (); resources))
     @test custom_resources["CPU"] == 0.5
 end

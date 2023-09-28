@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/beacon-biosignals/Ray.jl/workflows/CI/badge.svg?branch=main)](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/CI.yml?query=workflow%3ACI+branch%3Amain)
 [![codecov](https://codecov.io/gh/beacon-biosignals/Ray.jl/graph/badge.svg)](https://codecov.io/gh/beacon-biosignals/Ray.jl)
+[![Code Style: YASGuide](https://img.shields.io/badge/code%20style-yas-violet.svg)](https://github.com/jrevels/YASGuide)
 [![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://beacon-biosignals.github.io/Ray.jl/stable)
 [![Dev Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://beacon-biosignals.github.io/Ray.jl/dev)
 

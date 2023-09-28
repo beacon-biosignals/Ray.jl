@@ -9,7 +9,7 @@ end
 
 @testset "ObjectRef" begin
     @testset "basic" begin
-        hex_str = "f" ^ (2 * 28)
+        hex_str = "f"^(2 * 28)
         obj_ref = ObjectRef(hex_str)
         @test Ray.hex_identifier(obj_ref) == hex_str
         @test obj_ref.oid == ray_jll.FromHex(ray_jll.ObjectID, hex_str)
@@ -23,7 +23,7 @@ end
     end
 
     @testset "show" begin
-        hex_str = "f" ^ (2 * 28)
+        hex_str = "f"^(2 * 28)
         obj_ref = ObjectRef(hex_str)
         @test sprint(show, obj_ref) == "ObjectRef(\"$hex_str\")"
     end
