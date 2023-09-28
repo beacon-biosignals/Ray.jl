@@ -11,7 +11,7 @@ The Ray.jl provides a Julia language interface for [Ray.io](https://www.ray.io/)
 
 ### How do I start/stop the ray backend?
 
-Make sure the appropriate Python environment (i.e. `source venv/bin/activate`) is active (wherever you [`pip install`ed the Ray CLI](./docs/src/installation.md)) and then do:
+Make sure the appropriate Python environment (i.e. `source venv/bin/activate`) is active (wherever you [`pip install`ed the Ray CLI](https://beacon-biosignals.github.io/Ray.jl/stable/installation/)) and then do:
 
 ```sh
 ray start --head
