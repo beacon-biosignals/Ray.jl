@@ -122,12 +122,12 @@ ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 ARG RAY_REPO=${HOME}/ray
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
-COPY --chown=${UID} build/ray-commit /tmp/ray-commit
+COPY --chown=${UID} build/ray_commit /tmp/ray_commit
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
-    git -C ${RAY_REPO} checkout $(cat /tmp/ray-commit) && \
+    git -C ${RAY_REPO} checkout $(cat /tmp/ray_commit) && \
     #
     # Build using the final Ray.jl destination
     mkdir -p ${BUILD_PROJECT} && \
