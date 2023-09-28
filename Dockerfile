@@ -13,7 +13,7 @@ FROM julia:${JULIA_VERSION}-bullseye as julia-base
 # otherwise the default is x86_64 (https://github.com/ray-project/ray/tree/master/docker/ray#tags)
 FROM rayproject/ray:${RAY_VERSION}-py310 as ray-base
 
-# User ID and Group ID for Docker USER
+# User ID and Group ID for Docker USER ("ray")
 ENV UID=1000
 ENV GID=100
 
@@ -64,7 +64,7 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
 
 # Instantiate the Julia project environment
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
-COPY --chown=ray *Project.toml *Manifest.toml /tmp/Ray.jl/
+COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
 RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
@@ -171,11 +171,11 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE}
 
 # Copy over artifacts generated during the previous stages
-COPY --chown=ray --link --from=deps ${HOME}/.julia ${HOME}/.julia
+COPY --chown=${UID} --link --from=deps ${HOME}/.julia ${HOME}/.julia
 
 # Setup ray_julia library
 ARG BUILD_ROOT=${HOME}/build
-COPY --chown=ray build ${BUILD_ROOT}
+COPY --chown=${UID} build ${BUILD_ROOT}
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
     #
@@ -194,19 +194,19 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     rm ${BUILD_PROJECT}
 
 # Specify the location of the "ray_julia" library via Overrides.toml
-COPY --chown=ray <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
+COPY --chown=${UID} <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
 [3f779ece-f0b6-4c4f-a81a-0cb2add9eb95]
 ray_julia = "${BUILD_PROJECT}/bin"
 EOF
 
-COPY --chown=ray . ${RAY_JL_PROJECT}/
+COPY --chown=${UID} . ${RAY_JL_PROJECT}/
 
 # Restore content from previous build directory
 RUN rm -rf ${BUILD_PROJECT} && \
     ln -s ${BUILD_ROOT} ${BUILD_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
-RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
+RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Add Ray.jl to the default Julia environment
 RUN JULIA_PROJECT="" julia -e 'using Pkg; Pkg.develop(path=ENV["RAY_JL_PROJECT"])'
