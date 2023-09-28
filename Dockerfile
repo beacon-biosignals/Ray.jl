@@ -120,14 +120,15 @@ ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
 ARG RAY_REPO=${HOME}/ray
-ARG RAY_COMMIT=448a83caf4
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
+COPY --chown=${UID} build/ray_commit /tmp/ray_commit
 RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
     --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
     set -eux && \
+    read -r ray_commit < /tmp/ray_commit && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
-    git -C ${RAY_REPO} checkout ${RAY_COMMIT} && \
+    git -C ${RAY_REPO} checkout ${ray_commit} && \
     #
     # Build using the final Ray.jl destination
     mkdir -p ${BUILD_PROJECT} && \

@@ -6,6 +6,7 @@ build_dir = @__DIR__()
 project_toml = joinpath(build_dir, "..", "Project.toml")
 artifact_dir = joinpath(build_dir, "bazel-bin")
 ray_dir = joinpath(build_dir, "ray")
+ray_commit = readchomp(joinpath(build_dir, "ray_commit"))
 library_name = "julia_core_worker_lib.so"
 
 dict = Dict("JULIA_INCLUDE_DIR" => joinpath(Sys.BINDIR, "..", "include"),
@@ -26,6 +27,12 @@ isdir(ray_dir) && !isempty(readdir(ray_dir)) || cd(dirname(ray_dir)) do
     return nothing
 end
 #! format: on
+
+# Ensure that library is always built against the same version of ray
+if !("--no-checkout" in ARGS)
+    run(`git -C $ray_dir fetch origin`)
+    run(`git -C $ray_dir checkout $ray_commit`)
+end
 
 cd(build_dir) do
     run(`bazel build $library_name`)
