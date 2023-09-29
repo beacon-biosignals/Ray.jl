@@ -64,7 +64,7 @@ end
 
 const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
 const REPO_HTTPS_URL = convert_to_https_url(remote_url(REPO_PATH))
-const COMPILED_DIR = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
+const COMPILED_DIR = joinpath(REPO_PATH, "build", "bazel-bin")
 
 const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
 
