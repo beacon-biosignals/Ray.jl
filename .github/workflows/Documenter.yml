@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - main
+    # Always run the Documenter workflow on tags, regardless of which paths have changed,
+    # to ensure we build the "stable" docs
     tags: ["*"]
-    paths:
-      - "docs/**"
-      - ".github/workflows/Documenter.yml"
   pull_request:
     paths:
       - "docs/**"
