@@ -36,7 +36,6 @@ The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/be
    julia --project bind_artifacts.jl
    ```
 
-6. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.
-Then update the GitHub release to point to the new tag.
+6. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged. Then update the GitHub release to point to the new tag.
 
 7. Register the new tag as normal with JuliaRegistrator.
