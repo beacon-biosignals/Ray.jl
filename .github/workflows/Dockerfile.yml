@@ -1,5 +1,7 @@
 name: Dockerfile
 on:
+  push:
+    tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
   pull_request:
     paths:
       - "build/**"
