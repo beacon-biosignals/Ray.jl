@@ -63,8 +63,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     # check that contents are tarballs with correct filename
     for t in readdir(TARBALL_DIR)
-        !isnothing(match(TARBALL_REGEX, t)) || error("Unexpected file found: tarballs/$t")
-        contains(t, "ray_julia.$TAG") || error("Unexpected version: tarballs/$t")
+        m = match(TARBALL_REGEX, t)
+        !isnothing(m) || error("Unexpected file found: tarballs/$t")
+        "v$(m[:jll_version])" == TAG || error("Unexpected JLL version: tarballs/$t")
     end
 
     artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG, filename="")
