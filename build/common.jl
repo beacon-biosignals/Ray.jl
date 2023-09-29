@@ -35,14 +35,14 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
-function set_url_scheme(url, scheme)
+function convert_to_https_url(url)
     m = match(LibGit2.URL_REGEX, url)
     if m === nothing
         throw(ArgumentError("URL is not a valid SCP or HTTP(S) URL: $(url)"))
     end
-    return LibGit2.git_url(; scheme="https", username=something(m[:user], ""),
-                           host=something(m[:host], ""), port=something(m[:port], ""),
-                           path=something(m[:path], ""))
+    # Purposefully excluding username as we're assuming this is a public repo
+    return LibGit2.git_url(; scheme="https", host=something(m[:host], ""),
+                           port=something(m[:port], ""), path=something(m[:path], ""))
 end
 
 # Used to convert `HostPlatform` into something contained in
@@ -63,7 +63,7 @@ function gen_artifact_filename(; tag::AbstractString, platform::Platform)
 end
 
 const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
-const REPO_HTTPS_URL = set_url_scheme(remote_url(REPO_PATH), "https")
+const REPO_HTTPS_URL = convert_to_https_url(remote_url(REPO_PATH))
 const COMPILED_DIR = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
 
 const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
