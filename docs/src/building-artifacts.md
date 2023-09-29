@@ -8,7 +8,7 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### Artifacts
 
-The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To upate the artifacts, perform the following steps:
+The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To update the artifacts, first ensure you have already [built Ray.jl](./developer-guide.md#build-rayjl) then perform the following steps:
 
 1. Update the Ray.jl version in the `Project.toml`
 

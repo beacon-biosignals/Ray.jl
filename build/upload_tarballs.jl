@@ -64,6 +64,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # check that contents are tarballs with correct filename
     all(t -> !isnothing(match(TARBALL_REGEX, t)), readdir(TARBALL_DIR))
 
+    all(readdir(TARBALL_DIR)) do t
+        contains(t, "ray_julia.$TAG") || error("Stale tarball found: $t")
+    end
+
     artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG, filename="")
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
 
