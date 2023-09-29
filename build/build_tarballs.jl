@@ -13,7 +13,7 @@ function create_tarball(dir, tarball)
     end
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
+function main()
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
     @info "Building ray_julia library..."
@@ -25,4 +25,10 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Creating tarball $tarball_name"
     tarball_path = joinpath(TARBALL_DIR, tarball_name)
     create_tarball(COMPILED_DIR, tarball_path)
+
+    return tarball_path
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end

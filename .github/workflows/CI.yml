@@ -108,11 +108,17 @@ jobs:
           cp -rfp . "$RAY_GEN_CACHE_DIR"
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
+        id: ray_julia
         shell: julia --color=yes --project {0}
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "build_library.jl"))
+          include(joinpath(pwd(), "build_tarballs.jl"))
+          tarball_path = main()
+          open(ENV["GITHUB_OUTPUT"], "a") do io
+              println(io, "tarball_path=$tarball_path")
+              println(io, "tarball_filename=$(basename(tarball_path))")
+          end
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
@@ -124,6 +130,12 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
           flags: Ray.jl
+
+      - name: Save ray_julia library
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.ray_julia.outputs.tarball_filename }}
+          path: ${{ steps.ray_julia.outputs.tarball_path }}
 
       # https://github.com/actions/cache/tree/main/save#always-save-cache
       - name: Save build cache
