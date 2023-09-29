@@ -15,6 +15,4 @@ makedocs(; modules=[Ray],
          pages)
 
 deploydocs(; repo="github.com/beacon-biosignals/Ray.jl.git", push_preview=true,
-           devbranch="main",
-           versions=["stable" => "Ray-v^", "Ray-v#.#",
-                     "dev" => "dev"])
+           devbranch="main")
