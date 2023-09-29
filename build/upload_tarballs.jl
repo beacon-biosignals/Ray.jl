@@ -62,10 +62,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
     # check that contents are tarballs with correct filename
-    all(t -> !isnothing(match(TARBALL_REGEX, t)), readdir(TARBALL_DIR))
-
-    all(readdir(TARBALL_DIR)) do t
-        contains(t, "ray_julia.$TAG") || error("Stale tarball found: $t")
+    for t in readdir(TARBALL_DIR)
+        !isnothing(match(TARBALL_REGEX, t)) || error("Unexpected file found: tarballs/$t")
+        contains(t, "ray_julia.$TAG") || error("Unexpected version: tarballs/$t")
     end
 
     artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG, filename="")
