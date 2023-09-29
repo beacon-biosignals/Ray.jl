@@ -17,7 +17,7 @@ function main()
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
     @info "Building ray_julia library..."
-    include("build_library.jl")
+    include(joinpath(pwd(), "build_library.jl"))
 
     host = supported_platform(HostPlatform())
     tarball_name = gen_artifact_filename(; tag=TAG, platform=host)
