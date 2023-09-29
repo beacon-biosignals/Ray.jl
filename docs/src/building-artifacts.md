@@ -8,13 +8,13 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### Artifacts
 
-The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To upate the artifacts, perform the following steps:
+The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To update the artifacts, first ensure you have already [built Ray.jl](./developer-guide.md#build-rayjl) then perform the following steps:
 
 1. Update the Ray.jl version in the `Project.toml`
 
 2. Navigate to the `build` directory
 
-3. Run the `build_tarballs.jl` script to build the tarball for the host platform for the Julia version used. Builds are required for `Linux x86_64` and `macOS aarch64` on Julia `v1.8` and `v1.9`. It is advised you run this within the python virtual environment associated with the Ray.jl package to avoid unnecessary Bazel rebuilds.  Note: re-running this script _will overwrite_ an existing tarball for this version of Ray.jl.
+3. Run the `build_tarballs.jl` script to build the tarball for the host platform for the Julia version used. Builds are required for the platform triplets `x86_64-linux-gnu` and `aarch64-apple-darwin` on Julia `v1.8` and `v1.9`. It is advised you run this within the python virtual environment associated with the Ray.jl package to avoid unnecessary Bazel rebuilds.  Note: re-running this script _will overwrite_ an existing tarball for this version of Ray.jl.
 
    ```sh
    source ../venv/bin/activate

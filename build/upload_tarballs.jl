@@ -3,42 +3,6 @@ using ghr_jll: ghr
 
 include("common.jl")
 
-# Parse "GIT URLs" syntax (URLs and a scp-like syntax). For details see:
-# https://git-scm.com/docs/git-clone#_git_urls_a_id_urls_a
-# Note that using a Regex like this is inherently insecure with regards to its
-# handling of passwords; we are unable to deterministically and securely erase
-# the passwords from memory after use.
-# TODO: reimplement with a Julian parser instead of leaning on this regex
-const URL_REGEX = r"""
-^(?:(?<scheme>ssh|git|https?)://)?+
-(?:
-    (?<user>.*?)
-    (?:\:(?<password>.*?))?@
-)?
-(?<host>[A-Za-z0-9\-\.]+)
-(?(<scheme>)
-    # Only parse port when not using scp-like syntax
-    (?:\:(?<port>\d+))?
-    /?
-    |
-    :?
-)
-(?<path>
-    # Require path to be preceded by '/'. Alternatively, ':' when using scp-like syntax.
-    (?<=(?(<scheme>)/|:))
-    .*
-)?
-$
-"""x
-
-function parse_git_remote_url(pkg_url)
-    m = match(URL_REGEX, pkg_url)
-    if m === nothing
-        throw(ArgumentError("Package URL is not a valid SCP or HTTP URL: $(pkg_url)"))
-    end
-    return "https://" * joinpath(m[:host], m[:path])
-end
-
 function upload_to_github_release(archive_path::AbstractString,
                                   archive_url::AbstractString,
                                   commit;
@@ -68,6 +32,7 @@ end
 
 function upload_to_github_release(owner, repo_name, commit, tag, path;
                                   token=ENV["GITHUB_TOKEN"])
+
     # Based on: https://github.com/JuliaPackaging/BinaryBuilder.jl/blob/d40ec617d131a1787851559ef1a9f04efce19f90/src/AutoBuild.jl#L487
     # TODO: Passing in a directory path uploads multiple assets
     # TODO: Would be nice to perform parallel uploads
@@ -82,7 +47,14 @@ function upload_to_github_release(owner, repo_name, commit, tag, path;
         $tag $path
     ```
 
-    return run(cmd)
+    try
+        run(cmd)
+    catch e
+        # ghr() already prints an error message with diagnosis
+        @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
+    end
+
+    return nothing
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -90,17 +62,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
     !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
 
     # check that contents are tarballs with correct filename
-    all(t -> !isnothing(match(TARBALL_REGEX, t)), readdir(TARBALL_DIR))
+    for t in readdir(TARBALL_DIR)
+        m = match(TARBALL_REGEX, t)
+        !isnothing(m) || error("Unexpected file found: tarballs/$t")
+        "v$(m[:jll_version])" == TAG || error("Unexpected JLL version: tarballs/$t")
+    end
 
-    pkg_http_url = parse_git_remote_url(PKG_URL)
-    artifact_url = "$(pkg_http_url)/releases/download/$TAG"
+    artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG, filename="")
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
 
     @info "Uploading tarballs to $artifact_url"
-    try
-        upload_to_github_release(TARBALL_DIR, artifact_url, branch)
-    catch e
-        # ghr() already prints an error message with diagnosis
-        @debug "Caught exception $(sprint(showerror, e, catch_backtrace()))"
-    end
+    upload_to_github_release(TARBALL_DIR, artifact_url, branch)
 end
