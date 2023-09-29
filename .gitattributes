@@ -1,0 +1,6 @@
+# Useful linguist links:
+# - https://github.com/github-linguist/linguist/blob/master/docs/overrides.md
+# - https://github.com/github-linguist/linguist/blob/master/lib/linguist/languages.yml
+
+# Reclassifies `.tpl` files as Mustache templates
+*.tpl linguist-language=Mustache
