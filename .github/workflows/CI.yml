@@ -24,8 +24,7 @@ concurrency:
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on:
-      labels: ubuntu-20.04-16core
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +32,8 @@ jobs:
           - "1.8"  # Version used with MVP
           - "1.9"  # Latest release
         os:
-          - ubuntu-latest
+          - ubuntu-20.04-16core
+          - macos-latest-xlarge
         arch:
           - x64
     env:
