@@ -49,7 +49,9 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
         io = Downloads.download(url, IOBuffer(); headers)
         zip = ZipFile.Reader(io)
 
-        length(zip.files) == 1 || error("GitHub workflow artifact contains more than one file:\n$(join(zip.files, '\n'))")
+        if length(zip.files) == 1
+            error("GitHub workflow artifact contains more than one file:\n$(join(zip.files, '\n'))")
+        end
 
         file = only(zip.files)
         write(joinpath(tarball_dir, name), read(file))
@@ -85,7 +87,7 @@ function main()
     elseif "--fetch" in ARGS
         token = get(ENV, "GITHUB_TOKEN") do
             Base.shred!(Base.getpass("GitHub PAT")) do s
-                read(s, String)
+                return read(s, String)
             end
         end
 
