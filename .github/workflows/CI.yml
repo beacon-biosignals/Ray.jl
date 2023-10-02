@@ -33,9 +33,15 @@ jobs:
           - "1.9"  # Latest release
         os:
           - ubuntu-20.04-16core
-          - macos-latest-xlarge
+          - macos-latest-xlarge  # M1
         arch:
           - x64
+          - aarch64
+        exclude:
+          - os: ubuntu-20.04-16core
+            arch: aarch64
+          - os: macos-latest-xlarge
+            arch: x64
     env:
       build_dir: ./build
       ray_dir: ./build/ray
