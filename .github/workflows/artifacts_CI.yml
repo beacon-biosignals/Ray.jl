@@ -45,6 +45,9 @@ jobs:
             version: ${{ matrix.version }}
             arch: ${{ matrix.arch }}
         - uses: julia-actions/cache@v1
+        - uses: actions/setup-python@v4
+          with:
+            python-version: "3.10"
         - name: Install Ray CLI
           run: |
             pip install --upgrade pip wheel
@@ -54,10 +57,6 @@ jobs:
             esac
             ARCH=$(uname -m)
             PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
-            # TODO: Work around our ray release not having Python 3.11 support for macOS
-            if [ "$OS" = "macosx_13_0" ]; then
-                PYTHON=cp310-cp310
-            fi
             pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
         - name: Delete Overrides.toml
           shell: julia --color=yes --project {0}
