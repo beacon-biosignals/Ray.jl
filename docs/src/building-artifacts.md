@@ -53,7 +53,9 @@ To update the artifacts, ensure you are running on macOS using Apple Silicon (`a
    git push origin
    ```
 
-6. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.
+6. Merge the PR. If the PR becomes out of date with the default branch then you will need to repeat steps 3-6 to ensure that the tarballs include the current changes. In some scenarios re-building the tarballs may be unnecessary such as a documentation only change. If in doubt re-build the tarballs.
+
+7. After the PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged.
 Then update the GitHub release to point to the new tag.
 
    ```sh
@@ -64,4 +66,4 @@ Then update the GitHub release to point to the new tag.
    # Update GitHub Release to point to the updated tag
    ```
 
-7. Register the new tag as normal with JuliaRegistrator.
+8. Register the new tag as normal with JuliaRegistrator.
