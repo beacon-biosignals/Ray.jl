@@ -48,8 +48,16 @@ jobs:
         - name: Install Ray CLI
           run: |
             pip install --upgrade pip wheel
+            case $(uname -s) in
+                Linux)  OS=manylinux2014;;
+                Darwin) OS=macosx_13_0;;
+            esac
+            case $(uname -m) in
+                x86_64)  ARCH=x86_64;;
+                aarch64) ARCH=arm64;;
+            esac
             PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
-            pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
+            pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
         - name: Delete Overrides.toml
           shell: julia --color=yes --project {0}
           run: |
