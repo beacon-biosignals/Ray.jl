@@ -58,7 +58,9 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir)
     return nothing
 end
 
-function build_host_tarball(; override::Bool=true)
+function build_host_tarball(; tarball_dir, override::Bool=true)
+    isdir(tarball_dir) || mkdir(tarball_dir)
+
     @info "Building ray_julia library..."
     build_library(; override)
 
@@ -66,42 +68,33 @@ function build_host_tarball(; override::Bool=true)
     tarball_name = gen_artifact_filename(; tag=TAG, platform=host)
 
     @info "Creating tarball $tarball_name"
-    tarball_path = joinpath(TARBALL_DIR, tarball_name)
+    tarball_path = joinpath(tarball_dir, tarball_name)
     create_tarball(COMPILED_DIR, tarball_path)
 
     return tarball_path
 end
 
 function main()
-    isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
-
-    # Note: Using `--all` purposefully ignores the `--no-override` setting
     if "--all" in ARGS
-        if !Sys.isapple() || Sys.ARCH != :aarch64
-            error("The `--all` flag must be run on \"aarch64-apple-darwin\" (macOS Apple Silicon)")
+        # Note: Using `--all` purposefully ignores the `--no-override` setting
+        for v in REQUIRED_JULIA_VERSIONS
+            julia = "julia-$(v.major).$(v.minor)"
+            code = "include(\"$(@__FILE__())\"); build_host_tarball(override=false)"
+            run(`$julia --project=$(Pkg.project().path) -e $code`)
         end
-
+    elseif "--fetch" in ARGS
         token = get(ENV, "GITHUB_TOKEN") do
             Base.shred!(Base.getpass("GitHub PAT")) do s
                 read(s, String)
             end
         end
 
-        @info "Cleaning tarballs dir..."
-        rm(TARBALL_DIR; recursive=true, force=true)
-
         @info "Retrieving CI built tarballs..."
         commit_sha = git_head_sha()
         download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_DIR)
-
-        for v in REQUIRED_JULIA_VERSIONS
-            julia = "julia-$(v.major).$(v.minor)"
-            code = "include(\"$(@__FILE__())\"); build_host_tarball(override=false)"
-            run(`$julia --project=$(Pkg.project().path) -e $code`)
-        end
     else
         override = !("--no-override" in ARGS)
-        build_host_tarball(; override)
+        build_host_tarball(; override, tarball_dir=TARBALL_DIR)
     end
 
     return nothing
