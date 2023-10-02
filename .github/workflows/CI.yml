@@ -114,7 +114,7 @@ jobs:
           using Pkg
           Pkg.instantiate()
           include(joinpath(pwd(), "build_tarballs.jl"))
-          tarball_path = main()
+          tarball_path = build_host_tarball()
           open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "tarball_path=$tarball_path")
               println(io, "tarball_filename=$(basename(tarball_path))")
