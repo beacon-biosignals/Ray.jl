@@ -32,7 +32,7 @@ function list_workflow_run_artifacts(; org, repo, run_id)
     return JSON3.read(seekstart(b))
 end
 
-function download_ray_julia_artifacts(; commit_sha, token, tarball_dir)
+function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_DIR)
     isdir(tarball_dir) || mkpath(tarball_dir)
 
     response = list_workflow_runs(; org=REPO_ORG, repo=REPO_NAME, head_sha=commit_sha)
@@ -58,7 +58,7 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir)
     return nothing
 end
 
-function build_host_tarball(; tarball_dir, override::Bool=true)
+function build_host_tarball(; tarball_dir=TARBALL_DIR, override::Bool=true)
     isdir(tarball_dir) || mkdir(tarball_dir)
 
     @info "Building ray_julia library..."
@@ -79,7 +79,7 @@ function main()
         # Note: Using `--all` purposefully ignores the `--no-override` setting
         for v in REQUIRED_JULIA_VERSIONS
             julia = "julia-$(v.major).$(v.minor)"
-            code = "include(\"$(@__FILE__())\"); build_host_tarball(override=false)"
+            code = "include(\"$(@__FILE__())\"); build_host_tarball(; override=false)"
             run(`$julia --project=$(Pkg.project().path) -e $code`)
         end
     elseif "--fetch" in ARGS
@@ -91,10 +91,10 @@ function main()
 
         @info "Retrieving CI built tarballs..."
         commit_sha = git_head_sha()
-        download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_DIR)
+        download_ray_julia_artifacts(; commit_sha, token)
     else
         override = !("--no-override" in ARGS)
-        build_host_tarball(; override, tarball_dir=TARBALL_DIR)
+        build_host_tarball(; override)
     end
 
     return nothing
