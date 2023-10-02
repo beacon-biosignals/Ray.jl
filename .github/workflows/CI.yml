@@ -94,13 +94,18 @@ jobs:
           if [ -d "$RAY_GEN_CACHE_DIR" ]; then
               dest=$(pwd)
               pushd $RAY_GEN_CACHE_DIR
-              cp -rp --parents \
+              rel_srcs=(
                   python/ray/_raylet.so \
                   python/ray/core/generated \
                   python/ray/serve/generated \
                   python/ray/core/src/ray/raylet/raylet \
                   python/ray/core/src/ray/gcs \
-                  $dest
+              )
+              for rel_src in "${rel_srcs[@]}"; do
+                  echo "Restoring $rel_src"
+                  mkdir -p $(dirname $rel_src)
+                  cp -rp $rel_src $dest/$rel_src
+              done
               popd
           fi
 
