@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-    tags: ["*"]
+    tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
     paths:
       - "src/**"
       - "test/**"

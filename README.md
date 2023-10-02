@@ -6,7 +6,7 @@
 [![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://beacon-biosignals.github.io/Ray.jl/stable)
 [![Dev Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://beacon-biosignals.github.io/Ray.jl/dev)
 
-The Ray.jl provides a Julia language interface for [Ray.io](https://www.ray.io/) workloads.
+The Ray.jl package provides a Julia language interface for [Ray.io](https://www.ray.io/) workloads.
 
 ## FAQ
 
