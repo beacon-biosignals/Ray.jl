@@ -77,14 +77,7 @@ function build_host_tarball(; tarball_dir=TARBALL_DIR, override::Bool=true)
 end
 
 function main()
-    if "--all" in ARGS
-        # Note: Using `--all` purposefully ignores the `--no-override` setting
-        for v in REQUIRED_JULIA_VERSIONS
-            julia = "julia-$(v.major).$(v.minor)"
-            code = "include(\"$(@__FILE__())\"); build_host_tarball(; override=false)"
-            run(`$julia --project=$(Pkg.project().path) -e $code`)
-        end
-    elseif "--fetch" in ARGS
+    if "--fetch" in ARGS
         token = get(ENV, "GITHUB_TOKEN") do
             Base.shred!(Base.getpass("GitHub PAT")) do s
                 return read(s, String)
