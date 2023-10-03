@@ -29,7 +29,7 @@ jobs:
           - "1.9"  # Latest release
         os:
           - ubuntu-20.04-16core
-          - macos-latest-xlarge  # M1
+          - macos-latest-xlarge  # Apple silicon
         arch:
           - x64
           - aarch64
