@@ -137,9 +137,11 @@ jobs:
           popd
 
           # By copying the entire Ray worktree we can easily restore missing files without having to
-          # delete the cache and build from scratch.
-          mkdir -p "$RAY_GEN_CACHE_DIR"
-          cp -rfp . "$RAY_GEN_CACHE_DIR"
+          # delete the cache and build from scratch. Skip copy when we don't save the cache.
+          if [ "${{ steps.build-cache.outputs.cache-hit }}" != "true" ]; then
+              mkdir -p "$RAY_GEN_CACHE_DIR"
+              cp -rfp . "$RAY_GEN_CACHE_DIR"
+          fi
 
           # Verify Ray CLI works
           echo "Verify Ray CLI works" >&2
