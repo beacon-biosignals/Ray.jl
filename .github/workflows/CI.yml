@@ -58,6 +58,11 @@ jobs:
           repository: beacon-biosignals/ray
           path: ${{ env.ray_dir }}
           ref: ${{ steps.ray-commit.outputs.sha }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ${{ env.ray_dir }}/python/setup.py
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
