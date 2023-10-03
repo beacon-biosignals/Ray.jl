@@ -18,6 +18,7 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   format-check:
+    if: (github.event_name == 'push') || (github.event.pull_request.draft == false)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -58,5 +59,9 @@ jobs:
           end
           if !formatted
               @error "Found some unformatted files:\n" * read(`git diff --name-only`, String)
-              exit(1)
           end
+      - uses: reviewdog/action-suggester@v1
+        if: github.event_name == 'pull_request'
+        with:
+          tool_name: JuliaFormatter
+          fail_on_error: true
