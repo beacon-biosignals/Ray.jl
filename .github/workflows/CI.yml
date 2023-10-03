@@ -84,7 +84,6 @@ jobs:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
       - name: Build Ray CLI
         run: |
-          set -eux
           pip install --upgrade pip wheel
 
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
@@ -94,7 +93,6 @@ jobs:
           RAY_GEN_CACHE_DIR=~/.cache/ray-generated
           if [ -d "$RAY_GEN_CACHE_DIR" ]; then
               dest_root=$(pwd)
-              pushd $RAY_GEN_CACHE_DIR
               rel_srcs=(
                   python/ray/_raylet.so \
                   python/ray/core/generated \
@@ -103,12 +101,16 @@ jobs:
                   python/ray/core/src/ray/gcs \
               )
               for rel in "${rel_srcs[@]}"; do
+                  echo "Restoring $rel" >&2
+                  src="$RAY_GEN_CACHE_DIR/$rel"
                   dest="$dest_root/$rel"
-                  echo "Restoring $rel"
                   mkdir -p $(dirname $dest)
-                  cp -rp $rel $dest
+                  cp -rp $src $dest
+                  echo "src:"
+                  ls -l $src
+                  echo "dest:"
+                  ls -l $dest
               done
-              popd
           fi
 
           pushd python
@@ -121,6 +123,7 @@ jobs:
           cp -rfp . "$RAY_GEN_CACHE_DIR"
 
           # Verify Ray CLI works
+          echo "Verify Ray CLI works" >&2
           ray --version
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
