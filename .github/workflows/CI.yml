@@ -85,20 +85,6 @@ jobs:
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
 
-      - name: Show Cache
-        run: |
-          echo "-----------"
-          echo "find -L ~/.cache"
-          if [ -d ~/.cache ]; then
-              find -L ~/.cache
-          fi
-
-          echo "-----------"
-          echo "find -L /private/var/tmp"
-          if [ -d /private/var/tmp ]; then
-              find -L /private/var/tmp
-          fi
-
       # Based upon:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
       - name: Build Ray CLI
@@ -152,19 +138,6 @@ jobs:
           echo "Verify Ray CLI works" >&2
           ray --version
         working-directory: ${{ env.ray_dir }}
-      - name: Show Cache After
-        run: |
-          echo "-----------"
-          echo "find -L ~/.cache"
-          if [ -d ~/.cache ]; then
-              find -L ~/.cache
-          fi
-
-          echo "-----------"
-          echo "find -L /private/var/tmp"
-          if [ -d /private/var/tmp ]; then
-              find -L /private/var/tmp
-          fi
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
         run: |
