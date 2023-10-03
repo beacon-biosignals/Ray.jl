@@ -58,6 +58,9 @@ jobs:
             ARCH=$(uname -m)
             PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
             pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
+
+            # Verify Ray CLI works
+            ray --version
         - name: Delete Overrides.toml
           shell: julia --color=yes --project {0}
           run: |

@@ -103,12 +103,12 @@ jobs:
               for rel in "${rel_srcs[@]}"; do
                   echo "Restoring $rel" >&2
                   src="$RAY_GEN_CACHE_DIR/$rel"
-                  dest="$dest_root/$rel"
-                  mkdir -p $(dirname $dest)
+                  dest=$(dirname "$dest_root/$rel")
+                  mkdir -p $dest
                   cp -rp $src $dest
-                  echo "src:"
+                  echo "src: $src"
                   ls -l $src
-                  echo "dest:"
+                  echo "dest: $dest"
                   ls -l $dest
               done
           fi
