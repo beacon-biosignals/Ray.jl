@@ -83,15 +83,15 @@ jobs:
       - name: Show Cache
         run: |
           echo "-----------"
-          echo "find ~/.cache"
+          echo "find -L ~/.cache"
           if [ -d ~/.cache ]; then
-              find ~/.cache
+              find -L ~/.cache
           fi
 
           echo "-----------"
-          echo "find /private/var/tmp"
+          echo "find -L /private/var/tmp"
           if [ -d /private/var/tmp ]; then
-              find /private/var/tmp
+              find -L /private/var/tmp
           fi
 
       # Based upon:
@@ -147,15 +147,15 @@ jobs:
       - name: Show Cache After
         run: |
           echo "-----------"
-          echo "find ~/.cache"
+          echo "find -L ~/.cache"
           if [ -d ~/.cache ]; then
-              find ~/.cache
+              find -L ~/.cache
           fi
 
           echo "-----------"
-          echo "find /private/var/tmp"
+          echo "find -L /private/var/tmp"
           if [ -d /private/var/tmp ]; then
-              find /private/var/tmp
+              find -L /private/var/tmp
           fi
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
