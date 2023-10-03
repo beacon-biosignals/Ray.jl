@@ -90,6 +90,13 @@ jobs:
         run: |
           pip install --upgrade pip wheel
 
+          # Use `~/.cache/bazel` as the Bazel cache directory on macOS
+          # https://bazel.build/remote/output-directories
+          if [ "$(uname -s)" = "Darwin" ]; then
+              mkdir -p ~/.cache/bazel/_bazel_$USER
+              ln -s ~/.cache/bazel/_bazel_$USER /private/var/tmp/_bazel_$USER
+          fi
+
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
           # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
           # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
@@ -126,6 +133,8 @@ jobs:
           # Verify Ray CLI works
           echo "Verify Ray CLI works" >&2
           ray --version
+
+          ls -l ~/.cache/bazel/_bazel_$USER
         working-directory: ${{ env.ray_dir }}
       - name: Build Ray CLI 2
         run: |
