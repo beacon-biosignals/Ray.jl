@@ -82,7 +82,7 @@ jobs:
 
       - name: Show Cache
         run: |
-          find ~/.cache
+          [ -d ~/.cache ] && find ~/.cache
 
       # Based upon:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
