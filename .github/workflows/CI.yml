@@ -92,24 +92,21 @@ jobs:
           # saving/restoring these files we can work around this.
           RAY_GEN_CACHE_DIR=~/.cache/ray-generated
           if [ -d "$RAY_GEN_CACHE_DIR" ]; then
-              dest_root=$(pwd)
-              rel_srcs=(
+              ray_repo=$(pwd)
+              srcs=(
                   python/ray/_raylet.so \
                   python/ray/core/generated \
                   python/ray/serve/generated \
                   python/ray/core/src/ray/raylet/raylet \
                   python/ray/core/src/ray/gcs \
               )
-              for rel in "${rel_srcs[@]}"; do
+              # Reimplemented `cp --parents` as this isn't supported by macOS
+              for rel in "${srcs[@]}"; do
                   echo "Restoring $rel" >&2
                   src="$RAY_GEN_CACHE_DIR/$rel"
-                  dest=$(dirname "$dest_root/$rel")
+                  dest=$(dirname "$ray_repo/$rel")
                   mkdir -p $dest
                   cp -rp $src $dest
-                  echo "src: $src"
-                  ls -l $src
-                  echo "dest: $dest"
-                  ls -l $dest
               done
           fi
 
