@@ -84,6 +84,7 @@ jobs:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
       - name: Build Ray CLI
         run: |
+          set -eux
           pip install --upgrade pip wheel
 
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
