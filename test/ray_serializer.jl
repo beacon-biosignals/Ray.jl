@@ -94,6 +94,7 @@ end
                                    false)
 
         @test String(take!(ray_jll.GetMetadata(md_obj[])[])) == "hello"
-
-        Ray.deserialize_from_ray_object(md_obj)
+        @test [1, 2, 3] == @test_logs((:warn, r"Unhandled RayObject.Metadata: hello"),
+                                      Ray.deserialize_from_ray_object(md_obj))
+    end
 end
