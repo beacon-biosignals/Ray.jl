@@ -13,8 +13,7 @@ using JSON3
 using Logging
 using LoggingExtras
 using Pkg
-using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
-                     reset_state, serialize, serialize_type, ser_version, writeheader
+using Serialization: Serialization, AbstractSerializer, Serializer, deserialize, reset_state, serialize, serialize_type, ser_version, writeheader
 using Sockets: IPAddr, getipaddr
 
 export start_worker, submit_task, @ray_import, ObjectRef
