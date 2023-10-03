@@ -82,8 +82,16 @@ jobs:
 
       - name: Show Cache
         run: |
+          echo "-----------"
+          echo "find ~/.cache"
           if [ -d ~/.cache ]; then
               find ~/.cache
+          fi
+
+          echo "-----------"
+          echo "find /private/var/tmp"
+          if [ -d /private/var/tmp ]; then
+              find /private/var/tmp
           fi
 
       # Based upon:
@@ -135,9 +143,20 @@ jobs:
           # Verify Ray CLI works
           echo "Verify Ray CLI works" >&2
           ray --version
-
-          ls -l ~/.cache/bazel/_bazel_$USER
         working-directory: ${{ env.ray_dir }}
+      - name: Show Cache After
+        run: |
+          echo "-----------"
+          echo "find ~/.cache"
+          if [ -d ~/.cache ]; then
+              find ~/.cache
+          fi
+
+          echo "-----------"
+          echo "find /private/var/tmp"
+          if [ -d /private/var/tmp ]; then
+              find /private/var/tmp
+          fi
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
         run: |
