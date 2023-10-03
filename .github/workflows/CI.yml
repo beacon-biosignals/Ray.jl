@@ -136,16 +136,6 @@ jobs:
 
           ls -l ~/.cache/bazel/_bazel_$USER
         working-directory: ${{ env.ray_dir }}
-      - name: Build Ray CLI 2
-        run: |
-          pushd python
-          pip install . --verbose  # Fresh build takes ~50 minutes on basic GH runner
-          popd
-
-          # Verify Ray CLI works
-          echo "Verify Ray CLI works" >&2
-          ray --version
-        working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
         run: |
