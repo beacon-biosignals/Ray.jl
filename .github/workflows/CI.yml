@@ -102,8 +102,9 @@ jobs:
 
           # Use `~/.cache/bazel` as the Bazel cache directory on macOS
           # https://bazel.build/remote/output-directories
-          if [ "$(uname -s)" = "Darwin" ]; then
+          if [ "$(uname -s)" = "Darwin" ] && [ ! -d ~/.cache/bazel ]; then
               mkdir -p ~/.cache/bazel/_bazel_$USER
+              rm -rf /private/var/tmp/_bazel_$USER
               ln -s ~/.cache/bazel/_bazel_$USER /private/var/tmp/_bazel_$USER
           fi
 
