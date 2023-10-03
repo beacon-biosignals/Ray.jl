@@ -103,7 +103,7 @@ jobs:
               )
               for rel in "${rel_srcs[@]}"; do
                   dest="$dest_root/$rel"
-                  echo "Restoring $rel -> $dest"
+                  echo "Restoring $rel"
                   mkdir -p $(dirname $dest)
                   cp -rp $rel $dest
               done
