@@ -82,7 +82,7 @@ jobs:
 
       - name: Show Cache
         run: |
-          if [ -d ~/.cache ]
+          if [ -d ~/.cache ]; then
               find ~/.cache
           fi
 
