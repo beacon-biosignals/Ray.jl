@@ -80,6 +80,10 @@ jobs:
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.
 
+      - name: Show Cache
+        run: |
+          find ~/.cache
+
       # Based upon:
       # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
       - name: Build Ray CLI
