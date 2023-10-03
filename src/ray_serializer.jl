@@ -89,6 +89,7 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
             @warn "Unhandled RayObject.Metadata: $(String(metadata_bytes))"
         end
     end
+
     bytes = take!(ray_jll.GetData(x[]))
     s = RaySerializer(IOBuffer(bytes))
     result = try
