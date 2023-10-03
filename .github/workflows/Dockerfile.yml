@@ -19,8 +19,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    runs-on:
-      labels: ubuntu-20.04-16core
+    runs-on: ubuntu-20.04-16core
     env:
       # Reference the HEAD commit which triggered this workflow. By default PRs use a merge commit
       SHA: ${{ github.event.pull_request.head.sha || github.sha }}
