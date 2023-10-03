@@ -2,12 +2,12 @@ name: Dockerfile
 on:
   push:
     tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
-  pull_request:
-    paths:
-      - "build/**"
-      - "Dockerfile"
-      - ".dockerignore"
-      - ".github/workflows/Dockerfile.yml"
+  # pull_request:
+  #   paths:
+  #     - "build/**"
+  #     - "Dockerfile"
+  #     - ".dockerignore"
+  #     - ".github/workflows/Dockerfile.yml"
 
 # Each PR and each commit on `main` use distinct concurrency groups. Note canceling workflows in
 # progress may result in having to rebuild layers as the Docker layer caching is only uploaded
