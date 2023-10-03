@@ -92,7 +92,7 @@ jobs:
           # saving/restoring these files we can work around this.
           RAY_GEN_CACHE_DIR=~/.cache/ray-generated
           if [ -d "$RAY_GEN_CACHE_DIR" ]; then
-              dest=$(pwd)
+              dest_root=$(pwd)
               pushd $RAY_GEN_CACHE_DIR
               rel_srcs=(
                   python/ray/_raylet.so \
@@ -101,10 +101,11 @@ jobs:
                   python/ray/core/src/ray/raylet/raylet \
                   python/ray/core/src/ray/gcs \
               )
-              for rel_src in "${rel_srcs[@]}"; do
-                  echo "Restoring $rel_src"
-                  mkdir -p $(dirname $rel_src)
-                  cp -rp $rel_src $dest/$rel_src
+              for rel in "${rel_srcs[@]}"; do
+                  dest="$dest_root/$rel"
+                  echo "Restoring $rel -> $dest"
+                  mkdir -p $(dirname $dest)
+                  cp -rp $rel $dest
               done
               popd
           fi
