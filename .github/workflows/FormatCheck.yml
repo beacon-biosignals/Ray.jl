@@ -43,6 +43,7 @@ jobs:
           using Pkg
           Pkg.add(PackageSpec(name="JuliaFormatter", version="1"))
       - name: Check formatting
+        id: check
         shell: julia --color=yes {0}
         run: |
           using JuliaFormatter
