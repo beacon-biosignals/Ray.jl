@@ -118,6 +118,9 @@ jobs:
           # delete the cache and build from scratch.
           mkdir -p "$RAY_GEN_CACHE_DIR"
           cp -rfp . "$RAY_GEN_CACHE_DIR"
+
+          # Verify Ray CLI works
+          ray --version
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
         shell: julia --color=yes --project {0}
