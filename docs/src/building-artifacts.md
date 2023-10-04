@@ -45,7 +45,7 @@ To update the Ray.jl artifacts for a new release perform the following steps:
    ```sh
    julia --project bind_artifacts.jl
 
-   git commit -a -m "Update Artifacts.toml"
+   git commit -m "Update Artifacts.toml" -- Artifacts.toml
    git push origin
    ```
 
