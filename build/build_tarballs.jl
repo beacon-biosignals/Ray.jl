@@ -20,5 +20,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     include("build_library.jl")
 
     @info "Creating tarball $tarball_name"
-    create_tarball(COMPILED_DIR, TARBALL_PATH)
+    compiled_dir = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
+    create_tarball(compiled_dir, TARBALL_PATH)
 end
