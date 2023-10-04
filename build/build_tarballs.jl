@@ -13,7 +13,8 @@ function create_tarball(dir, tarball)
     end
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
+
+function build_host_tarball()
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
     @info "Building ray_julia library..."
