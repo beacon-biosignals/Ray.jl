@@ -18,7 +18,7 @@ To update the Ray.jl artifacts for a new release perform the following steps:
 
 3. Navigate to the `build` directory
 
-4. Run the `build_tarballs.jl --fetch` script to fetch the GitHub workflow tarballs for all of the required platforms and Julia versions.
+4. Run the `download_tarballs.jl` script to fetch the GitHub workflow tarballs for all of the required platforms and Julia versions.
 
    ```sh
    julia --project -e 'using Pkg; Pkg.instantiate()'
@@ -29,7 +29,7 @@ To update the Ray.jl artifacts for a new release perform the following steps:
    # Fetches the tarballs from GitHub Actions artifacts (may need to wait on CI)
    read -s GITHUB_TOKEN
    export GITHUB_TOKEN
-   julia --project build_tarballs.jl --fetch
+   julia --project download_tarballs.jl
    ```
 
 5. Run the `upload_tarballs.jl` script to publish the tarballs as assets of a GitHub pre-release. Re-running this script will only upload new tarballs and skip any that have already been published.
