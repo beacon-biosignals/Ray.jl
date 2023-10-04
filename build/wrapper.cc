@@ -510,6 +510,35 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("SPILL_WORKER", ray::core::WorkerType::SPILL_WORKER);
     mod.set_const("RESTORE_WORKER", ray::core::WorkerType::RESTORE_WORKER);
 
+    // enum ErrorType
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L142
+    mod.add_bits<ray::core::ErrorType>("ErrorType", jlcxx::julia_type("CppEnum"));
+
+    mod.set_const("WORKER_DIED", ray::core::ErrorType::WORKER_DIED);
+    mod.set_const("ACTOR_DIED", ray::core::ErrorType::ACTOR_DIED);
+    mod.set_const("OBJECT_UNRECONSTRUCTABLE", ray::core::ErrorType::OBJECT_UNRECONSTRUCTABLE);
+    mod.set_const("TASK_EXECUTION_EXCEPTION", ray::core::ErrorType::TASK_EXECUTION_EXCEPTION);
+    mod.set_const("OBJECT_IN_PLASMA", ray::core::ErrorType::OBJECT_IN_PLASMA);
+    mod.set_const("TASK_CANCELLED", ray::core::ErrorType::TASK_CANCELLED);
+    mod.set_const("ACTOR_CREATION_FAILED", ray::core::ErrorType::ACTOR_CREATION_FAILED);
+    mod.set_const("RUNTIME_ENV_SETUP_FAILED", ray::core::ErrorType::RUNTIME_ENV_SETUP_FAILED);
+    mod.set_const("OBJECT_LOST", ray::core::ErrorType::OBJECT_LOST);
+    mod.set_const("OWNER_DIED", ray::core::ErrorType::OWNER_DIED);
+    mod.set_const("OBJECT_DELETED", ray::core::ErrorType::OBJECT_DELETED);
+    mod.set_const("DEPENDENCY_RESOLUTION_FAILED", ray::core::ErrorType::DEPENDENCY_RESOLUTION_FAILED);
+    mod.set_const("OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED", ray::core::ErrorType::OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED);
+    mod.set_const("OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED", ray::core::ErrorType::OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED);
+    mod.set_const("OBJECT_FETCH_TIMED_OUT", ray::core::ErrorType::OBJECT_FETCH_TIMED_OUT);
+    mod.set_const("LOCAL_RAYLET_DIED", ray::core::ErrorType::LOCAL_RAYLET_DIED);
+    mod.set_const("TASK_PLACEMENT_GROUP_REMOVED", ray::core::ErrorType::TASK_PLACEMENT_GROUP_REMOVED);
+    mod.set_const("ACTOR_PLACEMENT_GROUP_REMOVED", ray::core::ErrorType::ACTOR_PLACEMENT_GROUP_REMOVED);
+    mod.set_const("TASK_UNSCHEDULABLE_ERROR", ray::core::ErrorType::TASK_UNSCHEDULABLE_ERROR);
+    mod.set_const("ACTOR_UNSCHEDULABLE_ERROR", ray::core::ErrorType::ACTOR_UNSCHEDULABLE_ERROR);
+    mod.set_const("OUT_OF_DISK_ERROR", ray::core::ErrorType::OUT_OF_DISK_ERROR);
+    mod.set_const("OBJECT_FREED", ray::core::ErrorType::OBJECT_FREED);
+    mod.set_const("OUT_OF_MEMORY", ray::core::ErrorType::OUT_OF_MEMORY);
+    mod.set_const("NODE_DIED", ray::core::ErrorType::NODE_DIED);
+
     // Needed by FunctionDescriptorInterface
     mod.add_bits<ray::rpc::FunctionDescriptor::FunctionDescriptorCase>("FunctionDescriptorCase");
 
