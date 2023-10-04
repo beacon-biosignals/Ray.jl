@@ -74,6 +74,8 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
     rm -rf ${RAY_JL_PROJECT} && \
     mkdir -p $(dirname ${RAY_JL_PROJECT}) && \
     mv /tmp/Ray.jl ${RAY_JL_PROJECT} && \
+    # Generate a fake Ray.jl package structure just for instantiation
+    mkdir -p ${RAY_JL_PROJECT}/src && touch ${RAY_JL_PROJECT}/src/Ray.jl && \
     # Note: The `timing` flag requires Julia 1.9
     julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.build(); Pkg.precompile(strict=true, timing=true)'
 
