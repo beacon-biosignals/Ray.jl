@@ -8,11 +8,11 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### Artifacts
 
-The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform.
+The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform which installs Ray.jl.
 
-To update the artifacts perform the following steps:
+To update the Ray.jl artifacts for a new release perform the following steps:
 
-1. Create a new branch (based off of `origin/HEAD`) and update the Ray.jl version in the `Project.toml` file. Commit and push this change to a new PR. The Julia CI jobs created by this PR will build the artifacts required to make a new release.
+1. Create a new branch (based off of `origin/HEAD`) and bump the Ray.jl version in the `Project.toml` file. Commit and push this change to a new PR. The Julia CI jobs created by this PR will build the artifacts required to make a new release.
 
 2. Wait for the CI workflows to complete for the created PR.
 
@@ -26,7 +26,7 @@ To update the artifacts perform the following steps:
    # Cleanup any tarballs from previous builds
    rm -rf tarballs
 
-   # Fetches the x86_64-linux-gnu tarballs from GitHub Actions (may need to wait)
+   # Fetches the tarballs from GitHub Actions artifacts (may need to wait on CI)
    read -s GITHUB_TOKEN
    export GITHUB_TOKEN
    julia --project build_tarballs.jl --fetch
