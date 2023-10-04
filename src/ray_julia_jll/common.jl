@@ -31,6 +31,31 @@ const STATUS_CODE_SYMBOLS = (:OK,
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
 const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
 
+const ERROR_TYPE_SYMBOLS = (:WORKER_DIED,
+                            :ACTOR_DIED,
+                            :OBJECT_UNRECONSTRUCTABLE,
+                            :TASK_EXECUTION_EXCEPTION,
+                            :OBJECT_IN_PLASMA,
+                            :TASK_CANCELLED,
+                            :ACTOR_CREATION_FAILED,
+                            :RUNTIME_ENV_SETUP_FAILED,
+                            :OBJECT_LOST,
+                            :OWNER_DIED,
+                            :OBJECT_DELETED,
+                            :DEPENDENCY_RESOLUTION_FAILED,
+                            :OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED,
+                            :OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED,
+                            :OBJECT_FETCH_TIMED_OUT,
+                            :LOCAL_RAYLET_DIED,
+                            :TASK_PLACEMENT_GROUP_REMOVED,
+                            :ACTOR_PLACEMENT_GROUP_REMOVED,
+                            :TASK_UNSCHEDULABLE_ERROR,
+                            :ACTOR_UNSCHEDULABLE_ERROR,
+                            :OUT_OF_DISK_ERROR,
+                            :OBJECT_FREED,
+                            :OUT_OF_MEMORY,
+                            :NODE_DIED)
+
 # Generate the following methods for our wrapped enum types:
 # - A constructor allowing you to create a value via a `Symbol` (e.g. `StatusCode(:OK)`).
 # - A `Symbol` method allowing you convert a enum value to a `Symbol` (e.g. `Symbol(OK)`).
@@ -39,6 +64,7 @@ const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
     $(_enum_expr(:StatusCode, STATUS_CODE_SYMBOLS))
     $(_enum_expr(:Language, LANGUAGE_SYMBOLS))
     $(_enum_expr(:WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_expr(:ErrorType, ERROR_TYPE_SYMBOLS))
 end
 
 function check_status(status::Status)
