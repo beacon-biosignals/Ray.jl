@@ -44,6 +44,16 @@ function git_head_sha(repo_root::AbstractString=REPO_PATH)
     end
 end
 
+function github_token()
+    return get(ENV, "GITHUB_TOKEN") do
+        s = Base.getpass("GitHub PAT")
+        println()
+        token = read(s, String)
+        Base.shred!(s)
+        return token
+    end
+end
+
 function convert_to_https_url(url)
     m = match(LibGit2.URL_REGEX, url)
     if m === nothing

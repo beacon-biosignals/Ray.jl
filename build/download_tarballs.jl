@@ -48,12 +48,7 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
 end
 
 function main()
-    token = get(ENV, "GITHUB_TOKEN") do
-        Base.shred!(Base.getpass("GitHub PAT")) do s
-            return read(s, String)
-        end
-        println()
-    end
+    token = github_token()
 
     @info "Retrieving CI built tarballs..."
     commit_sha = git_head_sha()

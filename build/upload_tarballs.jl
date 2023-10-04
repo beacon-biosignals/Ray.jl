@@ -30,8 +30,7 @@ function upload_to_github_release(archive_path::AbstractString, archive_uri::URI
     return nothing
 end
 
-function upload_to_github_release(owner, repo_name, commit, tag, path;
-                                  token=ENV["GITHUB_TOKEN"])
+function upload_to_github_release(owner, repo_name, commit, tag, path; token)
 
     # Based on: https://github.com/JuliaPackaging/BinaryBuilder.jl/blob/d40ec617d131a1787851559ef1a9f04efce19f90/src/AutoBuild.jl#L487
     # TODO: Passing in a directory path uploads multiple assets
@@ -59,7 +58,7 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     isdir(TARBALL_DIR) || error("$TARBALL_DIR does not exist")
-    !haskey(ENV, "GITHUB_TOKEN") && error("\"GITHUB_TOKEN\" environment variable required.")
+    token = github_token()
 
     # check that contents are tarballs with correct filename
     for t in readdir(TARBALL_DIR)
@@ -72,5 +71,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
     branch = LibGit2.with(LibGit2.branch, LibGit2.GitRepo(REPO_PATH))
 
     @info "Uploading tarballs to $artifact_url"
-    upload_to_github_release(TARBALL_DIR, artifact_url, branch)
+    upload_to_github_release(TARBALL_DIR, artifact_url, branch; token)
 end
