@@ -20,8 +20,7 @@ concurrency:
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on:
-      labels: ubuntu-20.04-16core
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +28,16 @@ jobs:
           - "1.8"  # Version used with MVP
           - "1.9"  # Latest release
         os:
-          - ubuntu-latest
+          - ubuntu-20.04-16core
+          - macos-latest-xlarge  # Apple silicon
         arch:
           - x64
+          - aarch64
+        exclude:
+          - os: ubuntu-20.04-16core
+            arch: aarch64
+          - os: macos-latest-xlarge
+            arch: x64
     steps:
         - uses: actions/checkout@v3
         - uses: julia-actions/setup-julia@v1
@@ -39,11 +45,22 @@ jobs:
             version: ${{ matrix.version }}
             arch: ${{ matrix.arch }}
         - uses: julia-actions/cache@v1
+        - uses: actions/setup-python@v4
+          with:
+            python-version: "3.10"
         - name: Install Ray CLI
           run: |
             pip install --upgrade pip wheel
+            case $(uname -s) in
+                Linux)  OS=manylinux2014;;
+                Darwin) OS=macosx_13_0;;
+            esac
+            ARCH=$(uname -m)
             PYTHON=$(python3 --version | perl -ne '/(\d+)\.(\d+)/; print "cp$1$2-cp$1$2"')
-            pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-manylinux2014_x86_64.whl" "pydantic<2"
+            pip install -U "ray[default] @ https://github.com/beacon-biosignals/ray/releases/latest/download/ray-2.5.1-${PYTHON}-${OS}_${ARCH}.whl" "pydantic<2"
+
+            # Verify Ray CLI works
+            ray --version
         - name: Delete Overrides.toml
           shell: julia --color=yes --project {0}
           run: |

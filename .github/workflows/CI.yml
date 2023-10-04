@@ -33,7 +33,7 @@ jobs:
           - "1.9"  # Latest release
         os:
           - ubuntu-20.04-16core
-          - macos-latest-xlarge  # M1
+          - macos-latest-xlarge  # Apple silicon
         arch:
           - x64
           - aarch64
@@ -58,6 +58,11 @@ jobs:
           repository: beacon-biosignals/ray
           path: ${{ env.ray_dir }}
           ref: ${{ steps.ray-commit.outputs.sha }}
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ${{ env.ray_dir }}/python/setup.py
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -74,7 +79,7 @@ jobs:
         uses: actions/cache/restore@v3
         id: build-cache
         with:
-          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.hash-${{ hashFiles('ray_julia_jll/build/WORKSPACE.bazel.tpl', 'ray_julia_jll/build/BUILD.bazel') }}
+          key: build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.hash-${{ hashFiles('build/WORKSPACE.bazel.tpl', 'build/BUILD.bazel') }}
           path: ~/.cache
           restore-keys: |
             build-cache.ray-jl.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.ray-${{ steps.ray-commit.outputs.sha }}.
@@ -86,22 +91,36 @@ jobs:
         run: |
           pip install --upgrade pip wheel
 
+          # Use `~/.cache/bazel` as the Bazel cache directory on macOS
+          # https://bazel.build/remote/output-directories
+          if [ "$(uname -s)" = "Darwin" ]; then
+              mkdir -p ~/.cache/bazel/_bazel_$USER
+              rm -rf /private/var/tmp/_bazel_$USER  # Bazel cached data may be present from unrelated builds
+              ln -s ~/.cache/bazel/_bazel_$USER /private/var/tmp/_bazel_$USER
+          fi
+
           # The Ray BUILD.bazel includes a bunch of `copy_to_workspace` rules which copy build output
           # into the Ray worktree. When we only restore the Bazel cache then re-building causes these
           # rules to be skipped resulting in `error: [Errno 2] No such file or directory`. By manually
           # saving/restoring these files we can work around this.
           RAY_GEN_CACHE_DIR=~/.cache/ray-generated
           if [ -d "$RAY_GEN_CACHE_DIR" ]; then
-              dest=$(pwd)
-              pushd $RAY_GEN_CACHE_DIR
-              cp -rp --parents \
+              ray_repo=$(pwd)
+              srcs=(
                   python/ray/_raylet.so \
                   python/ray/core/generated \
                   python/ray/serve/generated \
                   python/ray/core/src/ray/raylet/raylet \
                   python/ray/core/src/ray/gcs \
-                  $dest
-              popd
+              )
+              # Reimplemented `cp --parents` as this isn't supported by macOS
+              for rel in "${srcs[@]}"; do
+                  echo "Restoring $rel" >&2
+                  src="$RAY_GEN_CACHE_DIR/$rel"
+                  dest=$(dirname "$ray_repo/$rel")
+                  mkdir -p $dest
+                  cp -rp $src $dest
+              done
           fi
 
           pushd python
@@ -109,9 +128,15 @@ jobs:
           popd
 
           # By copying the entire Ray worktree we can easily restore missing files without having to
-          # delete the cache and build from scratch.
-          mkdir -p "$RAY_GEN_CACHE_DIR"
-          cp -rfp . "$RAY_GEN_CACHE_DIR"
+          # delete the cache and build from scratch. Skip copy when we don't save the cache.
+          if [ "${{ steps.build-cache.outputs.cache-hit }}" != "true" ]; then
+              mkdir -p "$RAY_GEN_CACHE_DIR"
+              cp -rfp . "$RAY_GEN_CACHE_DIR"
+          fi
+
+          # Verify Ray CLI works
+          echo "Verify Ray CLI works" >&2
+          ray --version
         working-directory: ${{ env.ray_dir }}
       - name: Build ray_julia library
         id: ray_julia
