@@ -171,7 +171,7 @@ jobs:
 
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
-        if: ${{ github.ref == 'refs/heads/main' }}
+        # if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
           generate_release_notes: true
