@@ -36,7 +36,7 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
         io = Downloads.download(url, IOBuffer(); headers)
         zip = ZipFile.Reader(io)
 
-        if length(zip.files) == 1
+        if length(zip.files) > 1
             error("GitHub workflow artifact contains more than one file:\n$(join(zip.files, '\n'))")
         end
 
@@ -52,6 +52,7 @@ function main()
         Base.shred!(Base.getpass("GitHub PAT")) do s
             return read(s, String)
         end
+        println()
     end
 
     @info "Retrieving CI built tarballs..."
