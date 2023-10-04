@@ -144,7 +144,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "build_tarballs.jl"))  # includes common.jl
+          include(joinpath(pwd(), "build_tarballs.jl"))
           open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "tarball_path=$TARBALL_PATH")
               println(io, "tag=$TAG")
