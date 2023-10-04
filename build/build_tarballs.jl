@@ -13,14 +13,13 @@ function create_tarball(dir, tarball)
     end
 end
 
-
 function build_host_tarball()
     isdir(TARBALL_DIR) || mkdir(TARBALL_DIR)
 
     @info "Building ray_julia library..."
     include("build_library.jl")
 
-    @info "Creating tarball $tarball_name"
+    @info "Creating tarball $TARBALL_NAME"
     compiled_dir = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
     create_tarball(compiled_dir, TARBALL_PATH)
 end
