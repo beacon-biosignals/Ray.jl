@@ -78,6 +78,18 @@ end
 
 function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
+    # unlike CoreWorker::GetData, CoreWorker::GetMetadata returns a _reference_
+    # to a pointer to a buffer, so we need to dereference the return value to
+    # get the pointer that `take!` expects.
+    metadata_ptr = ray_jll.GetMetadata(x[])[]
+    # the pointer itself will not be null, but rather point to a null ref
+    if !isnull(metadata_ptr[])
+        metadata_bytes = take!(metadata_ptr)
+        if !isempty(metadata_bytes)
+            @warn "Unhandled RayObject.Metadata: $(String(metadata_bytes))"
+        end
+    end
+
     bytes = take!(ray_jll.GetData(x[]))
     s = RaySerializer(IOBuffer(bytes))
     result = try

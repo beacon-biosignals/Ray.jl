@@ -77,3 +77,25 @@ end
         @test deserialize(s) == x
     end
 end
+
+@testset "deserialize_from_ray_object" begin
+    @testset "metadata handling" begin
+        obj = Ray.serialize_to_ray_object([1, 2, 3])
+
+        # make some metadata
+        metadata = "hello\x00world"
+        buffer = ray_jll.LocalMemoryBuffer(collect(codeunits(metadata)),
+                                           length(metadata),
+                                           true)
+
+        md_obj = ray_jll.RayObject(ray_jll.GetData(obj[]),
+                                   buffer,
+                                   StdVector{ray_jll.ObjectReference}(),
+                                   false)
+
+        @test String(take!(ray_jll.GetMetadata(md_obj[])[])) == "hello\x00world"
+        @test_logs (:warn, r"Unhandled RayObject.Metadata: hello") begin
+            @test Ray.deserialize_from_ray_object(md_obj) == [1, 2, 3]
+        end
+    end
+end
