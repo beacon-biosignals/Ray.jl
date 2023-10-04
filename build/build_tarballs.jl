@@ -19,10 +19,6 @@ if abspath(PROGRAM_FILE) == @__FILE__
     @info "Building ray_julia library..."
     include("build_library.jl")
 
-    host = supported_platform(HostPlatform())
-    tarball_name = gen_artifact_filename(; tag=TAG, platform=host)
-
     @info "Creating tarball $tarball_name"
-    tarball_path = joinpath(TARBALL_DIR, tarball_name)
-    create_tarball(COMPILED_DIR, tarball_path)
+    create_tarball(COMPILED_DIR, TARBALL_PATH)
 end

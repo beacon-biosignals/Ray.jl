@@ -2,7 +2,6 @@ using Base.BinaryPlatforms
 using LibGit2: LibGit2
 using Pkg.Types: read_project
 
-const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
 const SO_FILE = "julia_core_worker_lib.so"
 
 const TARBALL_REGEX = r"""
@@ -73,3 +72,8 @@ const TAG = let
     project = read_project(project_toml)
     "v$(project.version)"
 end
+
+const HOST = supported_platform(HostPlatform())
+const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
+const TARBALL_NAME = gen_artifact_filename(; tag=TAG, platform=HOST)
+const TARBALL_PATH = joinpath(TARBALL_DIR, TARBALL_NAME)
