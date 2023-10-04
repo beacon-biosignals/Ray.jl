@@ -1,6 +1,7 @@
 using Base.BinaryPlatforms
 using LibGit2: LibGit2
 using Pkg.Types: read_project
+using URIs: URI
 
 const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
 const SO_FILE = "julia_core_worker_lib.so"
@@ -35,6 +36,24 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
     end
 end
 
+function git_head_sha(repo_root::AbstractString=REPO_PATH)
+    return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
+        ref = LibGit2.head(repo)
+        commit = LibGit2.peel(LibGit2.GitCommit, ref)
+        return string(LibGit2.GitHash(commit))
+    end
+end
+
+function github_token()
+    return get(ENV, "GITHUB_TOKEN") do
+        s = Base.getpass("GitHub PAT")
+        println()
+        token = read(s, String)
+        Base.shred!(s)
+        return token
+    end
+end
+
 function convert_to_https_url(url)
     m = match(LibGit2.URL_REGEX, url)
     if m === nothing
@@ -64,9 +83,12 @@ end
 
 const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
 const REPO_HTTPS_URL = convert_to_https_url(remote_url(REPO_PATH))
-const COMPILED_DIR = readlink(joinpath(REPO_PATH, "build", "bazel-bin"))
+const REPO_ORG = split(parse(URI, REPO_HTTPS_URL).path, '/')[2]
+const REPO_NAME = split(parse(URI, REPO_HTTPS_URL).path, '/')[3]
+const COMPILED_DIR = joinpath(REPO_PATH, "build", "bazel-bin")
 
 const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
+const ARTIFACTS_WORKFLOW_NAME = "CI"
 
 const TAG = let
     project_toml = joinpath(REPO_PATH, "Project.toml")

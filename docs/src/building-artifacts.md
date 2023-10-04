@@ -8,21 +8,31 @@ Follow [the instructions](https://github.com/beacon-biosignals/ray/blob/beacon-m
 
 ### Artifacts
 
-The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform. To update the artifacts, first ensure you have already [built Ray.jl](./developer-guide.md#build-rayjl) then perform the following steps:
+The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/beacon-biosignals/Ray.jl/releases) and will be downloaded automatically for any supported platform which installs Ray.jl.
 
-1. Update the Ray.jl version in the `Project.toml`
+To update the Ray.jl artifacts for a new release perform the following steps:
 
-2. Navigate to the `build` directory
+1. Create a new branch (based off of `origin/HEAD`) and bump the Ray.jl version in the `Project.toml` file. Commit and push this change to a new PR. The Julia CI jobs created by this PR will build the artifacts required to make a new release.
 
-3. Run the `build_tarballs.jl` script to build the tarball for the host platform for the Julia version used. Builds are required for the platform triplets `x86_64-linux-gnu` and `aarch64-apple-darwin` on Julia `v1.8` and `v1.9`. It is advised you run this within the python virtual environment associated with the Ray.jl package to avoid unnecessary Bazel rebuilds.  Note: re-running this script _will overwrite_ an existing tarball for this version of Ray.jl.
+2. Wait for the CI workflows to complete for the created PR.
+
+3. Navigate to the `build` directory
+
+4. Run the `download_tarballs.jl` script to fetch the GitHub workflow tarballs for all of the required platforms and Julia versions.
 
    ```sh
-   source ../venv/bin/activate
    julia --project -e 'using Pkg; Pkg.instantiate()'
-   julia --project build_tarballs.jl
+
+   # Cleanup any tarballs from previous builds
+   rm -rf tarballs
+
+   # Fetches the tarballs from GitHub Actions artifacts (may need to wait on CI)
+   read -s GITHUB_TOKEN
+   export GITHUB_TOKEN
+   julia --project download_tarballs.jl
    ```
 
-4. Run the `upload_tarballs.jl` script to publish the tarball(s) as asset(s) of a GitHub pre-release, which requires a `GITHUB_TOKEN` environment variable. Note: you can run this script after building each tarball, or after you've built them all. Rerunning it will only upload new tarballs and skip any that have already been published.
+5. Run the `upload_tarballs.jl` script to publish the tarballs as assets of a GitHub pre-release. Re-running this script will only upload new tarballs and skip any that have already been published.
 
    ```sh
    read -s GITHUB_TOKEN
@@ -30,12 +40,25 @@ The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/be
    julia --project upload_tarballs.jl
    ```
 
-5. Once all assets are uploaded, checkout a new branch (based off of `main`) and run the `bind_artifacts.jl`. This will modify the local `Artifacts.toml` with the artifact(s) associated with the Ray.jl version specified in the Project.toml. After running this you should commit and push the changes to a new PR.
+6. Run `bind_artifacts.jl` to modify local `Artifacts.toml` with the artifacts associated with the Ray.jl version specified in the `Project.toml`. After running this you should commit and push the changes to the PR you created in Step 1.
 
    ```sh
    julia --project bind_artifacts.jl
+
+   git commit -m "Update Artifacts.toml" -- Artifacts.toml
+   git push origin
    ```
 
-6. Once that PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged. Then update the GitHub release to point to the new tag.
+7. Merge the PR. If the PR becomes out of date with the default branch then you will need to repeat steps 3-6 to ensure that the tarballs include the current changes. In some scenarios re-building the tarballs may be unnecessary such as a documentation only change. If in doubt re-build the tarballs.
 
-7. Register the new tag as normal with JuliaRegistrator.
+8. After the PR is merged, delete the existing tag (which will convert the release to a draft) and create a new one (with the same version) from the commit you just merged. Then update the GitHub release to point to the new tag.
+
+   ```sh
+   git tag -d $tag
+   git push origin :$tag
+   git tag $tag
+
+   # Update GitHub Release to point to the updated tag
+   ```
+
+9. Register the new tag as normal with JuliaRegistrator.
