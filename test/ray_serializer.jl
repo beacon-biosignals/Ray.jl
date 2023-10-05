@@ -104,22 +104,18 @@ end
     end
 
     @testset "metadata handling" begin
-        obj = Ray.serialize_to_ray_object([1, 2, 3])
+        data = [1, 2, 3]
+        data_buf = ray_jll.GetData(Ray.serialize_to_ray_object(data)[])
 
-        # make some metadata
-        metadata = "hello\x00world"
-        buffer = ray_jll.LocalMemoryBuffer(collect(codeunits(metadata)),
-                                           length(metadata),
-                                           true)
+        metadata = b"hello\x00world"
+        metadata_buf = ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(metadata)), sizeof(metadata), true)
 
-        md_obj = ray_jll.RayObject(ray_jll.GetData(obj[]),
-                                   buffer,
-                                   StdVector{ray_jll.ObjectReference}(),
-                                   false)
+        nested_refs = StdVector{ray_jll.ObjectReference}()
+        ray_obj = ray_jll.RayObject(data_buf, metadata_buf, nested_refs, false)
+        @test take!(ray_jll.GetMetadata(ray_obj[])[]) == metadata
 
-        @test String(take!(ray_jll.GetMetadata(md_obj[])[])) == "hello\x00world"
-        @test_logs (:warn, r"Unhandled RayObject.Metadata: hello") begin
-            @test Ray.deserialize_from_ray_object(md_obj) == [1, 2, 3]
+        @test_throws "Encountered unhandled metadata: hello\x00world" begin
+            Ray.deserialize_from_ray_object(ray_obj)
         end
     end
 end

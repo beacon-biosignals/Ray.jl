@@ -77,26 +77,21 @@ function log_deserialize_error(bytes, obj_ref=nothing)
     @error "Unable to deserialize $(from)bytes: $(bytes2hex(bytes))"
 end
 
-function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
+function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
-    # unlike CoreWorker::GetData, CoreWorker::GetMetadata returns a _reference_
-    # to a pointer to a buffer, so we need to dereference the return value to
-    # get the pointer that `take!` expects.
-    metadata_ptr = ray_jll.GetMetadata(x[])[]
-    # the pointer itself will not be null, but rather point to a null ref
-    if !isnull(metadata_ptr[])
-        metadata_bytes = take!(metadata_ptr)
-        if !isempty(metadata_bytes)
-            @warn "Unhandled RayObject.Metadata: $(String(metadata_bytes))"
-        end
+
+    data, metadata = ray_jll.get_data_metadata(ray_obj)
+
+    if !isnothing(metadata)
+        from = isnothing(outer_object_ref) ? "" : "from `$(repr(outer_object_ref))`"
+        error("Encountered unhandled metadata$from: $(String(metadata))")
     end
 
-    bytes = take!(ray_jll.GetData(x[]))
-    s = RaySerializer(IOBuffer(bytes))
+    s = RaySerializer(IOBuffer(data))
     result = try
         deserialize(s)
     catch
-        log_deserialize_error(bytes, outer_object_ref)
+        log_deserialize_error(data, outer_object_ref)
         rethrow()
     end
 
