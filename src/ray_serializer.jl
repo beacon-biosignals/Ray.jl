@@ -88,6 +88,8 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
     data, metadata = get_data_metadata(ray_obj)
 
     # TODO: Always include metadata and throw an exception if it is missing
+    # The metadata specifies how the data should be deserialized or indicates an error
+    # reported from the raylet.
     if !isnothing(metadata)
         # Return an exception based upon the error type
         error_type = try
