@@ -85,7 +85,7 @@ end
 function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
 
-    data, metadata = get_data_metadata(ray_obj)
+    data, metadata = ray_jll.get_data_metadata(ray_obj)
 
     # TODO: Always include metadata and throw an exception if it is missing
     # The metadata specifies how the data should be deserialized or indicates an error
