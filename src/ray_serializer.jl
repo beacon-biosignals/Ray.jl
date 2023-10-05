@@ -82,31 +82,26 @@ function log_deserialize_error(descriptor, data, outer_object_ref)
     @error "Unable to deserialize $obj_ref_str$descriptor: $(repr(data))"
 end
 
-function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
+function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
-    # unlike CoreWorker::GetData, CoreWorker::GetMetadata returns a _reference_
-    # to a pointer to a buffer, so we need to dereference the return value to
-    # get the pointer that `take!` expects.
-    metadata_ptr = ray_jll.GetMetadata(x[])[]
-    # the pointer itself will not be null, but rather point to a null ref
-    if !isnull(metadata_ptr[])
-        metadata = String(take!(metadata_ptr))
 
-        # TODO: Always include metadata and throw an exception if it is missing
-        if !isempty(metadata)
-            # Return an exception based upon the error type
-            error_type = try
-                parse(Int, metadata)
-            catch e
-                log_deserialize_error("metadata", metadata, outer_object_ref)
-                rethrow()
-            end
+    data, metadata = get_data_metadata(ray_obj)
 
-            throw(RayException(error_type, b""))
+    # TODO: Always include metadata and throw an exception if it is missing
+    if !isnothing(metadata)
+        # Return an exception based upon the error type
+        error_type = try
+            parse(Int, metadata)
+        catch e
+            log_deserialize_error("metadata", metadata, outer_object_ref)
+            rethrow()
         end
+
+        throw(RayException(error_type, data))
+    elseif isnothing(data)
+        throw(ArgumentError("object without metadata should always have data"))
     end
 
-    data = take!(ray_jll.GetData(x[]))
     s = RaySerializer(IOBuffer(data))
     result = try
         deserialize(s)
