@@ -58,19 +58,13 @@ const ERROR_TYPE_SYMBOLS = (:WORKER_DIED,
 
 # Generate the following methods for our wrapped enum types:
 # - A constructor allowing you to create a value via a `Symbol` (e.g. `StatusCode(:OK)`).
-# - A `instances` method allowing you to get a list of all enum values (e.g. `instances(StatusCode)`)
+# - A `Symbol` method allowing you convert a enum value to a `Symbol` (e.g. `Symbol(OK)`).
+# - A `instances` method allowing you to get a list of all enum values (e.g. `instances(StatusCode)`).
 @eval begin
-    $(_enum_symbol_constructor_expr(StatusCode, STATUS_CODE_SYMBOLS))
-    $(_enum_instances_expr(StatusCode, STATUS_CODE_SYMBOLS))
-
-    $(_enum_symbol_constructor_expr(Language, LANGUAGE_SYMBOLS))
-    $(_enum_instances_expr(Language, LANGUAGE_SYMBOLS))
-
-    $(_enum_symbol_constructor_expr(WorkerType, WORKER_TYPE_SYMBOLS))
-    $(_enum_instances_expr(WorkerType, WORKER_TYPE_SYMBOLS))
-
-    $(_enum_symbol_constructor_expr(ErrorType, ERROR_TYPE_SYMBOLS))
-    $(_enum_instances_expr(ErrorType, ERROR_TYPE_SYMBOLS))
+    $(_enum_expr(StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_expr(Language, LANGUAGE_SYMBOLS))
+    $(_enum_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_expr(ErrorType, ERROR_TYPE_SYMBOLS))
 end
 
 function check_status(status::Status)

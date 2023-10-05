@@ -46,3 +46,10 @@ function _enum_instances_expr(base_type::Type, members)
     end
 end
 
+function _enum_expr(base_type::Type, members)
+    return quote
+        $(_enum_symbol_constructor_expr(base_type, members))
+        $(_enum_symbol_accessor_expr(base_type, members))
+        $(_enum_instances_expr(base_type, members))
+    end
+end
