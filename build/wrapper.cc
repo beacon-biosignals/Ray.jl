@@ -648,7 +648,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
                 nested_ids.push_back(ObjectID::FromBinary(ref.object_id()));
             }
             return nested_ids;
-        });
+        })
+        .method("HasData", &RayObject::HasData)
+        .method("HasMetadata", &RayObject::HasMetadata);
 
     // Julia RayObject constructors make shared_ptrs
     mod.method("RayObject", [] (
