@@ -102,7 +102,7 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
                 rethrow()
             end
 
-            throw(RayException(error_type, data))
+            throw(RayException(error_type, b""))
         end
     end
 
