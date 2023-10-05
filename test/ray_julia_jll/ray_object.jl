@@ -1,3 +1,5 @@
+using .ray_julia_jll: LocalMemoryBuffer, ObjectReference, RayObject, get_data_metadata
+
 @testset "RayObject" begin
     @testset "get_data_metadata" begin
         data = UInt16[1:3;]
@@ -10,7 +12,7 @@
         result = get_data_metadata(ray_obj)
 
         @test result isa Tuple{Vector{UInt8}, String}
-        @test result[1] == data
-        @test result[2] == metadata
+        @test result[1] == reinterpret(UInt8, data)
+        @test result[2] == String(metadata)
     end
 end
