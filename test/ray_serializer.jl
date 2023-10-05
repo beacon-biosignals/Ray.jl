@@ -93,9 +93,9 @@ end
                                    StdVector{ray_jll.ObjectReference}(),
                                    false)
 
-        @test String(take!(ray_jll.GetMetadata(md_obj[])[])) == "hello\x00world"
-        @test_logs (:warn, r"Unhandled RayObject.Metadata: hello") begin
-            @test Ray.deserialize_from_ray_object(md_obj) == [1, 2, 3]
+        @test String(take!(ray_jll.GetMetadata(md_obj[])[])) == metadata
+        @test_logs (:error, "Unable to deserialize metadata: \"hello\\0world\"") begin
+            @test_throws ArgumentError Ray.deserialize_from_ray_object(md_obj)
         end
     end
 end

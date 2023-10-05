@@ -73,11 +73,13 @@ deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(b
 # put this behind a function barrier so we're not generating the log message for
 # huge objects
 function log_deserialize_error(descriptor, data::Vector{UInt8}, outer_object_ref)
-    @error "Unable to deserialize `$(repr(outer_object_ref))` $descriptor containing hex bytes: $(bytes2hex(data))"
+    obj_ref_str = isnothing(outer_object_ref) ? "" : "`$(repr(outer_object_ref))` "
+    @error "Unable to deserialize $obj_ref_str$descriptor containing hex bytes: $(bytes2hex(data))"
 end
 
 function log_deserialize_error(descriptor, data, outer_object_ref)
-    @error "Unable to deserialize `$(repr(outer_object_ref))` $descriptor: $(repr(data))"
+    obj_ref_str = isnothing(outer_object_ref) ? "" : "`$(repr(outer_object_ref))` "
+    @error "Unable to deserialize $obj_ref_str$descriptor: $(repr(data))"
 end
 
 function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
