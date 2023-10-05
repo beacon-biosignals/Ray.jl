@@ -72,8 +72,8 @@ deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(b
 
 # put this behind a function barrier so we're not generating the log message for
 # huge objects
-function log_deserialize_error(bytes, outer_object_ref)
-    @error "Unable to deserialize $outer_object_ref bytes: $(bytes2hex(bytes))"
+function log_deserialize_error(bytes_descriptor, bytes, outer_object_ref)
+    @error "Unable to deserialize $outer_object_ref $bytes_descriptor: $(bytes2hex(bytes))"
 end
 
 function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
@@ -84,18 +84,28 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
     metadata_ptr = ray_jll.GetMetadata(x[])[]
     # the pointer itself will not be null, but rather point to a null ref
     if !isnull(metadata_ptr[])
-        metadata_bytes = take!(metadata_ptr)
-        if !isempty(metadata_bytes)
-            @warn "Unhandled RayObject.Metadata: $(String(metadata_bytes))"
+        metadata = take!(metadata_ptr)
+
+        # TODO: Always include metadata and throw an exception if it is missing
+        if !isempty(metadata)
+            # Return an exception based upon the error type
+            error_type = try
+                Int(metadata)
+            catch e
+                log_deserialize_error("metadata", metadata, outer_object_ref)
+                rethrow()
+            end
+
+            throw(RayException(error_type, data))
         end
     end
 
-    bytes = take!(ray_jll.GetData(x[]))
-    s = RaySerializer(IOBuffer(bytes))
+    data = take!(ray_jll.GetData(x[]))
+    s = RaySerializer(IOBuffer(data))
     result = try
         deserialize(s)
     catch
-        log_deserialize_error(bytes, outer_object_ref)
+        log_deserialize_error("data", data, outer_object_ref)
         rethrow()
     end
 
@@ -105,5 +115,5 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
 
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
-    result isa RayTaskException ? throw(result) : return result
+    result isa RayException ? throw(result) : return result
 end
