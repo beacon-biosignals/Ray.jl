@@ -184,6 +184,30 @@ end
 Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
 
 #####
+##### RayObject
+#####
+
+# Inspired by `RayObjectsToDataMetadataPairs`:
+# https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L458-L475
+function get_data_metadata(ray_obj::SharedPtr{RayObject})
+    data = if HasData(ray_obj[])
+        take!(GetData(ray_obj[]))
+    else
+        nothing
+    end
+
+    metadata = if HasMetadata(ray_obj[])
+        # Unlike `GetData`, `GetMetadata` returns a _reference_ to a pointer to a buffer, so
+        # we need to dereference the return value to get the pointer that `take!` expects.
+        take!(GetMetadata(ray_obj[])[])
+    else
+        nothing
+    end
+
+    return (data, metadata)
+end
+
+#####
 ##### TaskArg
 #####
 
