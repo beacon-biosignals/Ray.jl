@@ -72,8 +72,12 @@ deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(b
 
 # put this behind a function barrier so we're not generating the log message for
 # huge objects
-function log_deserialize_error(bytes_descriptor, bytes, outer_object_ref)
-    @error "Unable to deserialize $outer_object_ref $bytes_descriptor: $(bytes2hex(bytes))"
+function log_deserialize_error(descriptor, data::Vector{UInt8}, outer_object_ref)
+    @error "Unable to deserialize `$(repr(outer_object_ref))` $descriptor containing hex bytes: $(bytes2hex(data))"
+end
+
+function log_deserialize_error(descriptor, data, outer_object_ref)
+    @error "Unable to deserialize `$(repr(outer_object_ref))` $descriptor: $(repr(data))"
 end
 
 function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
@@ -84,13 +88,13 @@ function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
     metadata_ptr = ray_jll.GetMetadata(x[])[]
     # the pointer itself will not be null, but rather point to a null ref
     if !isnull(metadata_ptr[])
-        metadata = take!(metadata_ptr)
+        metadata = String(take!(metadata_ptr))
 
         # TODO: Always include metadata and throw an exception if it is missing
         if !isempty(metadata)
             # Return an exception based upon the error type
             error_type = try
-                Int(metadata)
+                parse(Int, metadata)
             catch e
                 log_deserialize_error("metadata", metadata, outer_object_ref)
                 rethrow()
