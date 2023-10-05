@@ -1,6 +1,11 @@
 # syntax=docker/dockerfile:1
 # Dockerfile is currently only for x86_64
 
+# Example of how to build this Docker image including a recommended tagging structure:
+# ```sh
+# docker build -t ray:2.5.1-julia1.9.3-rayjl$(git rev-parse --short HEAD) .
+# ```
+
 # TODO: Cleanup uid/gid/user work arounds
 
 ARG JULIA_VERSION=1.9.3
@@ -68,10 +73,10 @@ COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
 RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
-    mkdir -p ${RAY_JL_PROJECT} && \
+    mkdir -p $(dirname ${RAY_JL_PROJECT}) && \
     mv /tmp/Ray.jl ${RAY_JL_PROJECT} && \
-    # Generate a fake ray_julia_jll package just for instantiation
-    mkdir -p ${RAY_JL_PROJECT}/ray_julia_jll/src && touch ${RAY_JL_PROJECT}/ray_julia_jll/src/ray_julia_jll.jl && \
+    # Generate a fake Ray.jl package structure just for instantiation
+    mkdir -p ${RAY_JL_PROJECT}/src && touch ${RAY_JL_PROJECT}/src/Ray.jl && \
     # Note: The `timing` flag requires Julia 1.9
     julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.Registry.update(); Pkg.instantiate(); Pkg.build(); Pkg.precompile(strict=true, timing=true)'
 
@@ -114,7 +119,6 @@ RUN node --version && \
     npm --version
 
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
-ARG RAY_JLL_PROJECT=${RAY_JL_PROJECT}/ray_julia_jll
 ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
