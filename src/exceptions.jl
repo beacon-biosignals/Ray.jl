@@ -1,4 +1,11 @@
-struct RayTaskException <: Exception
+"""
+    RayException <: Exception
+
+Abstract super type of all Ray exception types.
+"""
+abstract type RayException <: Exception end
+
+struct RayTaskException <: RayException
     task_name::String
     pid::Int
     ip::IPAddr
