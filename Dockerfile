@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 # Dockerfile is currently only for x86_64
 
+# Example of how to build this Docker image including a recommended tagging structure:
 # ```sh
-# docker build ray:2.5.1-julia1.9.3-rayjl$(git rev-parse --short HEAD) .
+# docker build -t ray:2.5.1-julia1.9.3-rayjl$(git rev-parse --short HEAD) .
 # ```
 
 # TODO: Cleanup uid/gid/user work arounds
