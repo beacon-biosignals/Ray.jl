@@ -52,20 +52,25 @@ function serialize_to_bytes(x)
     return bytes
 end
 
-function serialize_to_ray_object(x)
+function serialize_to_ray_object(data, metadata=nothing)
     bytes = Vector{UInt8}()
     s = RaySerializer(bytes)
     writeheader(s)
-    serialize(s, x)
+    serialize(s, data)
+    data_buf = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
 
-    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    metadata = ray_jll.NullPtr(ray_jll.Buffer)
+    metadata_buf = if !isnothing(metadata)
+        ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(metadata)), sizeof(metadata), true)
+    else
+        ray_jll.NullPtr(ray_jll.Buffer)
+    end
+
     inlined_ids = StdVector(collect(s.object_ids))::StdVector{ray_jll.ObjectID}
     worker = ray_jll.GetCoreWorker()
     inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
 
-    # this is actually a `std::shared_pointer<RayObject>`
-    return ray_jll.RayObject(buffer, metadata, inlined_refs, false)
+    # This is actually a `SharedPtr{RayObject}`
+    return ray_jll.RayObject(data_buf, metadata_buf, inlined_refs, false)
 end
 
 deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(bytes)))
