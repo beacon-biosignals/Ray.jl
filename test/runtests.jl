@@ -33,7 +33,8 @@ include("utils.jl")
             include("ray_serializer.jl")
             include("runtime.jl")
             include("object_store.jl")
-            return include("task.jl")
+            include("task.jl")
+            return nothing
         end
     end
 end
