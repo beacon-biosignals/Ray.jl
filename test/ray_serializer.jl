@@ -108,7 +108,7 @@ end
         metadata = b"hello\x00world"
 
         ray_obj = Ray.serialize_to_ray_object(data, metadata)
-        @test take!(ray_jll.GetMetadata(ray_obj[])[]) == metadata
+        @test ray_jll.get_metadata(ray_obj) == metadata
 
         @test_throws "Encountered unhandled metadata: hello\x00world" begin
             Ray.deserialize_from_ray_object(ray_obj)
