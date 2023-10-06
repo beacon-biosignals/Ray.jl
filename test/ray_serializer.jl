@@ -99,3 +99,10 @@ end
         end
     end
 end
+
+@testset "log_deserialize_error" begin
+    obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+    bytes = [0x01, 0x00, 0x02]
+    msg = "Unable to deserialize $obj_ref bytes: $(bytes2hex(bytes))"
+    @test_logs (:error, msg) Ray.log_deserialize_error(bytes, obj_ref)
+end
