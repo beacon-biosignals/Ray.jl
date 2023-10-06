@@ -110,13 +110,17 @@ void initialize_worker(
                         application_error,
                         is_retryable_error);
 
-          RAY_CHECK(return_vec.size() == 1);
-
           // TODO: support multiple return values
           // https://github.com/beacon-biosignals/Ray.jl/issues/54
-          (*returns)[0].second = return_vec[0];
-          return Status::OK();
+          if (return_vec.size() == 1) {
+            (*returns)[0].second = return_vec[0];
+            return Status::OK();
+          } 
+          else {
+            return Status::Invalid("Multiple values returned by task");
+          };
         };
+
     RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
     CoreWorkerProcess::Initialize(options);
 
@@ -187,7 +191,10 @@ ObjectID put(const std::shared_ptr<RayObject> object,
 
     // Store our data in the object store
     ObjectID object_id;
-    RAY_CHECK_OK(worker.Put(*object, contained_object_ids, &object_id));
+    auto status = worker.Put(*object, contained_object_ids, &object_id);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
     return object_id;
 }
 
@@ -203,7 +210,11 @@ std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
         return nullptr;
     }
 
-    RAY_CHECK(objects.size() == 1);
+    if (objects.size() != 1) {
+        auto st = Status::Invalid("Size of RayObject is larger than 1");
+        throw std::runtime_error(st.ToString());
+    }
+
     return objects[0];
 }
 
