@@ -78,7 +78,31 @@ end
     end
 end
 
-@testset "deserialize_from_ray_object" begin
+@testset "serialize_to_ray_object / deserialize_from_ray_object" begin
+    @testset "invalid data" begin
+        # Only serializing the header will fail upon deserialization
+        data = Vector{UInt8}()
+        s = Ray.RaySerializer(IOBuffer(data; write=true))
+        Serialization.writeheader(s)
+
+        data_buf = ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data),
+                                             true)
+        metadata_buf = ray_jll.NullPtr(ray_jll.Buffer)
+        nested_refs = StdVector{ray_jll.ObjectReference}()
+        ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
+
+        msg = "Unable to deserialize bytes: $(bytes2hex(data))"
+        @test_logs (:error, msg) begin
+            @test_throws EOFError Ray.deserialize_from_ray_object(ray_obj)
+        end
+
+        obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+        msg = "Unable to deserialize `$(repr(obj_ref))` bytes: $(bytes2hex(data))"
+        @test_logs (:error, msg) begin
+            @test_throws EOFError Ray.deserialize_from_ray_object(ray_obj, obj_ref)
+        end
+    end
+
     @testset "metadata handling" begin
         obj = Ray.serialize_to_ray_object([1, 2, 3])
 
