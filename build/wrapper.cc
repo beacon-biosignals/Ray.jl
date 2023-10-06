@@ -497,18 +497,20 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Hex", &ObjectID::Hex);
 
     // enum Language
-    mod.add_bits<ray::Language>("Language", jlcxx::julia_type("CppEnum"));
-    mod.set_const("PYTHON", ray::Language::PYTHON);
-    mod.set_const("JAVA", ray::Language::JAVA);
-    mod.set_const("CPP", ray::Language::CPP);
-    mod.set_const("JULIA", Language::JULIA);
+    // https://github.com/beacon-biosignals/ray/blob/ray-2.5.1%2B1/src/ray/protobuf/common.proto#L25
+    mod.add_bits<rpc::Language>("Language", jlcxx::julia_type("CppEnum"));
+    mod.set_const("PYTHON", rpc::Language::PYTHON);
+    mod.set_const("JAVA", rpc::Language::JAVA);
+    mod.set_const("CPP", rpc::Language::CPP);
+    mod.set_const("JULIA", rpc::Language::JULIA);
 
     // enum WorkerType
-    mod.add_bits<ray::core::WorkerType>("WorkerType", jlcxx::julia_type("CppEnum"));
-    mod.set_const("WORKER", ray::core::WorkerType::WORKER);
-    mod.set_const("DRIVER", ray::core::WorkerType::DRIVER);
-    mod.set_const("SPILL_WORKER", ray::core::WorkerType::SPILL_WORKER);
-    mod.set_const("RESTORE_WORKER", ray::core::WorkerType::RESTORE_WORKER);
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L32
+    mod.add_bits<rpc::WorkerType>("WorkerType", jlcxx::julia_type("CppEnum"));
+    mod.set_const("WORKER", rpc::WorkerType::WORKER);
+    mod.set_const("DRIVER", rpc::WorkerType::DRIVER);
+    mod.set_const("SPILL_WORKER", rpc::WorkerType::SPILL_WORKER);
+    mod.set_const("RESTORE_WORKER", rpc::WorkerType::RESTORE_WORKER);
 
     // Needed by FunctionDescriptorInterface
     mod.add_bits<ray::rpc::FunctionDescriptor::FunctionDescriptorCase>("FunctionDescriptorCase");
