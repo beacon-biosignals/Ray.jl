@@ -207,7 +207,7 @@ std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
     std::vector<ObjectID> get_obj_ids = {object_id};
     auto status = worker.Get(get_obj_ids, timeout_ms, &objects);
     if (!status.ok()) {
-        return nullptr;
+        throw std::runtime_error(status.ToString());
     }
 
     if (objects.size() != 1) {
