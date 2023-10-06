@@ -110,8 +110,11 @@ end
         ray_obj = Ray.serialize_to_ray_object(data, metadata)
         @test ray_jll.get_metadata(ray_obj) == metadata
 
-        @test_throws "Encountered unhandled metadata: hello\x00world" begin
-            Ray.deserialize_from_ray_object(ray_obj)
-        end
+        msg = "Encountered unhandled metadata: hello\x00world"
+        @test_throws msg Ray.deserialize_from_ray_object(ray_obj)
+
+        obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
+        msg = "Encountered unhandled metadata from `$(repr(obj_ref))`: hello\x00world"
+        @test_throws msg Ray.deserialize_from_ray_object(ray_obj, obj_ref)
     end
 end
