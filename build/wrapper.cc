@@ -117,7 +117,8 @@ void initialize_worker(
             return Status::OK();
           } 
           else {
-            return Status::Invalid("Multiple values returned by task");
+            auto msg = "Task returned too many values: " + std::to_string(return_vec.size());
+            return Status::Invalid(msg);
           };
         };
 
@@ -211,7 +212,8 @@ std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
     }
 
     if (objects.size() != 1) {
-        auto st = Status::Invalid("Size of RayObject is larger than 1");
+        auto msg = "Size of RayObjects is " + std::to_string(objects.size());
+        auto st = Status::Invalid(msg);
         throw std::runtime_error(st.ToString());
     }
 
