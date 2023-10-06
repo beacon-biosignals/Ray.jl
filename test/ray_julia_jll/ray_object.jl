@@ -1,14 +1,16 @@
 using .ray_julia_jll: Buffer, LocalMemoryBuffer, NullPtr, ObjectReference, RayObject,
                       get_data, get_metadata
 
+local_buffer(x) = LocalMemoryBuffer(Ptr{Nothing}(pointer(x)), sizeof(x), true)
+
 @testset "RayObject" begin
     @testset "get_data / get_metadata" begin
         @testset "non-null data/metadata" begin
             data = UInt16[1:3;]
             metadata = b"22"
 
-            data_buf = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
-            metadata_buf = LocalMemoryBuffer(Ptr{Nothing}(pointer(metadata)), sizeof(metadata), true)
+            data_buf = local_buffer(data)
+            metadata_buf = local_buffer(metadata)
             nested_refs = StdVector{ObjectReference}()
             ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
 
@@ -25,7 +27,7 @@ using .ray_julia_jll: Buffer, LocalMemoryBuffer, NullPtr, ObjectReference, RayOb
             metadata = b"22"
 
             data_buf = NullPtr(Buffer)
-            metadata_buf = LocalMemoryBuffer(Ptr{Nothing}(pointer(metadata)), sizeof(metadata), true)
+            metadata_buf = local_buffer(metadata)
             nested_refs = StdVector{ObjectReference}()
             ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
 
@@ -36,7 +38,7 @@ using .ray_julia_jll: Buffer, LocalMemoryBuffer, NullPtr, ObjectReference, RayOb
         @testset "null metadata" begin
             data = UInt16[1:3;]
 
-            data_buf = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
+            data_buf = local_buffer(data)
             metadata_buf = NullPtr(Buffer)
             nested_refs = StdVector{ObjectReference}()
             ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
