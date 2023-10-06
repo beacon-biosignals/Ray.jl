@@ -85,7 +85,8 @@ end
         s = Ray.RaySerializer(IOBuffer(data; write=true))
         Serialization.writeheader(s)
 
-        data_buf = ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
+        data_buf = ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data),
+                                             true)
         metadata_buf = ray_jll.NullPtr(ray_jll.Buffer)
         nested_refs = StdVector{ray_jll.ObjectReference}()
         ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
