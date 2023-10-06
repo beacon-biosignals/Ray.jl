@@ -36,9 +36,9 @@ const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
 # - A `Symbol` method allowing you convert a enum value to a `Symbol` (e.g. `Symbol(OK)`).
 # - A `instances` method allowing you to get a list of all enum values (e.g. `instances(StatusCode)`).
 @eval begin
-    $(_enum_expr(StatusCode, STATUS_CODE_SYMBOLS))
-    $(_enum_expr(Language, LANGUAGE_SYMBOLS))
-    $(_enum_expr(WorkerType, WORKER_TYPE_SYMBOLS))
+    $(_enum_expr(:StatusCode, STATUS_CODE_SYMBOLS))
+    $(_enum_expr(:Language, LANGUAGE_SYMBOLS))
+    $(_enum_expr(:WorkerType, WORKER_TYPE_SYMBOLS))
 end
 
 function check_status(status::Status)
