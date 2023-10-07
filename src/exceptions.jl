@@ -1,5 +1,15 @@
+# The exceptions defined here mostly mirror the exceptions supported by Ray for Python:
+# https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py
+
 """
-    RayTaskError <: Exception
+    RayError <: Exception
+
+Abstract super type of all Ray exception types.
+"""
+abstract type RayError <: Exception end
+
+"""
+    RayTaskError <: RayError
 
 Indicates that a Ray task threw an exception during execution.
 
@@ -7,7 +17,7 @@ If a Ray task throws an exception during execution, a `RayTaskError` is stored f
 Ray task's output. When the object is retrieved, the contained exception is detected and
 thrown thereby propogating the exception to the Ray task caller.
 """
-struct RayTaskError <: Exception
+struct RayTaskError <: RayError
     task_name::String
     pid::Int
     ip::IPAddr
