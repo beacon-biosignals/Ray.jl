@@ -8,6 +8,26 @@ Abstract super type of all Ray exception types.
 """
 abstract type RayError <: Exception end
 
+function RayError(error_type::Integer, data)
+    ex = if error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
+        OutOfMemoryError(deserialize_error_info(data))
+    else
+        RaySystemError("Unrecognized error type $error_type")
+    end
+
+    return ex
+end
+
+# TODO: Exception data is actually serialized with a combination of MessagePack and Python
+# pickle5. Luckily most of the useful information can be extracted with a basic heuristic.
+function deserialize_error_info(data::AbstractString)
+    first_index = findfirst(isletter, data)
+    last_index = findlast(c -> isletter(c) | ispunct(c), data)
+    return SubString(data, first_index, last_index)
+end
+
+deserialize_error_info(data::Vector{UInt8}) = deserialize_error_info(String(data))
+
 """
     RayTaskError <: RayError
 

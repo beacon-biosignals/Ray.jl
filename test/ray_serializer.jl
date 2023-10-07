@@ -103,7 +103,7 @@ end
         end
     end
 
-    @testset "metadata handling" begin
+    @testset "unhandled metadata" begin
         data = [1, 2, 3]
         metadata = b"hello\x00world"
 
@@ -116,5 +116,19 @@ end
         obj_ref = ObjectRef(ray_jll.FromRandom(ray_jll.ObjectID))
         msg = "Encountered unhandled metadata from `$(repr(obj_ref))`: hello\x00world"
         @test_throws msg Ray.deserialize_from_ray_object(ray_obj, obj_ref)
+    end
+
+    @testset "metadata error type" begin
+        data = "oh noes!"
+        metadata = b"22"  # OUT_OF_MEMORY
+
+        data_ptr = Ptr{Nothing}(pointer(data))
+        data_buf = ray_jll.LocalMemoryBuffer(data_ptr, sizeof(data), true)
+        metadata_ptr = Ptr{Nothing}(pointer(metadata))
+        metadata_buf = ray_jll.LocalMemoryBuffer(metadata_ptr, sizeof(metadata), true)
+        nested_refs = StdVector{ray_jll.ObjectReference}()
+        ray_obj = RayObject(data_buf, metadata_buf, nested_refs, false)
+
+        @test_throws Ray.OutOfMemoryError(data) Ray.deserialize_from_ray_object(ray_obj)
     end
 end
