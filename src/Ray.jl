@@ -17,7 +17,10 @@ using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
                      reset_state, serialize, serialize_type, ser_version, writeheader
 using Sockets: IPAddr, getipaddr
 
-export start_worker, submit_task, @ray_import, ObjectRef, RayError, RayTaskError
+export start_worker, submit_task, @ray_import, ObjectRef
+
+# exceptions
+export RayError, RaySystemError, RayTaskError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll

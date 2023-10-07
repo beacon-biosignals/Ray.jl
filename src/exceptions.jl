@@ -41,3 +41,21 @@ function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
     showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
     return nothing
 end
+
+"""
+    RaySystemError <: RayError
+
+Indicates that Ray encountered a system error.
+
+This exception is thrown when:
+- The raylet is killed.
+- Deserialization of a `ObjectRef` contains an unknown metadata error type.
+"""
+struct RaySystemError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::RaySystemError)
+    print(io, "$RaySystemError: $(ex.msg)")
+    return nothing
+end

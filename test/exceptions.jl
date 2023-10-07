@@ -40,3 +40,8 @@
         nested exception: foo$"""s
     @test occursin(structure_regex, str)
 end
+
+@testset "RaySystemError" begin
+    e = RaySystemError("foo")
+    @test sprint(showerror, e) == "RaySystemError: foo"
+end
