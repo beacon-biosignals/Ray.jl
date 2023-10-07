@@ -41,6 +41,11 @@
     @test occursin(structure_regex, str)
 end
 
+@testset "OutOfMemoryError" begin
+    e = Ray.OutOfMemoryError("foo")
+    @test sprint(showerror, e) == "Ray.OutOfMemoryError: foo"
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"

@@ -43,6 +43,23 @@ function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
 end
 
 """
+    OutOfMemoryError <: RayError
+
+Indicates that the node is running out of memory and is close to full.
+
+This exception is thrown when the node is low on memory and tasks or actors are being
+evicted to free up memory.
+"""
+struct OutOfMemoryError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::OutOfMemoryError)
+    print(io, "$OutOfMemoryError: $(ex.msg)")
+    return nothing
+end
+
+"""
     RaySystemError <: RayError
 
 Indicates that Ray encountered a system error.
