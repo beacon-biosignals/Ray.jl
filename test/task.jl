@@ -29,7 +29,7 @@
     try
         Ray.get(result)
     catch e
-        @test e isa Ray.RayTaskException
+        @test e isa RayTaskError
         @test e.captured.ex == ErrorException("AHHHHH")
     end
 

@@ -328,7 +328,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         is_retryable_error[] = ray_jll.CxxBool(false)
         @debug "push error status: $status"
 
-        result = RayTaskException(task_name, captured)
+        result = RayTaskError(task_name, captured)
     end
 
     # TODO: remove - useful for now for debugging
