@@ -52,20 +52,25 @@ function serialize_to_bytes(x)
     return bytes
 end
 
-function serialize_to_ray_object(x)
+function serialize_to_ray_object(data, metadata=nothing)
     bytes = Vector{UInt8}()
     s = RaySerializer(bytes)
     writeheader(s)
-    serialize(s, x)
+    serialize(s, data)
+    data_buf = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
 
-    buffer = ray_jll.LocalMemoryBuffer(bytes, sizeof(bytes), true)
-    metadata = ray_jll.NullPtr(ray_jll.Buffer)
+    metadata_buf = if !isnothing(metadata)
+        ray_jll.LocalMemoryBuffer(Ptr{Nothing}(pointer(metadata)), sizeof(metadata), true)
+    else
+        ray_jll.NullPtr(ray_jll.Buffer)
+    end
+
     inlined_ids = StdVector(collect(s.object_ids))::StdVector{ray_jll.ObjectID}
     worker = ray_jll.GetCoreWorker()
     inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
 
-    # this is actually a `std::shared_pointer<RayObject>`
-    return ray_jll.RayObject(buffer, metadata, inlined_refs, false)
+    # This is actually a `SharedPtr{RayObject}`
+    return ray_jll.RayObject(data_buf, metadata_buf, inlined_refs, false)
 end
 
 deserialize_from_bytes(bytes::Vector{UInt8}) = deserialize(Serializer(IOBuffer(bytes)))
@@ -77,26 +82,20 @@ function log_deserialize_error(bytes, obj_ref=nothing)
     @error "Unable to deserialize $(from)bytes: $(bytes2hex(bytes))"
 end
 
-function deserialize_from_ray_object(x::SharedPtr{ray_jll.RayObject},
+function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
-    # unlike CoreWorker::GetData, CoreWorker::GetMetadata returns a _reference_
-    # to a pointer to a buffer, so we need to dereference the return value to
-    # get the pointer that `take!` expects.
-    metadata_ptr = ray_jll.GetMetadata(x[])[]
-    # the pointer itself will not be null, but rather point to a null ref
-    if !isnull(metadata_ptr[])
-        metadata_bytes = take!(metadata_ptr)
-        if !isempty(metadata_bytes)
-            @warn "Unhandled RayObject.Metadata: $(String(metadata_bytes))"
-        end
+    metadata = ray_jll.get_metadata(ray_obj)
+    if !isnothing(metadata)
+        from = isnothing(outer_object_ref) ? "" : " from `$(repr(outer_object_ref))`"
+        error("Encountered unhandled metadata$from: $(String(metadata))")
     end
 
-    bytes = take!(ray_jll.GetData(x[]))
-    s = RaySerializer(IOBuffer(bytes))
+    data = ray_jll.get_data(ray_obj)
+    s = RaySerializer(IOBuffer(data))
     result = try
         deserialize(s)
     catch
-        log_deserialize_error(bytes, outer_object_ref)
+        log_deserialize_error(data, outer_object_ref)
         rethrow()
     end
 
