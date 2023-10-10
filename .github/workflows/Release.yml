@@ -25,8 +25,8 @@ jobs:
           run: |
             using Pkg.Types
             project = read_project("Project.toml")
-            latest_tag = readchomp(`git describe --tags --abbrev=0`)
-            @assert project.version == latest_tag "$(project.version) != $latest_tag"
+            latest_tag = parse(VersionNumber, readchomp(`git describe --tags --abbrev=0`))
+            @assert project.version > latest_tag "$(project.version) !> $latest_tag"
             open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "version=$(project.version)")
             end
