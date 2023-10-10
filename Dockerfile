@@ -63,14 +63,14 @@ ARG JULIA_DEPOT_CACHE=/mnt/julia-cache
 RUN ln -s ${JULIA_DEPOT_CACHE} ~/.julia
 
 # Install Julia package registries
-RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     mkdir -p ${JULIA_DEPOT_CACHE} && \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
-RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
     mkdir -p $(dirname ${RAY_JL_PROJECT}) && \
@@ -127,8 +127,8 @@ ARG RAY_REPO=${HOME}/ray
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
 COPY --chown=${UID} build/ray_commit /tmp/ray_commit
-RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
-    --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID} \
+    --mount=type=cache,target=${RAY_REPO_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     set -eux && \
     read -r ray_commit < /tmp/ray_commit && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
@@ -176,12 +176,14 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE}
 
 # Copy over artifacts generated during the previous stages
-COPY --chown=${UID} --link --from=deps ${HOME}/.julia ${HOME}/.julia
+COPY --chown=${UID} --from=deps --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
+RUN rm -f ~/.julia && \
+    ln -sf ${JULIA_USER_DEPOT} ~/.julia
 
 # Setup ray_julia library
 ARG BUILD_ROOT=${HOME}/build
 COPY --chown=${UID} build ${BUILD_ROOT}
-RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     set -eux && \
     #
     # Build using the final Ray.jl destination
