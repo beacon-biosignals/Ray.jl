@@ -168,6 +168,13 @@ jobs:
           name: ${{ steps.ray_julia.outputs.tarball_filename }}
           path: ${{ steps.ray_julia.outputs.tarball_path }}
 
+      - name: Save Ray logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ray-logs-${{ github.run_number }}
+          path: /tmp/ray/session_latest/logs
+
       # https://github.com/actions/cache/tree/main/save#always-save-cache
       - name: Save build cache
         uses: actions/cache/save@v3
