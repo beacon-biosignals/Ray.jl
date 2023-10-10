@@ -27,9 +27,10 @@ captured exception will be thrown on `get`.
 """
 function get(obj_ref::ObjectRef)
     wait(obj_ref)
-    ray_obj = ray_jll.get(obj_ref.oid, 0)
-    isnull(ray_obj[]) && error("got null pointer after successful `wait`; this is a bug!")
-    return deserialize_from_ray_object(ray_obj, obj_ref)
+    ray_objs = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
+    ray_jll.get(obj_ref.oid, 0, ray_objs)
+    isnull(ray_objs) && error("got null pointer after successful `wait`; this is a bug!")
+    return deserialize_from_ray_object(ray_objs[][1], obj_ref)
 end
 
 # get(ray_obj::SharedPtr{ray_jll.RayObject}) = deserialize_from_ray_object(ray_obj, nothing)

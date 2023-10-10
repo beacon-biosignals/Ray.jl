@@ -17,8 +17,9 @@ using .ray_julia_jll: ObjectID
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/Ray.jl/issues/55
-        ray_obj = ray_julia_jll.get(oid[], -1)
-        buffer = GetData(ray_obj[])
+        ray_obj = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
+        ray_julia_jll.get(oid[], -1, ray_obj)
+        buffer = GetData(ray_obj[][1][])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
         T = eltype(data)
@@ -37,8 +38,9 @@ using .ray_julia_jll: ObjectID
         ray_julia_jll.put(RayObject(buffer), StdVector{ObjectID}(), oid)
         @test ray_julia_jll.contains(oid[])
 
-        ray_obj = ray_julia_jll.get(oid[], -1)
-        buffer = GetData(ray_obj[])
+        ray_obj = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
+        ray_julia_jll.get(oid[], -1, ray_obj)
+        buffer = GetData(ray_obj[][1][])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
         v = Vector{UInt8}(undef, buffer_size)
