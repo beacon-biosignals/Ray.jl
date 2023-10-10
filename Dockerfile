@@ -41,6 +41,11 @@ ENV DEBIAN_FRONTEND="noninteractive"
 # https://docs.julialang.org/en/v1/devdocs/sysimg/#Specifying-multiple-system-image-targets
 ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"
 
+# `JULIA_DEPOT_ID` must be unique for every Dockerfile. Typically pre-generated via `openssl rand -hex 5`
+ENV JULIA_DEPOT_ID=ab14e38af3
+ENV JULIA_USER_DEPOT=/usr/local/share/julia-depot/${JULIA_DEPOT_ID}
+ENV JULIA_DEPOT_PATH=${JULIA_USER_DEPOT}:${JULIA_DEPOT_PATH}
+
 #####
 ##### deps stage
 #####
@@ -59,18 +64,19 @@ ENV JULIA_PKG_USE_CLI_GIT="true"
 # path used during package precompilation matches the final depot path used in the image.
 # If a source file no longer resides at the expected location the `.ji` is deemed stale and
 # will be recreated.
-ARG JULIA_DEPOT_CACHE=/mnt/julia-cache
-RUN ln -s ${JULIA_DEPOT_CACHE} ~/.julia
+ARG JULIA_USER_DEPOT_CACHE=/mnt/julia-depot-cache/${JULIA_DEPOT_ID}
+RUN mkdir -p $(dirname ${JULIA_USER_DEPOT}) && \
+    ln -s ${JULIA_USER_DEPOT_CACHE} ${JULIA_USER_DEPOT}
 
 # Install Julia package registries
-RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     mkdir -p ${JULIA_DEPOT_CACHE} && \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
 ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
 COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
-RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
     mkdir -p $(dirname ${RAY_JL_PROJECT}) && \
@@ -82,10 +88,11 @@ RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},sharing=locked,uid=${UID},gid
 
 # Copy the shared ephemeral Julia depot into the image and remove any installed packages
 # not used by our Manifest.toml.
-RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
-    rm ~/.julia && \
-    mkdir ~/.julia && \
-    cp -rp ${JULIA_DEPOT_CACHE}/* ~/.julia && \
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},uid=${UID},gid=${GID} \
+    rm ${JULIA_USER_DEPOT} && \
+    mkdir ${JULIA_USER_DEPOT} && \
+    cp -rp ${JULIA_USER_DEPOT_CACHE}/* ${JULIA_USER_DEPOT} && \
+    rm -rf ${JULIA_USER_DEPOT}/environments && \
     julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
 
 #####
@@ -217,9 +224,6 @@ RUN rm -rf ${BUILD_PROJECT} && \
 # Note: The `timing` flag requires Julia 1.9
 RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true, timing=true); using Ray'
 
-# Add Ray.jl to the default Julia environment
-RUN JULIA_PROJECT="" julia -e 'using Pkg; Pkg.develop(path=ENV["RAY_JL_PROJECT"])'
-
 # Set up default project and working dir so that users need only pass in the requisite script input args
+ENV JULIA_PROJECT=${RAY_JL_PROJECT}
 WORKDIR ${RAY_JL_PROJECT}
-
