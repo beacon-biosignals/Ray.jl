@@ -172,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ray-logs-${{ github.run_number }}
+          name: ray-logs.${{ matrix.os }}.${{ matrix.arch }}.julia-${{ matrix.version }}.run-${{ github.run_number }}
           path: /tmp/ray/session_latest/logs
 
       # https://github.com/actions/cache/tree/main/save#always-save-cache
