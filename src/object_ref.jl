@@ -63,7 +63,8 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
     return xcp
 end
 
-function ObjectRef(oid::Union{ray_jll.ObjectIDAllocated, ray_jll.ObjectIDDereferenced}; kwargs...)
+function ObjectRef(oid::Union{ray_jll.ObjectIDAllocated,ray_jll.ObjectIDDereferenced};
+                   kwargs...)
     return ObjectRef(ray_jll.Hex(oid); kwargs...)
 end
 
