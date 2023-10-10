@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release-*
     tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
     paths:
       - "Artifacts.toml"
