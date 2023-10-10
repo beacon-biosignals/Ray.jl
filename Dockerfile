@@ -96,7 +96,9 @@ FROM ray-base as ray-jl
 
 # Install Bazel and compilers
 ARG BAZEL_CACHE=/mnt/bazel-cache
-RUN set -eux; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux; \
     case $(uname -m) in \
         "x86_64")  ARCH=amd64 ;; \
         "aarch64") ARCH=arm64 ;; \
