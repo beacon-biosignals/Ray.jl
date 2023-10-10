@@ -203,11 +203,13 @@ Status get(const ObjectID object_id, int64_t timeout_ms, std::vector<std::shared
     std::vector<ObjectID> get_obj_ids = {object_id};
     auto status = worker.Get(get_obj_ids, timeout_ms, objects);
 
-    // if (objects.size() != 1) {
-    //     auto msg = "Requested a single object but instead found " + std::to_string(objects.size()) + " objects.";
-    //     auto st = Status::UnknownError(msg);
-    //     return st;
-    // }
+    // TODO: allow multiple return values
+    auto num_objs = objects->size();
+    if (num_objs != 1) {
+        auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
+        auto st = Status::UnknownError(msg);
+        return st;
+    }
 
     return status;
 }
