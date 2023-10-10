@@ -9,8 +9,9 @@ function put(data)
     nested_ids = ray_jll.GetNestedRefIds(ray_obj[])
 
     # `CoreWorker::Put` initializes the local ref count to 1
-    return ObjectRef(ray_jll.put(ray_obj, nested_ids);
-                     add_local_ref=false)
+    oid_ptr = CxxPtr(ray_jll.ObjectID())
+    ray_jll.put(ray_obj, nested_ids, oid_ptr)
+    return ObjectRef(oid_ptr[]; add_local_ref=false)
 end
 
 put(obj_ref::ObjectRef) = obj_ref
