@@ -110,16 +110,10 @@ void initialize_worker(
                         application_error,
                         is_retryable_error);
 
-          // TODO: support multiple return values
-          // https://github.com/beacon-biosignals/Ray.jl/issues/54
-          if (return_vec.size() == 1) {
-            (*returns)[0].second = return_vec[0];
-            return Status::OK();
+          for(unsigned int i = 0; i < return_vec.size(); i++) {
+            (*returns)[i].second = return_vec[i];
           } 
-          else {
-            auto msg = "Task returned " + std::to_string(return_vec.size()) + " values. Expected 1.";
-            return Status::NotImplemented(msg);
-          };
+          return Status::OK();
         };
 
     RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
@@ -141,7 +135,7 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
     return *rayobj_ptr;
 }
 
-ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
+std::vector<ObjectID> _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<TaskArg *> &task_args,
                       const std::string &serialized_runtime_env_info,
                       const std::unordered_map<std::string, double> &resources) {
@@ -177,7 +171,7 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
         /*debugger_breakpoint=*/""
     );
 
-    return ObjectRefsToIds(return_refs)[0];
+    return ObjectRefsToIds(return_refs);
 }
 
 ray::core::CoreWorker &_GetCoreWorker() {
@@ -196,21 +190,10 @@ Status put(const std::shared_ptr<RayObject> object,
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-Status get(const ObjectID object_id, int64_t timeout_ms, std::vector<std::shared_ptr<RayObject>> *objects) {
+Status get(const std::vector<ObjectID> object_ids, int64_t timeout_ms, std::vector<std::shared_ptr<RayObject>> *objects) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
-
     // Retrieve our data from the object store
-    std::vector<ObjectID> get_obj_ids = {object_id};
-    auto status = worker.Get(get_obj_ids, timeout_ms, objects);
-
-    // TODO: allow multiple return values
-    auto num_objs = objects->size();
-    if (num_objs != 1) {
-        auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
-        auto st = Status::UnknownError(msg);
-        return st;
-    }
-
+    auto status = worker.Get(object_ids, timeout_ms, objects);
     return status;
 }
 

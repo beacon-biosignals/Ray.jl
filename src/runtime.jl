@@ -216,7 +216,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ""
     end
 
-    oid = GC.@preserve task_args begin
+    oids = GC.@preserve task_args begin
         ray_jll._submit_task(fd,
                              transform_task_args(task_args),
                              serialized_runtime_env_info,
@@ -224,7 +224,7 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
     end
     # CoreWorker::SubmitTask calls TaskManager::AddPendingTask which initializes
     # the local ref count to 1, so we don't need to do that here.
-    return ObjectRef(oid; add_local_ref=false)
+    return ObjectRef(only(oids); add_local_ref=false)
 end
 
 # Adapted from `prepare_args_internal`:
