@@ -217,7 +217,7 @@ jobs:
         if: github.event_name != 'pull_request'
         run: |
           version=v${{ steps.version_check.outputs.version }}
-          release_branch="release-$version
+          release_branch="release-$version"
           git checkout -b $release_branch
           git commit -m "Update Artifacts.toml" -- Artifacts.toml
           git tag $version
