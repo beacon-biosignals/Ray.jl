@@ -46,6 +46,11 @@ ENV JULIA_DEPOT_ID=ab14e38af3
 ENV JULIA_USER_DEPOT=/usr/local/share/julia-depot/${JULIA_DEPOT_ID}
 ENV JULIA_DEPOT_PATH=${JULIA_USER_DEPOT}:${JULIA_DEPOT_PATH}
 
+# Allow Julia packages to only be loaded from the current active project. Doing this ensures we don't
+# accidentally rely on packages installed into the default Julia environment and avoids issues this can
+# cause with Julia depot stacking.
+ENV JULIA_LOAD_PATH="@:@stdlib"
+
 #####
 ##### deps stage
 #####
@@ -93,8 +98,7 @@ RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},uid=${UID},gid=${GID} \
     rm ${JULIA_USER_DEPOT} && \
     mkdir ${JULIA_USER_DEPOT} && \
     cp -rp ${JULIA_USER_DEPOT_CACHE}/* ${JULIA_USER_DEPOT} && \
-    rm -rf ${JULIA_USER_DEPOT}/environments && \
-    julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
+    JULIA_LOAD_PATH=":" julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
 
 #####
 ##### ray-jl stage
