@@ -10,7 +10,8 @@ function put(data)
 
     # `CoreWorker::Put` initializes the local ref count to 1
     oid_ptr = CxxPtr(ray_jll.ObjectID())
-    ray_jll.put(ray_obj, nested_ids, oid_ptr)
+    status = ray_jll.put(ray_obj, nested_ids, oid_ptr)
+    Symbol(status) == :OK || error("ray_julia_jll.put returned Status::$status")
     return ObjectRef(oid_ptr[]; add_local_ref=false)
 end
 
@@ -28,7 +29,8 @@ captured exception will be thrown on `get`.
 function get(obj_ref::ObjectRef)
     wait(obj_ref)
     ray_objs = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
-    ray_jll.get(obj_ref.oid, 0, ray_objs)
+    status = ray_jll.get(obj_ref.oid, 0, ray_objs)
+    Symbol(status) == :OK || error("ray_julia_jll.get returned Status::$status")
     isnull(ray_objs) && error("got null pointer after successful `wait`; this is a bug!")
     return deserialize_from_ray_object(ray_objs[][1], obj_ref)
 end

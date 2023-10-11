@@ -12,13 +12,15 @@ using .ray_julia_jll: ObjectID
         data = UInt16[1:3;]
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
         oid = CxxPtr(ray_jll.ObjectID())
-        ray_julia_jll.put(RayObject(buffer), StdVector{ObjectID}(), oid)
+        status = ray_julia_jll.put(RayObject(buffer), StdVector{ObjectID}(), oid)
+        @test Symbol(status) == :OK
         @test ray_julia_jll.contains(oid[])
 
         # TODO: Currently uses size/length from `data`
         # https://github.com/beacon-biosignals/Ray.jl/issues/55
         ray_obj = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
-        ray_julia_jll.get(oid[], -1, ray_obj)
+        status = ray_julia_jll.get(oid[], -1, ray_obj)
+        @test Symbol(status) == :OK
         buffer = GetData(ray_obj[][1][])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])
@@ -35,11 +37,13 @@ using .ray_julia_jll: ObjectID
         data = "Greetings from Julia!"
         buffer = LocalMemoryBuffer(Ptr{Nothing}(pointer(data)), sizeof(data), true)
         oid = CxxPtr(ray_jll.ObjectID())
-        ray_julia_jll.put(RayObject(buffer), StdVector{ObjectID}(), oid)
+        status = ray_julia_jll.put(RayObject(buffer), StdVector{ObjectID}(), oid)
+        @test Symbol(status) == :OK
         @test ray_julia_jll.contains(oid[])
 
         ray_obj = CxxPtr(StdVector{SharedPtr{ray_jll.RayObject}}())
-        ray_julia_jll.get(oid[], -1, ray_obj)
+        status = ray_julia_jll.get(oid[], -1, ray_obj)
+        @test Symbol(status) == :OK
         buffer = GetData(ray_obj[][1][])
         buffer_ptr = Ptr{UInt8}(Data(buffer[]).cpp_object)
         buffer_size = Size(buffer[])

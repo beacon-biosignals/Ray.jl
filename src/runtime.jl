@@ -261,7 +261,8 @@ function serialize_args(args)
         else
             nested_ids = ray_jll.GetNestedRefIds(ray_obj[])
             oid = CxxPtr(ray_jll.ObjectID())
-            ray_jll.put(ray_obj, nested_ids, oid)
+            status = ray_jll.put(ray_obj, nested_ids, oid)
+            Symbol(status) == :OK || error("ray_julia_jll.put returned Status::$status")
             # TODO: Add test for populating `call_site`
             call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
             ray_jll.TaskArgByReference(oid[], rpc_address, call_site)
