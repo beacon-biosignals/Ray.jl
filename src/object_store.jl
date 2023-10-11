@@ -28,7 +28,6 @@ captured exception will be thrown on `get`.
 """
 function get(obj_ref::ObjectRef)
     wait(obj_ref)
-    # We need to wrap the RayObject in a StdVector to comply with the CoreWorker
     ray_objs = CxxPtr(SharedPtr{ray_jll.RayObject}())
     status = ray_jll.get(obj_ref.oid, 0, ray_objs)
     Symbol(status) == :OK || error("ray_julia_jll.get returned Status::$status")
