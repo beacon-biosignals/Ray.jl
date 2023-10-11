@@ -195,16 +195,18 @@ Status put(const std::shared_ptr<RayObject> object,
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-Status get(const ObjectID object_id, const int64_t timeout_ms, std::vector<std::shared_ptr<RayObject>> *objects) {
+Status get(const ObjectID object_id, const int64_t timeout_ms, std::shared_ptr<RayObject> *result) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
     std::vector<ObjectID> get_obj_ids = {object_id};
-    auto status = worker.Get(get_obj_ids, timeout_ms, objects);
+    std::vector<shared_ptr<RayObject>> result_vec;
+    auto status = worker.Get(get_obj_ids, timeout_ms, &result_vec);
+    *result = result_vec[0];
 
-    // TODO (maybe?): allow multiple return values
-    // https://github.com/beacon-biosignals/Ray.jl/issues/54
-    auto num_objs = objects->size();
+     // TODO (maybe?): allow multiple return values
+     // https://github.com/beacon-biosignals/Ray.jl/issues/54
+    auto num_objs = result_vec.size();
     if (num_objs != 1) {
         auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
         status = Status::UnknownError(msg);
