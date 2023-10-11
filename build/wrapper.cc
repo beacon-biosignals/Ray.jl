@@ -204,8 +204,8 @@ Status get(const ObjectID object_id, const int64_t timeout_ms, std::shared_ptr<R
     auto status = worker.Get(get_obj_ids, timeout_ms, &result_vec);
     *result = result_vec[0];
 
-     // TODO (maybe?): allow multiple return values
-     // https://github.com/beacon-biosignals/Ray.jl/issues/54
+    // TODO (maybe?): allow multiple return values
+    // https://github.com/beacon-biosignals/Ray.jl/issues/54
     auto num_objs = result_vec.size();
     if (num_objs != 1) {
         auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
