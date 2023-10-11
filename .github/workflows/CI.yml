@@ -217,12 +217,16 @@ jobs:
               exit 1
             fi
             git checkout -b $release_branch
+        - name: Download Artifacts
+          uses: actions/download-artifact@v3
+          with:
+            name: tarballs
+            path: tarballs
         - name: Update Artifacts.toml
           shell: julia --color=yes --project {0}
           run: |
             using Pkg
             Pkg.instantiate()
-            include("download_tarballs.jl")  # pulls artifacts from the latest CI job
             include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
             include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
         - name: Commit changes
