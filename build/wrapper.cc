@@ -115,7 +115,7 @@ void initialize_worker(
           if (return_vec.size() == 1) {
             (*returns)[0].second = return_vec[0];
             return Status::OK();
-          } 
+          }
           else {
             auto msg = "Task returned " + std::to_string(return_vec.size()) + " values. Expected 1.";
             return Status::NotImplemented(msg);
