@@ -8,10 +8,6 @@ on:
     paths:
       - "Artifacts.toml"
       - ".github/workflows/artifacts_CI.yml"
-  pull_request:
-    paths:
-      - "Artifacts.toml"
-      - ".github/workflows/artifacts_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
