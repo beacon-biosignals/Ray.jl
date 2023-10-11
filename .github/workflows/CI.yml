@@ -203,6 +203,7 @@ jobs:
           project = read_project("Project.toml")
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "version=v$(project.version)")
+            println(io, "release_branch=release-v$(project.version)")
           end
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
@@ -214,15 +215,16 @@ jobs:
       - name: Push Release Branch
         if: ${{ github.ref == 'refs/heads/main' }}
         run: |
-          version=${{ steps.version_check.outputs.version }}
-          release_branch="release-$version"
-          git checkout -b $release_branch
+          git checkout -b ${{ steps.version_check.outputs.release_branch }}
           git commit -m "Update Artifacts.toml" -- Artifacts.toml
-          git push origin $release_branch
-      - name: Publish Release
+          git push origin ${{ steps.version_check.outputs.release_branch }}
+          git checkout main
+      - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
+          prerelease: true
           generate_release_notes: true
+          target_commitish: ${{ steps.version_check.outputs.release_branch }}
           files: ${{ env.build_dir }}/tarballs
           
