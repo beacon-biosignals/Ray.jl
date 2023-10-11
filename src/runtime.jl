@@ -412,7 +412,7 @@ function start_worker(args=ARGS)
     # https://github.com/beacon-biosignals/Ray.jl/issues/53
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
-    global_logger(FileLogger(logfile; append=true, always_flush=true))
+    global_logger(timestamp_logger(FileLogger(logfile; append=true, always_flush=true)))
 
     _init_global_function_manager(parsed_args["address"])
 
@@ -435,4 +435,10 @@ function start_worker(args=ARGS)
                                      parsed_args["startup_token"],
                                      parsed_args["runtime_env_hash"],
                                      task_executor)
+end
+
+function timestamp_logger(logger, df::DateFormat=dateformat"yyyy-mm-dd HH:MM:SS,sss")
+    return TransformerLogger(logger) do log
+        return merge(log, (; message="$(Dates.format(now(), df)) $(log.message)"))
+    end
 end
