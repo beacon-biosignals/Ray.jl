@@ -21,6 +21,9 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  build_dir: ./build
+  ray_dir: ./build/ray
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -42,9 +45,6 @@ jobs:
             arch: aarch64
           - os: macos-latest-xlarge
             arch: x64
-    env:
-      build_dir: ./build
-      ray_dir: ./build/ray
     steps:
       - uses: actions/checkout@v3
       - name: Determine Ray commit
@@ -188,8 +188,6 @@ jobs:
     needs: [test]
     strategy:
       fail-fast: false
-    env:
-      build_dir: ./build
     steps:
         - uses: actions/checkout@v3
         - uses: julia-actions/setup-julia@v1
