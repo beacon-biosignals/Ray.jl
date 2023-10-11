@@ -44,7 +44,7 @@ ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,bas
 # `JULIA_DEPOT_ID` must be unique for every Dockerfile. Typically pre-generated via `openssl rand -hex 5`
 ENV JULIA_DEPOT_ID=ab14e38af3
 ENV JULIA_USER_DEPOT=/usr/local/share/julia-depot/${JULIA_DEPOT_ID}
-ENV JULIA_DEPOT_PATH=${JULIA_USER_DEPOT}:${JULIA_DEPOT_PATH}
+ENV JULIA_DEPOT_PATH=${JULIA_USER_DEPOT}
 
 # Allow Julia packages to only be loaded from the current active project. Doing this ensures we don't
 # accidentally rely on packages installed into the default Julia environment and avoids issues this can
@@ -101,10 +101,10 @@ RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},uid=${UID},gid=${GID} \
     JULIA_LOAD_PATH=":" julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
 
 #####
-##### ray-jl stage
+##### build-ray-jl stage
 #####
 
-FROM ray-base as ray-jl
+FROM ray-base as build-ray-jl
 
 # Install Bazel and compilers
 ARG BAZEL_CACHE=/mnt/bazel-cache
@@ -192,8 +192,6 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
 
 # Copy over artifacts generated during the previous stages
 COPY --chown=${UID} --from=deps --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
-RUN rm -rf ~/.julia && \
-    ln -sf ${JULIA_USER_DEPOT} ~/.julia
 
 # Setup ray_julia library
 ARG BUILD_ROOT=/tmp/build
@@ -213,6 +211,7 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
     # Cleanup build data
     cp -rpL ${BUILD_ROOT}/bazel-bin ${BUILD_ROOT}/bin && \
     rm ${BUILD_ROOT}/bazel-* && \
+    rm ${BUILD_ROOT}/ray && \
     rm ${BUILD_PROJECT}
 
 # Specify the location of the "ray_julia" library via Overrides.toml
@@ -229,6 +228,20 @@ RUN rm -rf ${BUILD_PROJECT} && \
 
 # Note: The `timing` flag requires Julia 1.9
 RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
+
+
+#####
+##### ray-jl stage
+#####
+
+FROM ray-base as ray-jl
+
+COPY --from=build-ray-jl --link $HOME/anaconda3 $HOME/anaconda3
+COPY --chown=${UID} --from=build-ray-jl --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
+RUN rm -rf ~/.julia && \
+    ln -sf ${JULIA_USER_DEPOT} ~/.julia
+
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 ENV JULIA_PROJECT=${RAY_JL_PROJECT}
