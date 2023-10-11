@@ -195,10 +195,6 @@ jobs:
           version: "1.8"
           arch: "x64"
       - uses: julia-actions/cache@v1
-      - uses: actions/download-artifact@v3
-        with:
-          name: ray_julia.v*
-          path: ${{ env.build_dir }}/tarballs
       - name: Check Project version
         id: version_check
         shell: julia --color=yes --project {0}
@@ -213,6 +209,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
+          include("download_tarballs.jl")  # pulls artifacts from the latest CI job
           include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
           include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
         working-directory: ${{ env.build_dir }}
