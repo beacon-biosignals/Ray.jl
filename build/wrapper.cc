@@ -195,7 +195,7 @@ Status put(const std::shared_ptr<RayObject> object,
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-Status get(const ObjectID object_id, int64_t timeout_ms, std::vector<std::shared_ptr<RayObject>> *objects) {
+Status get(const ObjectID object_id, const int64_t timeout_ms, std::vector<std::shared_ptr<RayObject>> *objects) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
