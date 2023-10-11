@@ -195,9 +195,6 @@ jobs:
           version: "1.8"
           arch: "x64"
       - uses: julia-actions/cache@v1
-      - uses: actions/download-artifact@v3
-        with:
-          path: ${{ env.build_dir }}/tarballs
       - name: Check Project version
         id: version_check
         shell: julia --color=yes --project {0}
@@ -213,8 +210,10 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
+          include(joinpath(pwd(), "download_tarballs.jl"))
           include(joinpath(pwd(), "bind_artifacts.jl"))
-          main()
+          download_tarballs()
+          bind_artifacts()
         working-directory: ${{ env.build_dir }}
       - name: Commit Changes
         id: commit

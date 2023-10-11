@@ -47,7 +47,7 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
     return nothing
 end
 
-function main()
+function download_tarballs()
     token = github_token()
 
     @info "Retrieving CI built tarballs..."
@@ -58,5 +58,5 @@ function main()
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    main()
+    download_tarballs()
 end
