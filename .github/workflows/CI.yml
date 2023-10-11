@@ -209,9 +209,9 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include("download_tarballs.jl")  # pulls artifacts from the latest CI job
-          include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
-          include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
+          include(joinpath(pwd(), "download_tarballs.jl"))  # pulls artifacts from the latest CI job
+          include(joinpath(pwd(), "upload_tarballs.jl"))    # uploads artifacts as assets to GH prerelease
+          include(joinpath(pwd(), "bind_artifacts.jl"))     # updates Artifacts.toml with asset metadata
         working-directory: ${{ env.build_dir }}
       - name: Push changes to branch
         if: github.event_name != 'pull_request'
