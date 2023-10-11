@@ -196,7 +196,7 @@ RUN rm -rf ~/.julia && \
     ln -sf ${JULIA_USER_DEPOT} ~/.julia
 
 # Setup ray_julia library
-ARG BUILD_ROOT=${HOME}/build
+ARG BUILD_ROOT=/tmp/build
 COPY --chown=${UID} build ${BUILD_ROOT}
 RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     set -eux && \
@@ -225,7 +225,7 @@ COPY --chown=${UID} . ${RAY_JL_PROJECT}/
 
 # Restore content from previous build directory
 RUN rm -rf ${BUILD_PROJECT} && \
-    ln -s ${BUILD_ROOT} ${BUILD_PROJECT}
+    mv ${BUILD_ROOT} ${BUILD_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
 RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
