@@ -34,7 +34,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
         @info "Dowloading artifact $artifact_url"
         artifact_path = joinpath(TARBALL_DIR, artifact_name)
-        Downloads.download(artifact_url, artifact_path)
+        isfile(artifact_path) || error("No such file $artifact_path")
 
         @info "Adding artifact for $(triplet(platform))"
         bind_artifact!(ARTIFACTS_TOML,
