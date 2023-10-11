@@ -209,8 +209,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include(joinpath(pwd(), "download_tarballs.jl"))  # pulls artifacts from the latest CI job
-          include(joinpath(pwd(), "bind_artifacts.jl"))     # updates Artifacts.toml with asset metadata
+          include(joinpath(pwd(), "bind_artifacts.jl")) # updates Artifacts.toml with asset metadata
         working-directory: ${{ env.build_dir }}
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
