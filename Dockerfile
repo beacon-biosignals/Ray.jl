@@ -201,7 +201,7 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
     ln -s ${BUILD_ROOT} ${BUILD_PROJECT} && \
     #
     # Build ray_julia library
-    julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
+    julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true)' && \
     julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl --no-override && \
     #
     # Cleanup build data
@@ -222,7 +222,7 @@ RUN rm -rf ${BUILD_PROJECT} && \
     ln -s ${BUILD_ROOT} ${BUILD_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
-RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true, timing=true); using Ray'
+RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 ENV JULIA_PROJECT=${RAY_JL_PROJECT}
