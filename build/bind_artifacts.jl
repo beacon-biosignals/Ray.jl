@@ -23,7 +23,7 @@ function sha256sum(tarball_path)
     end
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
+function main()
     # Start with a clean Artifacts.toml so that unsupported platforms are removed
     isfile(ARTIFACTS_TOML) && rm(ARTIFACTS_TOML)
 
@@ -43,4 +43,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
                        platform=platform,
                        download_info=[(artifact_url, sha256sum(artifact_path))])
     end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end
