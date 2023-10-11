@@ -213,7 +213,7 @@ jobs:
         run: |
           using Pkg
           Pkg.instantiate()
-          include("bind_artifacts.jl")
+          include(joinpath(pwd(), "bind_artifacts.jl"))
           main()
         working-directory: ${{ env.build_dir }}
       - name: Commit Changes
