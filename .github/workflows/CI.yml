@@ -188,6 +188,8 @@ jobs:
     needs: [test]
     strategy:
       fail-fast: false
+    env:
+      build_dir: ./build
     steps:
         - uses: actions/checkout@v3
         - uses: julia-actions/setup-julia@v1
@@ -195,33 +197,19 @@ jobs:
             version: "1.8"
             arch: "x64"
         - uses: julia-actions/cache@v1
+        - uses: actions/download-artifact@v3
+          with:
+            name: tarballs
+            path: tarballs
         - name: Check Project version
           id: version_check
           shell: julia --color=yes --project {0}
           run: |
             using Pkg.Types
             project = read_project("Project.toml")
-            latest_tag = parse(VersionNumber, readchomp(`git describe --tags --abbrev=0`))
-            @assert project.version > latest_tag "$(project.version) !> $latest_tag"
             open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "version=$(project.version)")
             end
-          continue-on-error: true
-        - name: Checkout new branch
-          if: steps.version_check.outcome = 'success'
-          run: |
-            release_branch="release-v${{ steps.version_check.outputs.version }}"
-            # Error if branch already exists
-            if [[ ! -z $(git ls-remote --heads origin $release_branch) ]]; then
-              echo "Release branch already exists on remote: $release_branch" >&2
-              exit 1
-            fi
-            git checkout -b $release_branch
-        - name: Download Artifacts
-          uses: actions/download-artifact@v3
-          with:
-            name: tarballs
-            path: tarballs
         - name: Update Artifacts.toml
           shell: julia --color=yes --project {0}
           run: |
@@ -229,10 +217,14 @@ jobs:
             Pkg.instantiate()
             include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
             include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
-        - name: Commit changes
+          working-directory: ${{ env.build_dir }}
+        - name: Push changes to branch
+          if: github.event_name != 'pull_request'
           run: |
+            version=v${{ steps.version_check.outputs.version }}
+            release_branch="release-$version
+            git checkout -b $release_branch
             git commit -m "Update Artifacts.toml" -- Artifacts.toml
-            git tag v${{ steps.version_check.outputs.version }}
-            git push origin release-v${{ steps.version_check.outputs.version }}
-            git push origin v${{ steps.version_check.outputs.version }}
+            git tag $version
+            git push origin $release_branch $version
             
