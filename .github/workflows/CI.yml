@@ -189,40 +189,40 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-        - uses: actions/checkout@v3
-        - uses: julia-actions/setup-julia@v1
-          with:
-            version: "1.8"
-            arch: "x64"
-        - uses: julia-actions/cache@v1
-        - uses: actions/download-artifact@v3
-          with:
-            name: tarballs
-            path: tarballs
-        - name: Check Project version
-          id: version_check
-          shell: julia --color=yes --project {0}
-          run: |
-            using Pkg.Types
-            project = read_project("Project.toml")
-            open(ENV["GITHUB_OUTPUT"], "a") do io
-              println(io, "version=$(project.version)")
-            end
-        - name: Update Artifacts.toml
-          shell: julia --color=yes --project {0}
-          run: |
-            using Pkg
-            Pkg.instantiate()
-            include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
-            include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
-          working-directory: ${{ env.build_dir }}
-        - name: Push changes to branch
-          if: github.event_name != 'pull_request'
-          run: |
-            version=v${{ steps.version_check.outputs.version }}
-            release_branch="release-$version
-            git checkout -b $release_branch
-            git commit -m "Update Artifacts.toml" -- Artifacts.toml
-            git tag $version
-            git push origin $release_branch $version
-            
+      - uses: actions/checkout@v3
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: "1.8"
+          arch: "x64"
+      - uses: julia-actions/cache@v1
+      - uses: actions/download-artifact@v3
+        with:
+          name: tarballs
+          path: tarballs
+      - name: Check Project version
+        id: version_check
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg.Types
+          project = read_project("Project.toml")
+          open(ENV["GITHUB_OUTPUT"], "a") do io
+            println(io, "version=$(project.version)")
+          end
+      - name: Update Artifacts.toml
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg
+          Pkg.instantiate()
+          include("upload_tarballs.jl")    # uploads artifacts as assets to GH prerelease
+          include("bind_artifacts.jl")     # updates Artifacts.toml with asset metadata
+        working-directory: ${{ env.build_dir }}
+      - name: Push changes to branch
+        if: github.event_name != 'pull_request'
+        run: |
+          version=v${{ steps.version_check.outputs.version }}
+          release_branch="release-$version
+          git checkout -b $release_branch
+          git commit -m "Update Artifacts.toml" -- Artifacts.toml
+          git tag $version
+          git push origin $release_branch $version
+          
