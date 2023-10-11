@@ -186,13 +186,12 @@ ray::core::CoreWorker &_GetCoreWorker() {
 
 // Example of using `CoreWorker::Put`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
 Status put(const std::shared_ptr<RayObject> object,
-             const std::vector<ObjectID> &contained_object_ids,
-             ObjectID *object_id) {
+           const std::vector<ObjectID> &contained_object_ids,
+           ObjectID *object_id) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
     // Store our data in the object store
-    auto status = worker.Put(*object, contained_object_ids, object_id);
-    return status;
+    return worker.Put(*object, contained_object_ids, object_id);
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
@@ -207,8 +206,7 @@ Status get(const ObjectID object_id, int64_t timeout_ms, std::vector<std::shared
     auto num_objs = objects->size();
     if (num_objs != 1) {
         auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
-        auto st = Status::UnknownError(msg);
-        return st;
+        status = Status::UnknownError(msg);
     }
 
     return status;

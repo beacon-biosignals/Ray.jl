@@ -63,11 +63,7 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
     return xcp
 end
 
-function ObjectRef(oid::Union{ray_jll.ObjectIDAllocated,ray_jll.ObjectIDDereferenced};
-                   kwargs...)
-    return ObjectRef(ray_jll.Hex(oid); kwargs...)
-end
-
+ObjectRef(oid::ray_jll.ObjectID; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
 ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
 hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
