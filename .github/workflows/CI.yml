@@ -212,19 +212,23 @@ jobs:
           Pkg.instantiate()
           include(joinpath(pwd(), "bind_artifacts.jl")) # updates Artifacts.toml with asset metadata
         working-directory: ${{ env.build_dir }}
-      - name: Push Release Branch
-        if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Commit Changes
+        id: commit
         run: |
           git checkout -b ${{ steps.version_check.outputs.release_branch }}
           git commit -m "Update Artifacts.toml" -- Artifacts.toml
-          git push origin ${{ steps.version_check.outputs.release_branch }}
+          echo "commitish=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           git checkout main
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
+          target_commitish: ${{ steps.commit.outputs.commitish}}
           generate_release_notes: true
-          target_commitish: ${{ steps.version_check.outputs.release_branch }}
           files: ${{ env.build_dir }}/tarballs
+      - name: Push Release Branch
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: git push origin ${{ steps.version_check.outputs.release_branch }}
+      
           
