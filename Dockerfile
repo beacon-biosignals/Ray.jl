@@ -70,11 +70,11 @@ RUN mkdir -p $(dirname ${JULIA_USER_DEPOT}) && \
 
 # Install Julia package registries
 RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
-    mkdir -p ${JULIA_DEPOT_CACHE} && \
+    mkdir -p ${JULIA_USER_DEPOT_CACHE} && \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
-ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
 RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     # Move project content into temporary depot
@@ -127,7 +127,7 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
@@ -210,7 +210,7 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
     rm ${BUILD_PROJECT}
 
 # Specify the location of the "ray_julia" library via Overrides.toml
-COPY --chown=${UID} <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
+COPY --chown=${UID} <<-EOF ${JULIA_USER_DEPOT}/artifacts/Overrides.toml
 [3f779ece-f0b6-4c4f-a81a-0cb2add9eb95]
 ray_julia = "${BUILD_PROJECT}/bin"
 EOF
