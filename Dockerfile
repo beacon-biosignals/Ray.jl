@@ -65,7 +65,8 @@ ENV JULIA_PKG_USE_CLI_GIT="true"
 # If a source file no longer resides at the expected location the `.ji` is deemed stale and
 # will be recreated.
 ARG JULIA_USER_DEPOT_CACHE=/mnt/julia-depot-cache/${JULIA_DEPOT_ID}
-RUN mkdir -p $(dirname ${JULIA_USER_DEPOT}) && \
+RUN sudo mkdir -p $(dirname ${JULIA_USER_DEPOT}) && \
+    sudo chown ${UID}:${GID} $(dirname ${JULIA_USER_DEPOT}) && \
     ln -s ${JULIA_USER_DEPOT_CACHE} ${JULIA_USER_DEPOT}
 
 # Install Julia package registries
@@ -144,7 +145,8 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
     git -C ${RAY_REPO} checkout ${ray_commit} && \
     #
     # Build using the final Ray.jl destination
-    mkdir -p ${BUILD_PROJECT} && \
+    sudo mkdir -p ${BUILD_PROJECT} && \
+    sudo chown ${UID}:${GID} ${BUILD_PROJECT} && \
     ln -s ${RAY_REPO} ${BUILD_PROJECT}/ray && \
     cd ${BUILD_PROJECT}/ray && \
     #
