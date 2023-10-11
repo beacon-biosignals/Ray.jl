@@ -233,5 +233,6 @@ jobs:
           run: |
             git commit -m "Update Artifacts.toml" -- Artifacts.toml
             git tag v${{ steps.version_check.outputs.version }}
-            git push --all origin
+            git push origin release-v${{ steps.version_check.outputs.version }}
+            git push origin v${{ steps.version_check.outputs.version }}
             
