@@ -188,7 +188,7 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID
 
 # Copy over artifacts generated during the previous stages
 COPY --chown=${UID} --from=deps --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
-RUN rm -f ~/.julia && \
+RUN rm -rf ~/.julia && \
     ln -sf ${JULIA_USER_DEPOT} ~/.julia
 
 # Setup ray_julia library
