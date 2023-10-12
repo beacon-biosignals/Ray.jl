@@ -205,14 +205,20 @@ jobs:
             println(io, "version=v$(project.version)")
             println(io, "release_branch=release-v$(project.version)")
           end
-      - name: Update Artifacts.toml
+      - name: Download Artifacts
         shell: julia --color=yes --project {0}
         run: |
           using Pkg
           Pkg.instantiate()
           include(joinpath(pwd(), "download_tarballs.jl"))
-          include(joinpath(pwd(), "bind_artifacts.jl"))
           download_tarballs()
+        working-directory: ${{ env.build_dir }}
+      - name: Update Artifacts.toml
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg
+          Pkg.instantiate()
+          include(joinpath(pwd(), "bind_artifacts.jl"))
           bind_artifacts()
         working-directory: ${{ env.build_dir }}
       - name: Commit Changes
