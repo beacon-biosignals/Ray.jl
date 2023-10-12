@@ -13,14 +13,16 @@ function list_workflow_runs(; org, repo, head_sha)
 end
 
 # https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28#list-workflow-run-artifacts
-function list_workflow_run_artifacts(; org, repo, run_id)
+function list_workflow_run_artifacts(; org, repo, run_id, headers)
     url = "https://api.github.com/repos/$org/$repo/actions/runs/$run_id/artifacts"
-    b = Downloads.download(url, IOBuffer())
+    b = Downloads.download(url, IOBuffer(); headers)
     return JSON3.read(seekstart(b))
 end
 
 function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_DIR)
     isdir(tarball_dir) || mkpath(tarball_dir)
+
+    headers = ["Authorization" => "Bearer $token"]
 
     response = list_workflow_runs(; org=REPO_ORG, repo=REPO_NAME, head_sha=commit_sha)
     @show response
@@ -28,13 +30,12 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
 
     @info "Polling run: $run_id"
 
-    response = list_workflow_run_artifacts(; org=REPO_ORG, repo=REPO_NAME, run_id)
+    response = list_workflow_run_artifacts(; org=REPO_ORG, repo=REPO_NAME, run_id, headers)
     @show response
 
     artifacts = map(j -> j.name => j.archive_download_url, response.artifacts)
 
     @show artifacts
-    headers = ["Authorization" => "Bearer $token"]
     for (name, url) in artifacts
         startswith(name, "ray_julia") || continue
 
