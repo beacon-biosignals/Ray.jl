@@ -186,7 +186,7 @@ jobs:
 
   release:
     name: "Publish Pre-Release"
-    runs-on: ubuntu-20.04-16core
+    runs-on: ubuntu-latest
     needs: [test]
     permissions:
       actions: read
