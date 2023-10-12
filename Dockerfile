@@ -3,7 +3,7 @@
 
 # Example of how to build this Docker image including a recommended tagging structure:
 # ```sh
-# docker build -t ray:2.5.1-julia1.9.3-rayjl$(git rev-parse --short HEAD) .
+# docker build -t ray:2.5.1-julia_1.9.3-rayjl_$(git rev-parse --short HEAD) .
 # ```
 
 # TODO: Cleanup uid/gid/user work arounds
