@@ -50,8 +50,8 @@ end
 function download_tarballs()
     token = github_token()
 
-    @info "Retrieving CI built tarballs..."
     commit_sha = git_head_sha()
+    @info "Retrieving CI built tarballs for $commit_sha..."
     download_ray_julia_artifacts(; commit_sha, token)
 
     return nothing
