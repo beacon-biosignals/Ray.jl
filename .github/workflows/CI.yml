@@ -211,7 +211,8 @@ jobs:
           project = read_project("Project.toml")
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "version=$(project.version)")
-            println(io, "tag=v$(project.version)")
+            # println(io, "tag=v$(project.version)")
+            println(io, "tag=test-pr-200")
           end
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
@@ -234,14 +235,14 @@ jobs:
           git commit -m "$msg" -- Artifacts.toml
           echo "commit=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
       - name: Tag and push
-        if: ${{ github.ref == 'refs/heads/main' }}
+        # if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           tag=${{ steps.version_check.outputs.tag }}
           git tag $tag ${{ steps.commit.outputs.commit }}
           git push origin $tag
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
-        if: ${{ github.ref == 'refs/heads/main' }}
+        # if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
           tag_name: ${{ steps.version_check.outputs.tag }}
