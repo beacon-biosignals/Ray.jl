@@ -238,9 +238,9 @@ FROM ray-base as ray-jl
 
 COPY --from=build-ray-jl --link $HOME/anaconda3 $HOME/anaconda3
 COPY --chown=${UID} --from=build-ray-jl --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
-RUN ls -la ~/ && \
-    sudo rm -rf ~/.julia && \
-    ln -sf ${JULIA_USER_DEPOT} ~/.julia
+RUN sudo chown ${UID} ${HOME} && \
+    ls -la ${HOME} && \
+    ln -s ${JULIA_USER_DEPOT} ~/.julia
 
 ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 
