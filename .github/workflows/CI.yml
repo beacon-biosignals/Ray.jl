@@ -223,14 +223,18 @@ jobs:
         working-directory: ${{ env.build_dir }}
       - name: Commit Changes
         id: commit
-        env:
-          author: "beacon-buddy <beacon-buddy@beacon.bio>"
         run: |
           set -x
           ls -l ${{ env.tarballs_dir }}
           cat Artifacts.toml
+
+          # Alternatively environment variables can be used but both author/committer need to be set
+          # https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables#_committing
+          git config user.name beacon-buddy
+          git config user.email beacon-buddy@beacon.bio
+
           git checkout -b ${{ steps.version_check.outputs.release_branch }} HEAD
-          git commit --author "${{ env.author }}" -m "Update Artifacts.toml" -- Artifacts.toml
+          git commit -m "Update Artifacts.toml" -- Artifacts.toml
           echo "commitish=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
