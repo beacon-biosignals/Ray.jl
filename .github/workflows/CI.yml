@@ -223,8 +223,6 @@ jobs:
           include(joinpath(pwd(), "bind_artifacts.jl"))
           bind_artifacts()
         working-directory: ${{ env.build_dir }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: Commit Changes
         id: commit
         run: |
