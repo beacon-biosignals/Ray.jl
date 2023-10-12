@@ -233,7 +233,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
-          target_commitish: ${{ steps.commit.outputs.commitish}}
+          target_commitish: ${{ steps.commit.outputs.commitish }}
           generate_release_notes: true
           files: ${{ env.build_dir }}/tarballs
       - name: Push Release Branch
