@@ -148,7 +148,6 @@ jobs:
           tarball_path = build_host_tarball()
           open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "tarball_path=$tarball_path")
-              println(io, "tarball_filename=$(basename(tarball_path))")
           end
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
@@ -165,7 +164,7 @@ jobs:
       - name: Save ray_julia library
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ steps.ray_julia.outputs.tarball_filename }}
+          name: ray_julia_libraries
           path: ${{ steps.ray_julia.outputs.tarball_path }}
 
       - name: Save Ray logs
@@ -182,6 +181,7 @@ jobs:
         with:
           key: ${{ steps.build-cache.outputs.cache-primary-key }}
           path: ~/.cache
+
   release:
     name: "Publish Pre-Release"
     runs-on: ubuntu-20.04-16core
@@ -194,56 +194,63 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: julia-actions/setup-julia@v1
+      - name: Retrieve ray_julia libraries
+        uses: actions/download-artifact@v3
         with:
-          version: "1.8"
-          arch: "x64"
-      - uses: julia-actions/cache@v1
-      - name: Check Project version
-        id: version_check
-        shell: julia --color=yes --project {0}
-        run: |
-          using Pkg.Types
-          project = read_project("Project.toml")
-          open(ENV["GITHUB_OUTPUT"], "a") do io
-            println(io, "version=v$(project.version)")
-            println(io, "release_branch=release-v$(project.version)")
-          end
-      - name: Download Artifacts
-        shell: julia --color=yes --project {0}
-        run: |
-          using Pkg
-          Pkg.instantiate()
-          include(joinpath(pwd(), "download_tarballs.jl"))
-          download_tarballs()
-        working-directory: ${{ env.build_dir }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Update Artifacts.toml
-        shell: julia --color=yes --project {0}
-        run: |
-          using Pkg
-          Pkg.instantiate()
-          include(joinpath(pwd(), "bind_artifacts.jl"))
-          bind_artifacts()
-        working-directory: ${{ env.build_dir }}
-      - name: Commit Changes
-        id: commit
-        run: |
-          git checkout -b ${{ steps.version_check.outputs.release_branch }}
-          git commit -m "Update Artifacts.toml" -- Artifacts.toml
-          echo "commitish=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          git checkout main
-      - name: Publish Pre-Release
-        uses: softprops/action-gh-release@v1
-        if: ${{ github.ref == 'refs/heads/main' }}
-        with:
-          prerelease: true
-          target_commitish: ${{ steps.commit.outputs.commitish }}
-          generate_release_notes: true
-          files: ${{ env.build_dir }}/tarballs
-      - name: Push Release Branch
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: git push origin ${{ steps.version_check.outputs.release_branch }}
+          name: ray_julia_libraries
+          path: output
+      - run: |
+          ls -la output
+      # - uses: julia-actions/setup-julia@v1
+      #   with:
+      #     version: "1.8"
+      #     arch: "x64"
+      # - uses: julia-actions/cache@v1
+      # - name: Check Project version
+      #   id: version_check
+      #   shell: julia --color=yes --project {0}
+      #   run: |
+      #     using Pkg.Types
+      #     project = read_project("Project.toml")
+      #     open(ENV["GITHUB_OUTPUT"], "a") do io
+      #       println(io, "version=v$(project.version)")
+      #       println(io, "release_branch=release-v$(project.version)")
+      #     end
+      # - name: Download Artifacts
+      #   shell: julia --color=yes --project {0}
+      #   run: |
+      #     using Pkg
+      #     Pkg.instantiate()
+      #     include(joinpath(pwd(), "download_tarballs.jl"))
+      #     download_tarballs()
+      #   working-directory: ${{ env.build_dir }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ github.token }}
+      # - name: Update Artifacts.toml
+      #   shell: julia --color=yes --project {0}
+      #   run: |
+      #     using Pkg
+      #     Pkg.instantiate()
+      #     include(joinpath(pwd(), "bind_artifacts.jl"))
+      #     bind_artifacts()
+      #   working-directory: ${{ env.build_dir }}
+      # - name: Commit Changes
+      #   id: commit
+      #   run: |
+      #     git checkout -b ${{ steps.version_check.outputs.release_branch }}
+      #     git commit -m "Update Artifacts.toml" -- Artifacts.toml
+      #     echo "commitish=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      #     git checkout main
+      # - name: Publish Pre-Release
+      #   uses: softprops/action-gh-release@v1
+      #   if: ${{ github.ref == 'refs/heads/main' }}
+      #   with:
+      #     prerelease: true
+      #     target_commitish: ${{ steps.commit.outputs.commitish }}
+      #     generate_release_notes: true
+      #     files: ${{ env.build_dir }}/tarballs
+      # - name: Push Release Branch
+      #   if: ${{ github.ref == 'refs/heads/main' }}
+      #   run: git push origin ${{ steps.version_check.outputs.release_branch }}
       
           
