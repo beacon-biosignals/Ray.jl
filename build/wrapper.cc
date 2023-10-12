@@ -110,16 +110,16 @@ void initialize_worker(
                         application_error,
                         is_retryable_error);
 
-          // TODO: support multiple return values
-          // https://github.com/beacon-biosignals/Ray.jl/issues/54
-          if (return_vec.size() == 1) {
-            (*returns)[0].second = return_vec[0];
-            return Status::OK();
-          }
-          else {
-            auto msg = "Task returned " + std::to_string(return_vec.size()) + " values. Expected 1.";
-            return Status::NotImplemented(msg);
-          };
+            // TODO: support multiple return values
+            // https://github.com/beacon-biosignals/Ray.jl/issues/54
+            if (return_vec.size() == 1) {
+                (*returns)[0].second = return_vec[0];
+                return Status::OK();
+            }
+            else {
+                auto msg = "Task returned " + std::to_string(return_vec.size()) + " values. Expected 1.";
+                return Status::NotImplemented(msg);
+            };
         };
 
     RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
