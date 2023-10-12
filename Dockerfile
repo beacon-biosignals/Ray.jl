@@ -22,15 +22,23 @@ FROM python:${PYTHON_VERSION}-bullseye as python-base
 FROM debian:bullseye as ray-base
 
 # Install Python
-COPY --link --from=python-base /usr/local/lib/libpython* /usr/local/lib/
-COPY --link --from=python-base /usr/local/lib/python3.10 /usr/local/lib/python3.10
-COPY --link --from=python-base /usr/local/bin/python* /usr/local/bin/pip* /usr/local/bin/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get -qq update && \
+    apt-get -qq install expat
+
+COPY --from=python-base --link /usr/local/lib/libpython* /usr/local/lib/
+COPY --from=python-base --link /usr/local/lib/python3.10 /usr/local/lib/python3.10
+COPY --from=python-base --link /usr/local/include/python3.10 /usr/local/include/python3.10
+COPY --from=python-base --link /usr/local/bin/python* /usr/local/bin/pip* /usr/local/bin/
 RUN python --version && \
-    pip --version
+    pip --version && \
+    # Upgrade pip to ensure that pip is fully functional and up-to-date
+    pip install --upgrade pip
 
 
 # Install Julia
-COPY --link --from=julia-base /usr/local/julia /usr/local/julia
+COPY --from=julia-base --link /usr/local/julia /usr/local/julia
 ENV JULIA_PATH=/usr/local/julia
 ENV PATH=$JULIA_PATH/bin:$PATH
 
@@ -49,7 +57,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get -qq update && \
     apt-get -qq install sudo && \
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+    echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Create "ray" user
 ENV UID=1000
@@ -163,7 +171,7 @@ ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
 # https://docs.ray.io/en/releases-2.5.1/ray-contribute/development.html#building-ray-on-linux-macos-full
-ARG RAY_REPO=${HOME}/ray
+ARG RAY_REPO=/tmp/ray
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
 COPY --chown=${UID} build/ray_commit /tmp/ray_commit
@@ -209,15 +217,18 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID} \
     #
     # Build Ray for Python
     cd ${BUILD_PROJECT}/ray/python && \
-    pip install --verbose . && \
+    pip install --verbose --user . && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
     mkdir -p ${RAY_REPO_CACHE} && \
-    cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE}
+    cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE} && \
+    #
+    # Validate Ray CLI works
+    $(python -m site --user-base)/bin/ray --version
 
 # Copy over artifacts generated during the previous stages
-COPY --chown=${UID} --from=deps --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
+COPY --from=deps --chown=${UID} --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
 
 # Setup ray_julia library
 ARG BUILD_ROOT=/tmp/build
@@ -262,12 +273,16 @@ RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true,
 
 FROM ray-base as ray-jl
 
-COPY --from=build-ray-jl --link $HOME/anaconda3 $HOME/anaconda3
-COPY --chown=${UID} --from=build-ray-jl --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
-RUN sudo chown ${UID} ${HOME} && \
-    ln -s ${JULIA_USER_DEPOT} ~/.julia
+# Equivalent of `python -m site --user-base`
+ARG PYTHON_USER_BASE=${HOME}/.local
+
+COPY --from=build-ray-jl --link ${PYTHON_USER_BASE} ${PYTHON_USER_BASE}
+ENV PATH="${PYTHON_USER_BASE}/bin:${PATH}"
+RUN ray --version
 
 ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
+COPY --from=build-ray-jl --chown=${UID} --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
+RUN julia --project=${RAY_JL_PROJECT} -e 'using Ray'
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
 ENV JULIA_PROJECT=${RAY_JL_PROJECT}
