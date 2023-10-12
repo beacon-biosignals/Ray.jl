@@ -213,6 +213,8 @@ jobs:
           include(joinpath(pwd(), "download_tarballs.jl"))
           download_tarballs()
         working-directory: ${{ env.build_dir }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
         run: |
@@ -221,6 +223,8 @@ jobs:
           include(joinpath(pwd(), "bind_artifacts.jl"))
           bind_artifacts()
         working-directory: ${{ env.build_dir }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Commit Changes
         id: commit
         run: |
