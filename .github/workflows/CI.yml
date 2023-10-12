@@ -186,6 +186,8 @@ jobs:
     name: "Publish Pre-Release"
     runs-on: ubuntu-20.04-16core
     needs: [test]
+    permissions:
+      actions: read
     strategy:
       fail-fast: false
     steps:
