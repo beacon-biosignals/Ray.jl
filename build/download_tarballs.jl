@@ -23,11 +23,17 @@ function download_ray_julia_artifacts(; commit_sha, token, tarball_dir=TARBALL_D
     isdir(tarball_dir) || mkpath(tarball_dir)
 
     response = list_workflow_runs(; org=REPO_ORG, repo=REPO_NAME, head_sha=commit_sha)
+    @show response
     run_id = only(filter(r -> r.name == ARTIFACTS_WORKFLOW_NAME, response.workflow_runs)).id
 
+    @info "Polling run: $run_id"
+
     response = list_workflow_run_artifacts(; org=REPO_ORG, repo=REPO_NAME, run_id)
+    @show response
+
     artifacts = map(j -> j.name => j.archive_download_url, response.artifacts)
 
+    @show artifacts
     headers = ["Authorization" => "Bearer $token"]
     for (name, url) in artifacts
         startswith(name, "ray_julia") || continue
