@@ -208,12 +208,12 @@ jobs:
       - name: Download Artifacts
         id: download
         uses: dawidd6/action-download-artifact@v2
-          with:
-            name: ray_julia*
-            name_is_regexp: true
-            skip_unpack: true
-            path: ${{ build_dir }}/tarballs
-            run_id: ${{ github.run_id }}
+        with:
+          name: ray_julia*
+          name_is_regexp: true
+          skip_unpack: true
+          path: ${{ build_dir }}/tarballs
+          run_id: ${{ github.run_id }}
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
         run: |
