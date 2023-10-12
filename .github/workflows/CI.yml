@@ -161,6 +161,8 @@ jobs:
           file: lcov.info
           flags: Ray.jl
 
+      # Add the ray_julia library from each job to the same artifact
+      # https://github.com/actions/upload-artifact#uploading-to-the-same-artifact
       - name: Save ray_julia library
         uses: actions/upload-artifact@v3
         with:
