@@ -38,9 +38,9 @@ RUN python --version && \
 
 
 # Install Julia
-COPY --from=julia-base --link /usr/local/julia /usr/local/julia
 ENV JULIA_PATH=/usr/local/julia
-ENV PATH=$JULIA_PATH/bin:$PATH
+COPY --from=julia-base --link ${JULIA_PATH} ${JULIA_PATH}
+RUN ln -s ${JULIA_PATH}/bin/julia /usr/local/bin/julia
 
 # Validate Julia executable is compatible with the container architecture
 RUN if ! julia --history-file=no -e 'exit(0)'; then \
@@ -217,7 +217,7 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID} \
     #
     # Build Ray for Python
     cd ${BUILD_PROJECT}/ray/python && \
-    pip install --verbose --user . && \
+    pip install --verbose --user ".[default]" "pydantic<2" && \
     #
     # By copying the entire Ray worktree we can easily restore missing files without having to
     # delete the cache and build from scratch.
@@ -226,6 +226,10 @@ RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID} \
     #
     # Validate Ray CLI works
     $(python -m site --user-base)/bin/ray --version
+
+# Install additional dependencies for RayCluster support
+# https://github.com/ray-project/ray/blob/a03efd9931128d387649dd48b0e4864b43d3bfb4/docker/ray-deps/Dockerfile#L12-L28
+RUN pip install --user kubernetes
 
 # Copy over artifacts generated during the previous stages
 COPY --from=deps --chown=${UID} --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
