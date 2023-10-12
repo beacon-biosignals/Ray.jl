@@ -1,5 +1,6 @@
 using Base64: base64encode
 using CxxWrap
+using CxxWrap.StdLib: SharedPtr
 using JSON3: JSON3
 using Test
 using Ray: ray_julia_jll
