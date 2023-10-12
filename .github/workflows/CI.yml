@@ -248,4 +248,4 @@ jobs:
           tag_name: ${{ steps.version_check.outputs.tag }}
           target_commitish: ${{ steps.commit.outputs.commit }}
           generate_release_notes: true
-          files: ${{ env.tarballs_dir }}
+          files: ${{ env.tarballs_dir }}/*.tar.gz
