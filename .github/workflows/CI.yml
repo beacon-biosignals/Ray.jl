@@ -211,7 +211,7 @@ jobs:
           project = read_project("Project.toml")
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "version=$(project.version)")
-            println(io, "release_branch=release-v$(project.version)")
+            println(io, "tag=v$(project.version)")
           end
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
@@ -230,17 +230,21 @@ jobs:
           git config user.email beacon-buddy@beacon.bio
 
           msg="Update Artifacts.toml to use ${{ steps.version_check.outputs.version }} assets"
-          git checkout -b ${{ steps.version_check.outputs.release_branch }} HEAD
+          git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
-          echo "commitish=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
+      - name: Tag and push
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          tag=${{ steps.version_check.outputs.tag }}
+          git tag $tag ${{ steps.commit.outputs.commit }}
+          git push origin $tag
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
-          target_commitish: ${{ steps.commit.outputs.commitish }}
+          tag_name: ${{ steps.version_check.outputs.tag }}
+          target_commitish: ${{ steps.commit.outputs.commit }}
           generate_release_notes: true
           files: ${{ env.tarballs_dir }}
-      - name: Push Release Branch
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: git push origin ${{ steps.version_check.outputs.release_branch }}
