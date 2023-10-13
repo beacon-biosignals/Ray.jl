@@ -52,11 +52,6 @@ jobs:
 
             # Verify Ray CLI works
             ray --version
-        - name: Delete Overrides.toml
-          shell: julia --color=yes --project {0}
-          run: |
-            overrides_toml = joinpath(first(Base.DEPOT_PATH), "artifacts", "Overrides.toml")
-            isfile(overrides_toml) && rm(overrides_toml)
         - uses: julia-actions/julia-buildpkg@v1
         - uses: julia-actions/julia-runtest@v1
           with:
