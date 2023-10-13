@@ -61,3 +61,14 @@ jobs:
         - uses: julia-actions/julia-runtest@v1
           with:
             annotate: true
+  release:
+    name: "Publish Release"
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          # Any info keys (i.e. prerelease) that are not explicitly set will retain the original
+          # value if there is already an existing release for the tag.
+          prerelease: false
