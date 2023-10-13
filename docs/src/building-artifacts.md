@@ -12,6 +12,7 @@ The `ray_julia` artifacts are hosted via [GitHub releases](https://github.com/be
 
 However, the artifacts are only associated with tagged releases of Ray.jl. 
 If you are working off the `main` branch, or developing Ray.jl locally, you will need to [build Ray.jl](./developer-guide.md#build-rayjl) yourself. 
+This will also update your `Overrides.toml` to reference the binaries you have built.
 
 To update the Ray.jl artifacts for a new release simply open a PR which bumps the Ray.jl version in the `Project.toml` and includes any other required changes.
 The Julia CI jobs created by this PR will build the artifacts required to make a new release.
