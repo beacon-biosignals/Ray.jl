@@ -2,12 +2,7 @@ name: Artifacts CI
 on:
   workflow_dispatch:
   push:
-    branches:
-      - release-*
     tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
-    paths:
-      - "Artifacts.toml"
-      - ".github/workflows/artifacts_CI.yml"
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
