@@ -17,7 +17,7 @@ end
         @test obj_ref == ObjectRef(hex_str)
         @test hash(obj_ref) == hash(ObjectRef(hex_str))
 
-        # test various "no owner address" constructors
+        # test "no owner address" constructors
         @test ObjectRef(hex_str, nothing, "") == obj_ref
         @test ObjectRef(hex_str, "", "") == obj_ref
     end

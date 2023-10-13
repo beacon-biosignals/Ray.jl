@@ -5,9 +5,6 @@ mutable struct ObjectRef
 
     function ObjectRef(oid_hex, owner_address_json, serialized_object_status;
                        add_local_ref=true)
-        if owner_address_json !== nothing && isempty(owner_address_json)
-            owner_address_json = nothing
-        end
         objref = new(oid_hex, owner_address_json, serialized_object_status)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
