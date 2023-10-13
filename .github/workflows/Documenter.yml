@@ -17,6 +17,8 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  build_dir: ./build
 jobs:
   docs:
     name: Build
@@ -29,6 +31,14 @@ jobs:
         with:
           version: "1"
       # Use a separate step for instantiation to get more fine grained timing of steps
+      - name: Build ray_julia library
+        id: ray_julia
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg
+          Pkg.instantiate()
+          include(joinpath(pwd(), "build_library.jl"))
+        working-directory: ${{ env.build_dir }}
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
         run: |
