@@ -58,10 +58,8 @@
     @testset "Object owner" begin
         obj = Ray.put(1)
         # ownership only embedded in ObjectRef on serialization
-        obj_rt = Ray.deserialize_from_ray_object(Ray.serialize_to_ray_object(obj))
-        addr_json = ray_jll.MessageToJsonString(Ray.get_owner_address(obj))
-        addr_rt_json = ray_jll.MessageToJsonString(obj_rt.owner_address)
-        @test addr_json == addr_rt_json == obj_rt.owner_address_json
+        result = Ray.deserialize_from_ray_object(Ray.serialize_to_ray_object(obj))
+        @test result.owner_address == Ray.get_owner_address(obj)
     end
 end
 
