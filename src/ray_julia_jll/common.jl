@@ -162,6 +162,12 @@ end
 # handle it on the C++ side rather than wrapping everything.
 Base.show(io::IO, addr::Address) = print(io, _string(addr))
 
+let types = (AddressAllocated, AddressDereferenced)
+    for A in types, B in types
+        @eval Base.:(==)(a::$A, b::$B) = MessageToJsonString(a) == MessageToJsonString(b)
+    end
+end
+
 #####
 ##### Buffer
 #####

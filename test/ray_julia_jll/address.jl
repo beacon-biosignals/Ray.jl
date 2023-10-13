@@ -1,6 +1,12 @@
 using .ray_julia_jll: Address
 
 @testset "Address" begin
+    @testset "equality" begin
+        addr = Address()
+        @test addr == Address()
+        @test addr == CxxPtr(Address())[]
+    end
+
     @testset "json round-trip" begin
         json = Dict(:rayletId => base64encode("raylet"), :ipAddress => "127.0.0.1",
                     :port => 10000, :workerId => base64encode("worker"))
