@@ -167,14 +167,13 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     owner_address_json = deserialize(s)
     serialized_object_status = deserialize(s)
 
-    # this if/else block only exists for debug logging
-    if owner_address_json === nothing || isempty(owner_address_json)
-        owner_address_json = nothing
-        @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address_json"
-    else
-        std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
-        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
-        @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
+    @debug begin
+        owner_address = nothing
+        if !isempty(owner_address_json)
+            std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
+            owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
+        end
+        "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
     end
 
     return ObjectRef(hex_str, owner_address_json, serialized_object_status)
