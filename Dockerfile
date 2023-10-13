@@ -3,7 +3,7 @@
 
 # Example of how to build this Docker image including a recommended tagging structure:
 # ```sh
-# docker build -t ray:2.5.1-julia1.9.3-rayjl$(git rev-parse --short HEAD) .
+# docker build -t ray:2.5.1-julia_1.9.3-rayjl_$(git rev-parse --short HEAD) .
 # ```
 
 # TODO: Cleanup uid/gid/user work arounds
@@ -37,9 +37,24 @@ RUN if ! julia --history-file=no -e 'exit(0)'; then \
 # Reduces output from `apt-get`
 ENV DEBIAN_FRONTEND="noninteractive"
 
+# Configure `apt-get` to keep downloaded packages. Needed for using `--mount=type=cache` with `apt-get`
+# https://docs.docker.com/engine/reference/builder/#example-cache-apt-packages
+RUN sudo rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | sudo tee -a /etc/apt/apt.conf.d/keep-cache
+
 # Set x86_64 targets for improved compatibility
 # https://docs.julialang.org/en/v1/devdocs/sysimg/#Specifying-multiple-system-image-targets
 ENV JULIA_CPU_TARGET="generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"
+
+# `JULIA_DEPOT_ID` must be unique for every Dockerfile. Typically pre-generated via `openssl rand -hex 5`
+ENV JULIA_DEPOT_ID=ab14e38af3
+ENV JULIA_USER_DEPOT=/usr/local/share/julia-depot/${JULIA_DEPOT_ID}
+ENV JULIA_DEPOT_PATH=${JULIA_USER_DEPOT}
+
+# Allow Julia packages to only be loaded from the current active project. Doing this ensures we don't
+# accidentally rely on packages installed into the default Julia environment and avoids issues this can
+# cause with Julia depot stacking.
+ENV JULIA_LOAD_PATH="@:@stdlib"
 
 #####
 ##### deps stage
@@ -59,18 +74,20 @@ ENV JULIA_PKG_USE_CLI_GIT="true"
 # path used during package precompilation matches the final depot path used in the image.
 # If a source file no longer resides at the expected location the `.ji` is deemed stale and
 # will be recreated.
-ARG JULIA_DEPOT_CACHE=/mnt/julia-cache
-RUN ln -s ${JULIA_DEPOT_CACHE} ~/.julia
+ARG JULIA_USER_DEPOT_CACHE=/mnt/julia-depot-cache/${JULIA_DEPOT_ID}
+RUN sudo mkdir -p $(dirname ${JULIA_USER_DEPOT}) && \
+    sudo chown ${UID}:${GID} $(dirname ${JULIA_USER_DEPOT}) && \
+    ln -s ${JULIA_USER_DEPOT_CACHE} ${JULIA_USER_DEPOT}
 
 # Install Julia package registries
-RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
-    mkdir -p ${JULIA_DEPOT_CACHE} && \
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
+    mkdir -p ${JULIA_USER_DEPOT_CACHE} && \
     julia -e 'using Pkg; Pkg.Registry.add("General")'
 
 # Instantiate the Julia project environment
-ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 COPY --chown=${UID} *Project.toml *Manifest.toml /tmp/Ray.jl/
-RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     # Move project content into temporary depot
     rm -rf ${RAY_JL_PROJECT} && \
     mkdir -p $(dirname ${RAY_JL_PROJECT}) && \
@@ -82,21 +99,23 @@ RUN --mount=type=cache,sharing=locked,target=${JULIA_DEPOT_CACHE},uid=${UID},gid
 
 # Copy the shared ephemeral Julia depot into the image and remove any installed packages
 # not used by our Manifest.toml.
-RUN --mount=type=cache,target=${JULIA_DEPOT_CACHE},uid=${UID},gid=${GID} \
-    rm ~/.julia && \
-    mkdir ~/.julia && \
-    cp -rp ${JULIA_DEPOT_CACHE}/* ~/.julia && \
-    julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
+RUN --mount=type=cache,target=${JULIA_USER_DEPOT_CACHE},uid=${UID},gid=${GID} \
+    rm ${JULIA_USER_DEPOT} && \
+    mkdir ${JULIA_USER_DEPOT} && \
+    cp -rp ${JULIA_USER_DEPOT_CACHE}/* ${JULIA_USER_DEPOT} && \
+    JULIA_LOAD_PATH=":" julia -e 'using Pkg, Dates; Pkg.gc(collect_delay=Day(0))'
 
 #####
-##### ray-jl stage
+##### build-ray-jl stage
 #####
 
-FROM ray-base as ray-jl
+FROM ray-base as build-ray-jl
 
 # Install Bazel and compilers
 ARG BAZEL_CACHE=/mnt/bazel-cache
-RUN set -eux; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux; \
     case $(uname -m) in \
         "x86_64")  ARCH=amd64 ;; \
         "aarch64") ARCH=arm64 ;; \
@@ -118,7 +137,7 @@ RUN sudo ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm
 RUN node --version && \
     npm --version
 
-ARG RAY_JL_PROJECT=${HOME}/.julia/dev/Ray
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 ARG BUILD_PROJECT=${RAY_JL_PROJECT}/build
 
 # Install custom Ray CLI which supports the Julia language.
@@ -127,15 +146,16 @@ ARG RAY_REPO=${HOME}/ray
 ARG RAY_REPO_CACHE=/mnt/ray-cache
 ARG RAY_CACHE_CLEAR=false
 COPY --chown=${UID} build/ray_commit /tmp/ray_commit
-RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
-    --mount=type=cache,sharing=locked,target=${RAY_REPO_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID} \
+    --mount=type=cache,target=${RAY_REPO_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     set -eux && \
     read -r ray_commit < /tmp/ray_commit && \
     git clone https://github.com/beacon-biosignals/ray ${RAY_REPO} && \
     git -C ${RAY_REPO} checkout ${ray_commit} && \
     #
     # Build using the final Ray.jl destination
-    mkdir -p ${BUILD_PROJECT} && \
+    sudo mkdir -p ${BUILD_PROJECT} && \
+    sudo chown ${UID}:${GID} ${BUILD_PROJECT} && \
     ln -s ${RAY_REPO} ${BUILD_PROJECT}/ray && \
     cd ${BUILD_PROJECT}/ray && \
     #
@@ -176,12 +196,12 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     cp -rfp ${RAY_REPO}/. ${RAY_REPO_CACHE}
 
 # Copy over artifacts generated during the previous stages
-COPY --chown=${UID} --link --from=deps ${HOME}/.julia ${HOME}/.julia
+COPY --chown=${UID} --from=deps --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
 
 # Setup ray_julia library
-ARG BUILD_ROOT=${HOME}/build
+ARG BUILD_ROOT=/tmp/build
 COPY --chown=${UID} build ${BUILD_ROOT}
-RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID} \
+RUN --mount=type=cache,target=${BAZEL_CACHE},sharing=locked,uid=${UID},gid=${GID} \
     set -eux && \
     #
     # Build using the final Ray.jl destination
@@ -190,16 +210,17 @@ RUN --mount=type=cache,sharing=locked,target=${BAZEL_CACHE},uid=${UID},gid=${GID
     ln -s ${BUILD_ROOT} ${BUILD_PROJECT} && \
     #
     # Build ray_julia library
-    julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.instantiate(); Pkg.precompile(strict=true)' && \
+    julia --project=${BUILD_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true)' && \
     julia --project=${BUILD_PROJECT} ${BUILD_PROJECT}/build_library.jl --no-override && \
     #
     # Cleanup build data
     cp -rpL ${BUILD_ROOT}/bazel-bin ${BUILD_ROOT}/bin && \
     rm ${BUILD_ROOT}/bazel-* && \
+    rm ${BUILD_ROOT}/ray && \
     rm ${BUILD_PROJECT}
 
 # Specify the location of the "ray_julia" library via Overrides.toml
-COPY --chown=${UID} <<-EOF ${HOME}/.julia/artifacts/Overrides.toml
+COPY --chown=${UID} <<-EOF ${JULIA_USER_DEPOT}/artifacts/Overrides.toml
 [3f779ece-f0b6-4c4f-a81a-0cb2add9eb95]
 ray_julia = "${BUILD_PROJECT}/bin"
 EOF
@@ -208,14 +229,25 @@ COPY --chown=${UID} . ${RAY_JL_PROJECT}/
 
 # Restore content from previous build directory
 RUN rm -rf ${BUILD_PROJECT} && \
-    ln -s ${BUILD_ROOT} ${BUILD_PROJECT}
+    mv ${BUILD_ROOT} ${BUILD_PROJECT}
 
 # Note: The `timing` flag requires Julia 1.9
-RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.resolve(); Pkg.precompile(strict=true, timing=true); using Ray'
+RUN julia --project=${RAY_JL_PROJECT} -e 'using Pkg; Pkg.precompile(strict=true, timing=true); using Ray'
 
-# Add Ray.jl to the default Julia environment
-RUN JULIA_PROJECT="" julia -e 'using Pkg; Pkg.develop(path=ENV["RAY_JL_PROJECT"])'
+
+#####
+##### ray-jl stage
+#####
+
+FROM ray-base as ray-jl
+
+COPY --from=build-ray-jl --link $HOME/anaconda3 $HOME/anaconda3
+COPY --chown=${UID} --from=build-ray-jl --link ${JULIA_USER_DEPOT} ${JULIA_USER_DEPOT}
+RUN sudo chown ${UID} ${HOME} && \
+    ln -s ${JULIA_USER_DEPOT} ~/.julia
+
+ARG RAY_JL_PROJECT=${JULIA_USER_DEPOT}/dev/Ray
 
 # Set up default project and working dir so that users need only pass in the requisite script input args
+ENV JULIA_PROJECT=${RAY_JL_PROJECT}
 WORKDIR ${RAY_JL_PROJECT}
-
