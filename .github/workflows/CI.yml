@@ -194,10 +194,12 @@ jobs:
           using Pkg.Types, LibGit2
           @info @__DIR__
           project = read_project("Project.toml")
+          @info project
           latest_tag = parse(VersionNumber, last(sort!(LibGit2.tag_list(LibGit2.GitRepo(@__DIR__)))))
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "make_release=$(project.version > latest_tag)")
           end
+        working-directory: ${{ github.workspace }}
 
   release:
     name: "Publish Pre-Release"
