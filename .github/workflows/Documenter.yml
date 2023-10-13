@@ -30,6 +30,12 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1"
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        id: build-cache
+        with:
+          key: build-cache.ray-jl.documenter
+          path: ~/.cache
       # Use a separate step for instantiation to get more fine grained timing of steps
       - name: Build ray_julia library
         id: ray_julia
@@ -63,3 +69,11 @@ jobs:
         env:
           repo: ${{ github.repository }}
           PR: ${{ github.event.number }}
+
+      # https://github.com/actions/cache/tree/main/save#always-save-cache
+      - name: Save build cache
+        uses: actions/cache/save@v3
+        if: always() && steps.build-cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+          path: ~/.cache
