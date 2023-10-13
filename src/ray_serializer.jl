@@ -87,7 +87,7 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
     data = ray_jll.get_data(ray_obj)
     metadata = ray_jll.get_metadata(ray_obj)
 
-    # Metadata indicates an error was reported from the raylet.
+    # If the raylet reports an error, metadata will be set to a numeric error code.
     if !isnothing(metadata)
         metadata = String(metadata)
 
