@@ -189,7 +189,7 @@ jobs:
         id: version_check
         shell: julia --color=yes --project {0}
         run: |
-          using Pkg.Types
+          using Pkg.Types, LibGit2
           project = read_project("Project.toml")
           latest_tag = parse(VersionNumber, last(sort!(LibGit2.tag_list(LibGit2.GitRepo(@__DIR__)))))
           open(ENV["GITHUB_OUTPUT"], "a") do io
