@@ -147,11 +147,12 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address),
                              CxxPtr(serialized_object_status))
 
+    @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
+
     # Using `collect` to ensure that the entire string is captured and not just up to the
     # first null character. Will be fixed in:
     # https://github.com/JuliaInterop/CxxWrap.jl/pull/378
     owner_address_json = String(collect(ray_jll.MessageToJsonString(owner_address)))
-    @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
     serialized_object_status = String(collect(serialized_object_status))
 
     serialize_type(s, typeof(obj_ref))
