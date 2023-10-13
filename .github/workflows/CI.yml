@@ -197,9 +197,7 @@ jobs:
           LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
         run: |
           using Pkg.Types, LibGit2
-          @info @__DIR__
           project = read_project("Project.toml")
-          @info project
           latest_tag = parse(VersionNumber, ENV["LATEST_TAG"])
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "make_release=$(project.version > latest_tag)")
