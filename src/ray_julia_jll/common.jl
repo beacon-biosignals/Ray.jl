@@ -204,9 +204,10 @@ Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
 # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
 #
 # is shadowed by more specific fallbacks defined by CxxWrap.
-const ObjectIDTypes = (ObjectIDAllocated, ObjectIDDereferenced)
-for Ta in ObjectIDTypes, Tb in ObjectIDTypes
-    @eval Base.:(==)(a::$Ta, b::$Tb) = Hex(a) == Hex(b)
+let types = (ObjectIDAllocated, ObjectIDDereferenced)
+    for A in types, B in types
+        @eval Base.:(==)(a::$A, b::$B) = Hex(a) == Hex(b)
+    end
 end
 
 Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
