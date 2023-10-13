@@ -40,7 +40,7 @@ function Base.getproperty(x::ObjectRef, prop::Symbol)
     elseif prop == :owner_address
         owner_address_json = getfield(x, :owner_address_json)
         isnothing(owner_address_json) && return nothing
-        std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
+        std_str = safe_convert(StdString, owner_address_json)
         ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
     else
         getfield(x, prop)
@@ -149,11 +149,8 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
 
     @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
 
-    # Using `collect` to ensure that the entire string is captured and not just up to the
-    # first null character. Will be fixed in:
-    # https://github.com/JuliaInterop/CxxWrap.jl/pull/378
-    owner_address_json = String(collect(ray_jll.MessageToJsonString(owner_address)))
-    serialized_object_status = String(collect(serialized_object_status))
+    owner_address_json = safe_convert(String, ray_jll.MessageToJsonString(owner_address))
+    serialized_object_status = safe_convert(String, serialized_object_status)
 
     serialize_type(s, typeof(obj_ref))
     serialize(s, hex_str)
@@ -171,7 +168,7 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     @debug begin
         owner_address = nothing
         if !isempty(owner_address_json)
-            std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
+            std_str = safe_convert(StdString, owner_address_json)
             owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
         end
         "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
@@ -179,3 +176,10 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
 
     return ObjectRef(hex_str, owner_address_json, serialized_object_status)
 end
+
+safe_convert(::Type{String}, str::AbstractString) = convert(String, str)
+
+# Using `collect` and `ncodeunits` to ensure that the entire string is captured and not just
+# up to the first null character: https://github.com/JuliaInterop/CxxWrap.jl/pull/378
+safe_convert(::Type{String}, str::StdString) = String(collect(str))
+safe_convert(::Type{StdString}, str::AbstractString) = StdString(str, ncodeunits(str))
