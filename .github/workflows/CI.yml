@@ -49,7 +49,8 @@ jobs:
             arch: x64
     steps:
       - uses: actions/checkout@v3
-        fetch-tags: true  # we need to know the latest tag to check if we should make a release
+        with:
+          fetch-tags: true  # we need to know the latest tag to check if we should make a release
       - name: Determine Ray commit
         id: ray-commit
         run: |
