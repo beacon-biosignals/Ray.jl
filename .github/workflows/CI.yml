@@ -191,7 +191,7 @@ jobs:
         run: |
           using Pkg.Types
           project = read_project("Project.toml")
-          latest_tag = parse(VersionNumber, readchomp(`git describe --tags --abbrev=0`))
+          latest_tag = parse(VersionNumber, last(sort!(LibGit2.tag_list(LibGit2.GitRepo(@__DIR__)))))
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "make_release=$(project.version > latest_tag)")
           end
