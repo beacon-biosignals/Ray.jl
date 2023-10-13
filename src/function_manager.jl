@@ -77,14 +77,15 @@ end
 
 function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     fd = ray_jll.function_descriptor(f)
+    function_locations = functionloc.(methods(f))
     key = function_key(fd, job_id)
-    @debug "Exporting function to function store:" fd key
+    @debug "Exporting function to function store:" fd key function_locations
     # DFK: I _think_ the string memory may be mangled if we don't `deepcopy`. Not sure but
     # it can't hurt
     if ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, deepcopy(key), -1)
-        @debug "Function already present in GCS store:" fd key f
+        @debug "Function already present in GCS store:" fd key
     else
-        @debug "Exporting function to GCS store:" fd key f
+        @debug "Exporting function to GCS store:" fd key
         val = base64encode(serialize, f)
         check_oversized_function(val, fd)
         ray_jll.Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)

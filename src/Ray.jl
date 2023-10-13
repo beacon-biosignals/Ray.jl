@@ -9,6 +9,7 @@ using ArgParse
 using Base64
 using CxxWrap: CxxPtr, CxxRef, StdString, StdVector, isnull
 using CxxWrap.StdLib: SharedPtr
+using Dates: Dates, DateFormat, @dateformat_str, now
 using JSON3
 using Logging
 using LoggingExtras
