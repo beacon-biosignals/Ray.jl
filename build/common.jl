@@ -6,19 +6,6 @@ using URIs: URI
 const TARBALL_DIR = joinpath(@__DIR__, "tarballs")
 const SO_FILE = "julia_core_worker_lib.so"
 
-const TARBALL_REGEX = r"""
-    ^ray_julia\.v(?<jll_version>[0-9]+(\.[0-9]+){2})\.
-    (?<triplet>[a-z0-9_-]+)-
-    julia_version\+(?<julia_version>[0-9]+(\.[0-9]+){2})\.
-    tar\.gz$
-    """x
-
-const GH_RELEASE_ASSET_PATH_REGEX = r"""
-    ^/(?<owner>[^/]+)/(?<repo_name>[^/]+)/
-    releases/download/
-    (?<tag>[^/]+)/?$
-    """x
-
 const REQUIRED_BASE_TRIPLETS = ("x86_64-linux-gnu", "aarch64-apple-darwin")
 const REQUIRED_JULIA_VERSIONS = (v"1.8", v"1.9")
 const REQUIRED_PLATFORMS = let
@@ -33,24 +20,6 @@ function remote_url(repo_root::AbstractString, name::AbstractString="origin")
         LibGit2.with(LibGit2.lookup_remote(repo, name)) do remote
             return LibGit2.url(remote)
         end
-    end
-end
-
-function git_head_sha(repo_root::AbstractString=REPO_PATH)
-    return LibGit2.with(LibGit2.GitRepo(repo_root)) do repo
-        ref = LibGit2.head(repo)
-        commit = LibGit2.peel(LibGit2.GitCommit, ref)
-        return string(LibGit2.GitHash(commit))
-    end
-end
-
-function github_token()
-    return get(ENV, "GITHUB_TOKEN") do
-        s = Base.getpass("GitHub PAT")
-        println()
-        token = read(s, String)
-        Base.shred!(s)
-        return token
     end
 end
 
@@ -83,12 +52,8 @@ end
 
 const REPO_PATH = abspath(joinpath(@__DIR__, ".."))
 const REPO_HTTPS_URL = convert_to_https_url(remote_url(REPO_PATH))
-const REPO_ORG = split(parse(URI, REPO_HTTPS_URL).path, '/')[2]
-const REPO_NAME = split(parse(URI, REPO_HTTPS_URL).path, '/')[3]
 const COMPILED_DIR = joinpath(REPO_PATH, "build", "bazel-bin")
-
 const ARTIFACTS_TOML = joinpath(REPO_PATH, "Artifacts.toml")
-const ARTIFACTS_WORKFLOW_NAME = "CI"
 
 const TAG = let
     project_toml = joinpath(REPO_PATH, "Project.toml")
