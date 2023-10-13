@@ -38,6 +38,7 @@ jobs:
           using Pkg
           Pkg.instantiate()
           include(joinpath(pwd(), "build_library.jl"))
+          build_library(; override=true)
         working-directory: ${{ env.build_dir }}
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
