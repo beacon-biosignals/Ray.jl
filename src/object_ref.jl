@@ -40,7 +40,8 @@ function Base.getproperty(x::ObjectRef, prop::Symbol)
     elseif prop == :owner_address
         owner_address_json = getfield(x, :owner_address_json)
         isnothing(owner_address_json) && return nothing
-        ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
+        std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
+        ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
     else
         getfield(x, prop)
     end
@@ -145,14 +146,13 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     # Prefer serializing ownership information from the core worker backend
     ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address),
                              CxxPtr(serialized_object_status))
-    # XXX: we use ~~codeunits~~ JSON here because when there are null bytes
-    # anywhere in the string, the `String` (or even `Vector{UInt8}`) conversion
-    # from `CxxWrap.StdString` will truncate the string at the first null byte.
-    #
-    # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
-    owner_address_json = String(ray_jll.MessageToJsonString(owner_address))
+
+    # Using `collect` to ensure that the entire string is captured and not just up to the
+    # first null character. Will be fixed in:
+    # https://github.com/JuliaInterop/CxxWrap.jl/pull/378
+    owner_address_json = String(collect(ray_jll.MessageToJsonString(owner_address)))
     @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
-    serialized_object_status = String(serialized_object_status)
+    serialized_object_status = String(collect(serialized_object_status))
 
     serialize_type(s, typeof(obj_ref))
     serialize(s, hex_str)
@@ -172,7 +172,8 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
         owner_address_json = nothing
         @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address_json"
     else
-        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
+        std_str = StdString(owner_address_json, ncodeunits(owner_address_json))
+        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
         @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
     end
 
