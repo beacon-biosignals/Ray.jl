@@ -63,10 +63,7 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
     return xcp
 end
 
-function ObjectRef(oid::ray_jll.ObjectIDAllocated; kwargs...)
-    return ObjectRef(ray_jll.Hex(oid); kwargs...)
-end
-
+ObjectRef(oid::ray_jll.ObjectID; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
 ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
 hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
@@ -105,7 +102,7 @@ end
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
     @debug """Registering ownership for $(obj_ref)
-              owner_address: $(obj_ref.owner_address)
+              owner address: $(obj_ref.owner_address)
               status: $(bytes2hex(codeunits(obj_ref.serialized_object_status)))
               contained in $(outer_obj_ref)"""
 
@@ -154,7 +151,7 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
     #
     # owner_address_bytes = collect(codeunits(ray_jll.SerializeAsString(owner_address)))
     owner_address_json = String(ray_jll.MessageToJsonString(owner_address))
-    @debug "serialize(, ::ObjectRef):\nowner address $(owner_address)"
+    @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
     serialized_object_status = String(serialized_object_status)
 
     serialize_type(s, typeof(obj_ref))
@@ -173,10 +170,10 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     # this if/else block only exists for debug logging
     if owner_address_json === nothing || isempty(owner_address_json)
         owner_address_json = nothing
-        @debug "deserialize(, ::ObjectRef): empty `owner_address_json`"
+        @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address_json"
     else
         owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, owner_address_json)
-        @debug "deserialize(, ::ObjectRef):\nowner address $(owner_address)"
+        @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
     end
 
     return ObjectRef(hex_str, owner_address_json, serialized_object_status)

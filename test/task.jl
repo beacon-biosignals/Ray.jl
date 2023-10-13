@@ -29,16 +29,18 @@
     try
         Ray.get(result)
     catch e
-        @test e isa Ray.RayTaskException
+        @test e isa RayTaskError
         @test e.captured.ex == ErrorException("AHHHHH")
     end
 
     # passthrough object refs as arguments
-    remote_ref = Ray.put(1)
-    return_ref = Ray.submit_task(identity, (remote_ref,))
-    @test return_ref != remote_ref
-    @test Ray.get(return_ref) == remote_ref
-    @test Ray.get(Ray.get(return_ref)) == 1
+    with_logger(ConsoleLogger(Logging.Debug)) do
+        remote_ref = Ray.put(1)
+        return_ref = Ray.submit_task(identity, (remote_ref,))
+        @test return_ref != remote_ref
+        @test Ray.get(return_ref) == remote_ref
+        @test Ray.get(Ray.get(return_ref)) == 1
+    end
 end
 
 @testset "Task spawning a task" begin

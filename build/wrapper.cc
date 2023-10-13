@@ -110,13 +110,18 @@ void initialize_worker(
                         application_error,
                         is_retryable_error);
 
-          RAY_CHECK(return_vec.size() == 1);
-
-          // TODO: support multiple return values
-          // https://github.com/beacon-biosignals/Ray.jl/issues/54
-          (*returns)[0].second = return_vec[0];
-          return Status::OK();
+            // TODO: support multiple return values
+            // https://github.com/beacon-biosignals/Ray.jl/issues/54
+            if (return_vec.size() == 1) {
+                (*returns)[0].second = return_vec[0];
+                return Status::OK();
+            }
+            else {
+                auto msg = "Task returned " + std::to_string(return_vec.size()) + " values. Expected 1.";
+                return Status::NotImplemented(msg);
+            };
         };
+
     RAY_LOG(DEBUG) << "ray_julia_jll: Initializing julia worker coreworker";
     CoreWorkerProcess::Initialize(options);
 
@@ -180,31 +185,34 @@ ray::core::CoreWorker &_GetCoreWorker() {
 }
 
 // Example of using `CoreWorker::Put`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L224-L237
-ObjectID put(const std::shared_ptr<RayObject> object,
-             const std::vector<ObjectID> &contained_object_ids) {
+Status put(const std::shared_ptr<RayObject> object,
+           const std::vector<ObjectID> &contained_object_ids,
+           ObjectID *object_id) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
-
     // Store our data in the object store
-    ObjectID object_id;
-    RAY_CHECK_OK(worker.Put(*object, contained_object_ids, &object_id));
-    return object_id;
+    return worker.Put(*object, contained_object_ids, object_id);
 }
 
 // Example of using `CoreWorker::Get`: https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/test/core_worker_test.cc#L210-L220
-std::shared_ptr<RayObject> get(const ObjectID object_id, int64_t timeout_ms) {
+Status get(const ObjectID object_id, const int64_t timeout_ms, std::shared_ptr<RayObject> *result) {
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
     // Retrieve our data from the object store
-    std::vector<std::shared_ptr<RayObject>> objects;
     std::vector<ObjectID> get_obj_ids = {object_id};
-    auto status = worker.Get(get_obj_ids, timeout_ms, &objects);
-    if (!status.ok()) {
-        return nullptr;
+    std::vector<shared_ptr<RayObject>> result_vec;
+    auto status = worker.Get(get_obj_ids, timeout_ms, &result_vec);
+    *result = result_vec[0];
+
+    // TODO (maybe?): allow multiple return values
+    // https://github.com/beacon-biosignals/Ray.jl/issues/54
+    auto num_objs = result_vec.size();
+    if (num_objs != 1) {
+        auto msg = "Requested a single object but instead found " + std::to_string(num_objs) + " objects.";
+        status = Status::UnknownError(msg);
     }
 
-    RAY_CHECK(objects.size() == 1);
-    return objects[0];
+    return status;
 }
 
 bool contains(const ObjectID object_id) {

@@ -8,6 +8,7 @@ using Serialization
 using Sockets: @ip_str
 using Test
 
+using Logging: Logging, ConsoleLogger, with_logger
 using Ray: ray_julia_jll, ray_julia_jll as ray_jll
 
 include("setup.jl")

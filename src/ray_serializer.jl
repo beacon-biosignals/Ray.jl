@@ -84,13 +84,23 @@ end
 
 function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
                                      outer_object_ref=nothing)
+    data = ray_jll.get_data(ray_obj)
     metadata = ray_jll.get_metadata(ray_obj)
+
+    # If the raylet reports an error, metadata will be set to a numeric error code.
     if !isnothing(metadata)
-        from = isnothing(outer_object_ref) ? "" : " from `$(repr(outer_object_ref))`"
-        error("Encountered unhandled metadata$from: $(String(metadata))")
+        metadata = String(metadata)
+
+        error_type = try
+            parse(Int, metadata)
+        catch e
+            from = isnothing(outer_object_ref) ? "" : " from `$(repr(outer_object_ref))`"
+            error("Encountered unhandled metadata$from: $metadata")
+        end
+
+        throw(RayError(error_type, data))
     end
 
-    data = ray_jll.get_data(ray_obj)
     s = RaySerializer(IOBuffer(data))
     result = try
         deserialize(s)
@@ -105,5 +115,5 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
 
     # TODO: add an option to not rethrow
     # https://github.com/beacon-biosignals/Ray.jl/issues/58
-    result isa RayTaskException ? throw(result) : return result
+    result isa RayError ? throw(result) : return result
 end

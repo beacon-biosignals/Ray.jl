@@ -9,8 +9,10 @@ function put(data)
     nested_ids = ray_jll.GetNestedRefIds(ray_obj[])
 
     # `CoreWorker::Put` initializes the local ref count to 1
-    return ObjectRef(ray_jll.put(ray_obj, nested_ids);
-                     add_local_ref=false)
+    oid_ptr = CxxPtr(ray_jll.ObjectID())
+    status = ray_jll.put(ray_obj, nested_ids, oid_ptr)
+    Symbol(status) == :OK || error("ray_julia_jll.put returned Status::$status")
+    return ObjectRef(oid_ptr[]; add_local_ref=false)
 end
 
 put(obj_ref::ObjectRef) = obj_ref
@@ -26,9 +28,11 @@ captured exception will be thrown on `get`.
 """
 function get(obj_ref::ObjectRef)
     wait(obj_ref)
-    ray_obj = ray_jll.get(obj_ref.oid, 0)
-    isnull(ray_obj[]) && error("got null pointer after successful `wait`; this is a bug!")
-    return deserialize_from_ray_object(ray_obj, obj_ref)
+    ray_obj = CxxPtr(SharedPtr{ray_jll.RayObject}())
+    status = ray_jll.get(obj_ref.oid, 0, ray_obj)
+    Symbol(status) == :OK || error("ray_julia_jll.get returned Status::$status")
+    isnull(ray_obj) && error("got null pointer after successful `wait`; this is a bug!")
+    return deserialize_from_ray_object(ray_obj[], obj_ref)
 end
 
 # get(ray_obj::SharedPtr{ray_jll.RayObject}) = deserialize_from_ray_object(ray_obj, nothing)

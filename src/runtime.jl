@@ -260,10 +260,12 @@ function serialize_args(args)
             ray_jll.TaskArgByValue(ray_obj)
         else
             nested_ids = ray_jll.GetNestedRefIds(ray_obj[])
-            oid = ray_jll.put(ray_obj, nested_ids)
+            oid = CxxPtr(ray_jll.ObjectID())
+            status = ray_jll.put(ray_obj, nested_ids, oid)
+            Symbol(status) == :OK || error("ray_julia_jll.put returned Status::$status")
             # TODO: Add test for populating `call_site`
             call_site = record_call_site ? sprint(Base.show_backtrace, backtrace()) : ""
-            ray_jll.TaskArgByReference(oid, rpc_address, call_site)
+            ray_jll.TaskArgByReference(oid[], rpc_address, call_site)
         end
 
         push!(task_args, task_arg)
@@ -328,7 +330,7 @@ function task_executor(ray_function, returns_ptr, task_args_ptr, task_name,
         is_retryable_error[] = ray_jll.CxxBool(false)
         @debug "push error status: $status"
 
-        result = RayTaskException(task_name, captured)
+        result = RayTaskError(task_name, captured)
     end
 
     # TODO: remove - useful for now for debugging
@@ -412,7 +414,7 @@ function start_worker(args=ARGS)
     # https://github.com/beacon-biosignals/Ray.jl/issues/53
     ENV["JULIA_DEBUG"] = "Ray"
     logfile = joinpath(parsed_args["logs_dir"], "julia_worker_$(getpid()).log")
-    global_logger(FileLogger(logfile; append=true, always_flush=true))
+    global_logger(timestamp_logger(FileLogger(logfile; append=true, always_flush=true)))
 
     _init_global_function_manager(parsed_args["address"])
 
@@ -435,4 +437,10 @@ function start_worker(args=ARGS)
                                      parsed_args["startup_token"],
                                      parsed_args["runtime_env_hash"],
                                      task_executor)
+end
+
+function timestamp_logger(logger, df::DateFormat=dateformat"yyyy-mm-dd HH:MM:SS,sss")
+    return TransformerLogger(logger) do log
+        return merge(log, (; message="$(Dates.format(now(), df)) $(log.message)"))
+    end
 end

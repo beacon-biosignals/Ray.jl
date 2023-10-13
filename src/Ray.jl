@@ -9,6 +9,7 @@ using ArgParse
 using Base64
 using CxxWrap: CxxPtr, CxxRef, StdString, StdVector, isnull
 using CxxWrap.StdLib: SharedPtr
+using Dates: Dates, DateFormat, @dateformat_str, now
 using JSON3
 using Logging
 using LoggingExtras
@@ -18,6 +19,9 @@ using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
 using Sockets: IPAddr, getipaddr
 
 export start_worker, submit_task, @ray_import, ObjectRef
+
+# exceptions
+export RayError, RaySystemError, RayTaskError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll
