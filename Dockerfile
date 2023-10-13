@@ -52,6 +52,11 @@ RUN if ! julia --history-file=no -e 'exit(0)'; then \
 # Reduces output from `apt-get`
 ENV DEBIAN_FRONTEND="noninteractive"
 
+# Configure `apt-get` to keep downloaded packages. Needed for using `--mount=type=cache` with `apt-get`
+# https://docs.docker.com/engine/reference/builder/#example-cache-apt-packages
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | tee -a /etc/apt/apt.conf.d/keep-cache
+
 # Install sudo
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
