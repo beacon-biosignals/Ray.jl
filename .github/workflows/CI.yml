@@ -195,7 +195,7 @@ jobs:
           @info @__DIR__
           project = read_project("Project.toml")
           @info project
-          latest_tag = parse(VersionNumber, readchomp(pipeline(`git fetch --tags`, `git describe --tags --abbrev=0`)))
+          latest_tag = parse(VersionNumber, readchomp(pipeline(`git fetch --tags`, `git tag --sort=-version:refname`, `head -n1`)))
           open(ENV["GITHUB_OUTPUT"], "a") do io
             println(io, "make_release=$(project.version > latest_tag)")
           end
