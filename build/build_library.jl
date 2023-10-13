@@ -46,6 +46,7 @@ function build_library(; override::Bool=true)
 
     # Add entry to depot Overrides.toml
     if override
+        @info "Adding entry to Overrides.toml..."
         pkg_uuid = TOML.parsefile(PROJECT_TOML)["uuid"]
 
         overrides_toml = joinpath(first(DEPOT_PATH), "artifacts", "Overrides.toml")
