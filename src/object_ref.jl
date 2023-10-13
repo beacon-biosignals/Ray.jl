@@ -1,6 +1,6 @@
 mutable struct ObjectRef
     oid_hex::String
-    owner_address_json::Union{String,Nothing}
+    owner_address_json::String
     serialized_object_status::String
 
     function ObjectRef(oid_hex, owner_address_json, serialized_object_status;
@@ -36,7 +36,6 @@ function Base.getproperty(x::ObjectRef, prop::Symbol)
         ray_jll.FromHex(ray_jll.ObjectID, getfield(x, :oid_hex))
     elseif prop == :owner_address
         owner_address_json = getfield(x, :owner_address_json)
-        isnothing(owner_address_json) && return nothing
         std_str = safe_convert(StdString, owner_address_json)
         ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
     else
@@ -62,7 +61,7 @@ function Base.deepcopy_internal(x::ObjectRef, stackdict::IdDict)
 end
 
 ObjectRef(oid::ray_jll.ObjectID; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
-ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, nothing, ""; kwargs...)
+ObjectRef(oid_hex::AbstractString; kwargs...) = ObjectRef(oid_hex, "", ""; kwargs...)
 hex_identifier(obj_ref::ObjectRef) = obj_ref.oid_hex
 Base.:(==)(a::ObjectRef, b::ObjectRef) = hex_identifier(a) == hex_identifier(b)
 
@@ -114,7 +113,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
     owner_address = obj_ref.owner_address
 
     worker = ray_jll.GetCoreWorker()
-    if !isnothing(obj_ref.owner_address) && !has_owner(obj_ref)
+    if !has_owner(obj_ref)
         serialized_object_status = safe_convert(StdString, obj_ref.serialized_object_status)
 
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
@@ -123,12 +122,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
                                                       owner_address,
                                                       serialized_object_status)
     else
-        if isnothing(obj_ref.owner_address)
-            @debug "attempted to register ownership but owner address is nothing: $(obj_ref)"
-        end
-        if has_owner(obj_ref)
-            @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
-        end
+        @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
     end
 
     return nothing
@@ -165,11 +159,8 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     serialized_object_status = deserialize(s)
 
     @debug begin
-        owner_address = nothing
-        if !isempty(owner_address_json)
-            std_str = safe_convert(StdString, owner_address_json)
-            owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
-        end
+        std_str = safe_convert(StdString, owner_address_json)
+        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
         "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
     end
 

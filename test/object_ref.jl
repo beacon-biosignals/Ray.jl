@@ -13,13 +13,15 @@ end
         obj_ref = ObjectRef(hex_str)
         @test Ray.hex_identifier(obj_ref) == hex_str
         @test obj_ref.oid == ray_jll.FromHex(ray_jll.ObjectID, hex_str)
-        @test obj_ref.owner_address === nothing
+        @test obj_ref.owner_address == ray_jll.Address()
         @test obj_ref == ObjectRef(hex_str)
         @test hash(obj_ref) == hash(ObjectRef(hex_str))
+    end
 
-        # test "no owner address" constructors
-        @test ObjectRef(hex_str, nothing, "") == obj_ref
-        @test ObjectRef(hex_str, "", "") == obj_ref
+    @testset "no owner address constructors" begin
+        hex_str = "f"^(2 * 28)
+        @test ObjectRef(hex_str, "", "").owner_address == ray_jll.Address()
+        @test ObjectRef(hex_str, "{}", "").owner_address == ray_jll.Address()
     end
 
     @testset "show" begin
