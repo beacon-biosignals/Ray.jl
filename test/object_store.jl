@@ -56,10 +56,8 @@
     end
 
     @testset "Object owner" begin
-        obj = Ray.put(1)
-        # ownership only embedded in ObjectRef on serialization
-        result = Ray.deserialize_from_ray_object(Ray.serialize_to_ray_object(obj))
-        @test result.owner_address == Ray.get_owner_address(obj)
+        obj_ref = Ray.put(1)
+        @test Ray.has_owner(obj_ref)
     end
 
     @testset "deepcopy object reference owner address" begin

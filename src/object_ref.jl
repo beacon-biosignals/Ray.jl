@@ -1,10 +1,8 @@
 mutable struct ObjectRef
     oid_hex::String
-    owner_address::ray_jll.Address
-    serialized_object_status::String
 
-    function ObjectRef(oid_hex, owner_address, serialized_object_status; add_local_ref=true)
-        objref = new(oid_hex, owner_address, serialized_object_status)
+    function ObjectRef(oid_hex; add_local_ref=true)
+        objref = new(oid_hex)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
             ray_jll.AddLocalReference(worker, objref.oid)
@@ -15,10 +13,6 @@ mutable struct ObjectRef
         end
         return objref
     end
-end
-
-function ObjectRef(oid_hex::AbstractString; kwargs...)
-    return ObjectRef(oid_hex, ray_jll.Address(), ""; kwargs...)
 end
 
 ObjectRef(oid::ray_jll.ObjectID; kwargs...) = ObjectRef(ray_jll.Hex(oid); kwargs...)
@@ -93,13 +87,26 @@ function has_owner(obj_ref::ObjectRef)
     return !isempty(ray_jll.SerializeAsString(owner_address))
 end
 
+function _get_ownership_info(obj_ref::ObjectRef)
+    worker = ray_jll.GetCoreWorker()
+    owner_address = ray_jll.Address()
+    serialized_object_status = StdString()
+
+    ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address),
+                             CxxPtr(serialized_object_status))
+
+    return owner_address, serialized_object_status
+end
+
 # TODO: this is not currently used pending investigation of how to properly handle ownership
 # see https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
 # and https://github.com/beacon-biosignals/Ray.jl/pull/108
-function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing})
+function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing},
+                             owner_address::ray_jll.Address,
+                             serialized_object_status::String)
     @debug """Registering ownership for $(obj_ref)
-              owner address: $(obj_ref.owner_address)
-              status: $(bytes2hex(codeunits(obj_ref.serialized_object_status)))
+              owner address: $(owner_address)
+              status: $(bytes2hex(codeunits(serialized_object_status)))
               contained in $(outer_obj_ref)"""
 
     outer_object_id = if outer_obj_ref !== nothing
@@ -110,12 +117,12 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
 
     worker = ray_jll.GetCoreWorker()
     if !has_owner(obj_ref)
-        serialized_object_status = safe_convert(StdString, obj_ref.serialized_object_status)
+        serialized_object_status = safe_convert(StdString, serialized_object_status)
 
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
         # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/core_worker.h#L543
         ray_jll.RegisterOwnershipInfoAndResolveFuture(worker, obj_ref.oid, outer_object_id,
-                                                      obj_ref.owner_address,
+                                                      owner_address,
                                                       serialized_object_status)
     else
         @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
@@ -126,32 +133,11 @@ end
 
 # We cannot serialize pointers between processes
 function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
-    worker = ray_jll.GetCoreWorker()
-
-    hex_str = hex_identifier(obj_ref)
-    owner_address = ray_jll.Address()
-    serialized_object_status = StdString()
-
-    # Prefer serializing ownership information from the core worker backend
-    ray_jll.GetOwnershipInfo(worker, obj_ref.oid, CxxPtr(owner_address),
-                             CxxPtr(serialized_object_status))
-
-    @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
-
     serialize_type(s, typeof(obj_ref))
-    serialize(s, hex_str)
-    serialize(s, owner_address)
-    serialize(s, safe_convert(String, serialized_object_status))
-
+    serialize(s, hex_identifier(obj_ref))
     return nothing
 end
 
 function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
-    hex_str = deserialize(s)
-    owner_address = deserialize(s)
-    serialized_object_status = deserialize(s)
-
-    @debug "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
-
-    return ObjectRef(hex_str, owner_address, serialized_object_status)
+    return ObjectRef(deserialize(s))
 end

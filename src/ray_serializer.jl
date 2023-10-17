@@ -1,3 +1,8 @@
+struct OwnershipInfo
+    owner_address::ray_jll.Address
+    serialized_object_status::String
+end
+
 mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     # Fields required by all AbstractSerializers
     io::I
@@ -6,11 +11,18 @@ mutable struct RaySerializer{I<:IO} <: AbstractSerializer
     pending_refs::Vector{Int}
     version::Int
 
-    # Inlined object references encountered during serializing
+    # Inlined object references encountered during serializing/deserialization
     object_refs::Set{ObjectRef}
 
+    # Deserialized object reference metadata used for registering ownership
+    object_owner::Dict{ObjectRef,OwnershipInfo}
+
     function RaySerializer{I}(io::I) where {I<:IO}
-        return new(io, 0, IdDict(), Int[], Serialization.ser_version, Set{ObjectRef}())
+        version = Serialization.ser_version
+        object_refs = Set{ObjectRef}()
+        object_owner = Dict{ObjectRef,OwnershipInfo}()
+
+        return new(io, 0, IdDict(), Int[], version, object_refs, object_owner)
     end
 end
 
@@ -32,12 +44,29 @@ end
 
 function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     push!(s.object_refs, obj_ref)
-    return invoke(serialize, Tuple{AbstractSerializer,ObjectRef}, s, obj_ref)
+
+    owner_address, serialized_object_status = _get_ownership_info(obj_ref)
+
+    invoke(serialize, Tuple{AbstractSerializer,ObjectRef}, s, obj_ref)
+
+    # Append ownership information when serializing an `ObjectRef` with the `RaySerializer`.
+    # This information will be deserialized another worker process and used during object
+    # reference registration.
+    serialize(s, owner_address)
+    serialize(s, safe_convert(String, serialized_object_status))
+
+    return nothing
 end
 
 function Serialization.deserialize(s::RaySerializer, T::Type{ObjectRef})
     obj_ref = invoke(deserialize, Tuple{AbstractSerializer,Type{ObjectRef}}, s, T)
+
+    owner_address = deserialize(s)
+    serialized_object_status = deserialize(s)
+    s.object_owner[obj_ref] = OwnershipInfo(owner_address, serialized_object_status)
+
     push!(s.object_refs, obj_ref)
+
     return obj_ref
 end
 
@@ -110,7 +139,9 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
     end
 
     for inner_object_ref in s.object_refs
-        _register_ownership(inner_object_ref, outer_object_ref)
+        metadata = s.object_owner[inner_object_ref]
+        _register_ownership(inner_object_ref, outer_object_ref, metadata.owner_address,
+                            metadata.serialized_object_status)
     end
 
     # TODO: add an option to not rethrow
