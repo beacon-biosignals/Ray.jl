@@ -18,10 +18,9 @@ end
         @test hash(obj_ref) == hash(ObjectRef(hex_str))
     end
 
-    @testset "no owner address constructors" begin
+    @testset "no owner address constructor" begin
         hex_str = "f"^(2 * 28)
-        @test ObjectRef(hex_str, "", "").owner_address == ray_jll.Address()
-        @test ObjectRef(hex_str, "{}", "").owner_address == ray_jll.Address()
+        @test ObjectRef(hex_str, ray_jll.Address(), "").owner_address == ray_jll.Address()
     end
 
     @testset "show" begin
