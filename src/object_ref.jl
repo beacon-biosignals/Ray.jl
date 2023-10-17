@@ -1,11 +1,11 @@
 mutable struct ObjectRef
     oid_hex::String
-    owner_address_json::String
+    serialized_owner_address::String
     serialized_object_status::String
 
-    function ObjectRef(oid_hex, owner_address_json, serialized_object_status;
+    function ObjectRef(oid_hex, serialized_owner_address, serialized_object_status;
                        add_local_ref=true)
-        objref = new(oid_hex, owner_address_json, serialized_object_status)
+        objref = new(oid_hex, serialized_owner_address, serialized_object_status)
         if add_local_ref
             worker = ray_jll.GetCoreWorker()
             ray_jll.AddLocalReference(worker, objref.oid)
@@ -35,9 +35,11 @@ function Base.getproperty(x::ObjectRef, prop::Symbol)
     return if prop == :oid
         ray_jll.FromHex(ray_jll.ObjectID, getfield(x, :oid_hex))
     elseif prop == :owner_address
-        owner_address_json = getfield(x, :owner_address_json)
-        std_str = safe_convert(StdString, owner_address_json)
-        ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
+        owner_address = ray_jll.Address()
+        serialized_owner_address = getfield(x, :serialized_owner_address)
+        std_str = safe_convert(StdString, serialized_owner_address)
+        ray_jll.ParseFromString(owner_address, std_str)
+        owner_address
     else
         getfield(x, prop)
     end
@@ -142,12 +144,12 @@ function Serialization.serialize(s::AbstractSerializer, obj_ref::ObjectRef)
 
     @debug "serialize ObjectRef:\noid: $hex_str\nowner address $owner_address"
 
-    owner_address_json = safe_convert(String, ray_jll.MessageToJsonString(owner_address))
+    serialized_owner_address = safe_convert(String, ray_jll.SerializeAsString(owner_address))
     serialized_object_status = safe_convert(String, serialized_object_status)
 
     serialize_type(s, typeof(obj_ref))
     serialize(s, hex_str)
-    serialize(s, owner_address_json)
+    serialize(s, serialized_owner_address)
     serialize(s, serialized_object_status)
 
     return nothing
@@ -155,21 +157,20 @@ end
 
 function Serialization.deserialize(s::AbstractSerializer, ::Type{ObjectRef})
     hex_str = deserialize(s)
-    owner_address_json = deserialize(s)
+    serialized_owner_address = deserialize(s)
     serialized_object_status = deserialize(s)
 
     @debug begin
-        std_str = safe_convert(StdString, owner_address_json)
-        owner_address = ray_jll.JsonStringToMessage(ray_jll.Address, std_str)
+        owner_address = ray_jll.Address()
+        std_str = safe_convert(StdString, serialized_owner_address)
+        ray_jll.ParseFromString(owner_address, std_str)
         "deserialize ObjectRef:\noid: $hex_str\nowner address: $owner_address"
     end
 
-    return ObjectRef(hex_str, owner_address_json, serialized_object_status)
+    return ObjectRef(hex_str, serialized_owner_address, serialized_object_status)
 end
-
-safe_convert(::Type{String}, str::AbstractString) = convert(String, str)
 
 # Using `collect` and `ncodeunits` to ensure that the entire string is captured and not just
 # up to the first null character: https://github.com/JuliaInterop/CxxWrap.jl/pull/378
-safe_convert(::Type{String}, str::StdString) = String(collect(str))
-safe_convert(::Type{StdString}, str::AbstractString) = StdString(str, ncodeunits(str))
+safe_convert(::Type{String}, str::StdString) = String(Vector{UInt8}(collect(str)))
+safe_convert(::Type{StdString}, str::String) = StdString(str, ncodeunits(str))
