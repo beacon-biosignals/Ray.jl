@@ -154,8 +154,28 @@ function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
     return message
 end
 
+function Serialization.serialize(s::AbstractSerializer, message::Message)
+    serialized_message = safe_convert(String, SerializeAsString(message))
+
+    serialize_type(s, Message)
+    serialize(s, supertype(typeof(message)))
+    serialize(s, serialized_message)
+
+    return nothing
+end
+
+function Serialization.deserialize(s::AbstractSerializer, ::Type{Message})
+    T = deserialize(s)
+    serialized_message = deserialize(s)
+
+    message = T()
+    ParseFromString(message, safe_convert(StdString, serialized_message))
+
+    return message
+end
+
 #####
-##### Address
+##### Address <: Message
 #####
 
 # there's annoying conversion from protobuf binary blobs for the "fields" so we
@@ -166,24 +186,6 @@ let types = (AddressAllocated, AddressDereferenced)
     for A in types, B in types
         @eval Base.:(==)(a::$A, b::$B) = MessageToJsonString(a) == MessageToJsonString(b)
     end
-end
-
-function Serialization.serialize(s::AbstractSerializer, addr::Address)
-    serialized_addr = safe_convert(String, SerializeAsString(addr))
-
-    serialize_type(s, Address)
-    serialize(s, serialized_addr)
-
-    return nothing
-end
-
-function Serialization.deserialize(s::AbstractSerializer, ::Type{Address})
-    serialized_addr = deserialize(s)
-
-    addr = Address()
-    ParseFromString(addr, safe_convert(StdString, serialized_addr))
-
-    return addr
 end
 
 #####
