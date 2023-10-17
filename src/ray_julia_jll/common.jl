@@ -154,6 +154,19 @@ function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
     return message
 end
 
+let msg_types = (Address, JobConfig, ObjectReference)
+    for T in msg_types
+        types = (Symbol(nameof(T), :Allocated), Symbol(nameof(T), :Dereferenced))
+        for A in types, B in types
+            @eval function Base.:(==)(a::$A, b::$B)
+                serialized_a = safe_convert(String, SerializeAsString(a))
+                serialized_b = safe_convert(String, SerializeAsString(b))
+                return serialized_a == serialized_b
+            end
+        end
+    end
+end
+
 function Serialization.serialize(s::AbstractSerializer, message::Message)
     serialized_message = safe_convert(String, SerializeAsString(message))
 
@@ -181,12 +194,6 @@ end
 # there's annoying conversion from protobuf binary blobs for the "fields" so we
 # handle it on the C++ side rather than wrapping everything.
 Base.show(io::IO, addr::Address) = print(io, _string(addr))
-
-let types = (AddressAllocated, AddressDereferenced)
-    for A in types, B in types
-        @eval Base.:(==)(a::$A, b::$B) = MessageToJsonString(a) == MessageToJsonString(b)
-    end
-end
 
 #####
 ##### Buffer
