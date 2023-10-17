@@ -168,6 +168,24 @@ let types = (AddressAllocated, AddressDereferenced)
     end
 end
 
+function Serialization.serialize(s::AbstractSerializer, addr::Address)
+    serialized_addr = safe_convert(String, SerializeAsString(addr))
+
+    serialize_type(s, Address)
+    serialize(s, serialized_addr)
+
+    return nothing
+end
+
+function Serialization.deserialize(s::AbstractSerializer, ::Type{Address})
+    serialized_addr = deserialize(s)
+
+    addr = Address()
+    ParseFromString(addr, safe_convert(StdString, serialized_addr))
+
+    return addr
+end
+
 #####
 ##### Buffer
 #####

@@ -22,4 +22,13 @@ using .ray_julia_jll: Address
         result = ray_julia_jll.SerializeAsString(address)
         @test result == serialized_str
     end
+
+    @testset "julia serialization round-trip" begin
+        address = Address()
+        io = IOBuffer()
+        serialize(io, address)
+        seekstart(io)
+        result = deserialize(io)
+        @test result == address
+    end
 end
