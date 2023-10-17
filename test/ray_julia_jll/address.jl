@@ -31,7 +31,6 @@ using .ray_julia_jll: Address
         @test result isa ray_julia_jll.AddressAllocated
         @test result == addr_alloc
 
-
         addr_ptr = CxxPtr(addr_alloc)
         addr_deref = addr_ptr[]
         @test addr_deref isa ray_julia_jll.AddressDereferenced
