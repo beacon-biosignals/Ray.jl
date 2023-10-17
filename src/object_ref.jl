@@ -104,19 +104,21 @@ end
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing},
                              owner_address::ray_jll.Address,
                              serialized_object_status::String)
-    @debug """Registering ownership for $(obj_ref)
-              owner address: $(owner_address)
-              status: $(bytes2hex(codeunits(serialized_object_status)))
-              contained in $(outer_obj_ref)"""
-
-    outer_object_id = if outer_obj_ref !== nothing
-        outer_obj_ref.oid
-    else
-        ray_jll.FromNil(ray_jll.ObjectID)
-    end
-
-    worker = ray_jll.GetCoreWorker()
     if !has_owner(obj_ref)
+        @debug """
+               Registering ownership for $(obj_ref)
+               owner address: $(owner_address)
+               status: $(bytes2hex(codeunits(serialized_object_status)))
+               contained in: $(outer_obj_ref)"""
+
+        worker = ray_jll.GetCoreWorker()
+
+        outer_object_id = if outer_obj_ref !== nothing
+            outer_obj_ref.oid
+        else
+            ray_jll.FromNil(ray_jll.ObjectID)
+        end
+
         serialized_object_status = safe_convert(StdString, serialized_object_status)
 
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_raylet.pyx#L3329
@@ -125,7 +127,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
                                                       owner_address,
                                                       serialized_object_status)
     else
-        @debug "attempted to register ownership but object already has known owner: $(obj_ref)"
+        @debug "Skipping registering ownership for $(obj_ref) as object has known owner"
     end
 
     return nothing
