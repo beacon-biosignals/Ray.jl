@@ -125,19 +125,10 @@ function Base.showerror(io::IO, ex::OutOfMemoryError)
     return nothing
 end
 
-"""
-    ObjectLostError <: RayError
+abstract type ObjectStoreError <: RayError end
 
-Indicates that the object is lost from distributed memory, due to node failure or system
-error.
-"""
-struct ObjectLostError <: RayError
-    object_ref_hex::String
-    call_site::String
-end
-
-function Base.showerror(io::IO, ex::ObjectLostError)
-    print(io, "$ObjectLostError: Failed to retrieve object $(ex.object_ref_hex). ")
+function print_prefix(io::IO, ex::ObjectStoreError)
+    print(io, "Failed to retrieve object $(ex.object_ref_hex). "
 
     # TODO: Support reporting call_site information
     # if !isempty(ex.call_site)
@@ -149,13 +140,29 @@ function Base.showerror(io::IO, ex::ObjectLostError)
     # end
     # print(io, "\n\n")
 
+    return nothing
+end
+
+"""
+    ObjectLostError <: ObjectStoreError
+
+Indicates that the object is lost from distributed memory, due to node failure or system
+error.
+"""
+struct ObjectLostError <: ObjectStoreError
+    object_ref_hex::String
+    call_site::String
+end
+
+function Base.showerror(io::IO, ex::ObjectLostError)
+    print(io, "$ObjectLostError: ")
+    print_prefix(io, ex)
     print(io, "All copies of $(ex.object_ref_hex) have been lost due to node failure. " *
               "Check cluster logs (\"/tmp/ray/session_latest/logs\") for more " *
               "information about the failure.")
 
     return nothing
 end
-
 
 """
     RaySystemError <: RayError

@@ -66,6 +66,7 @@ end
     call_site = ""
     msg = sprint(showerror, ObjectLostError(hex_str, call_site))
     @test startswith(msg, "ObjectLostError: Failed to retrieve object $hex_str")
+    @test contains(msg, "All copies of")
 end
 
 @testset "RaySystemError" begin
