@@ -69,6 +69,14 @@ end
     @test contains(msg, "All copies of")
 end
 
+@testset "ObjectFetchTimedOutError" begin
+    hex_str = "f"^(2 * 28)
+    call_site = ""
+    msg = sprint(showerror, ObjectFetchTimedOutError(hex_str, call_site))
+    @test startswith(msg, "ObjectFetchTimedOutError: Failed to retrieve object $hex_str")
+    @test contains(msg, "Fetch for object")
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -90,6 +98,7 @@ end
     @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "", obj_ref) == LocalRayletDiedError()
     @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ref) == TaskCancelledError()
     @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ref) == ObjectLostError(hex_str, "")
+    @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ref) == ObjectFetchTimedOutError(hex_str, "")
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ref) == Ray.OutOfMemoryError("foo")
     @test RayError(-1, nothing, obj_ref) == RaySystemError("Unrecognized error type -1")
 end

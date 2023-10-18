@@ -17,6 +17,8 @@ function RayError(error_type::Integer, data, obj_ref::Union{ObjectRef,Nothing})
         TaskCancelledError()
     elseif error_type == ray_jll.ErrorType(:OBJECT_LOST)
         ObjectLostError(hex_identifier(obj_ref), "")
+    elseif error_type == ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT)
+        ObjectFetchTimedOutError(hex_identifier(obj_ref), "")
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -160,6 +162,25 @@ function Base.showerror(io::IO, ex::ObjectLostError)
     print(io, "All copies of $(ex.object_ref_hex) have been lost due to node failure. " *
               "Check cluster logs (\"/tmp/ray/session_latest/logs\") for more " *
               "information about the failure.")
+
+    return nothing
+end
+
+"""
+    ObjectFetchTimedOutError <: ObjectStoreError
+
+Indicates that an object fetch timed out.
+"""
+struct ObjectFetchTimedOutError <: ObjectStoreError
+    object_ref_hex::String
+    call_site::String
+end
+
+function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
+    print(io, "$ObjectFetchTimedOutError: ")
+    print_prefix(io, ex)
+    print(io, "Fetch for object $(ex.object_ref_hex) timed out because no locations were " *
+              "found for the object. This may indicate a system-level bug.")
 
     return nothing
 end
