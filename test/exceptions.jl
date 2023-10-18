@@ -41,6 +41,11 @@
     @test occursin(structure_regex, str)
 end
 
+@testset "WorkerCrashedError" begin
+    msg = sprint(showerror, WorkerCrashedError())
+    @test startswith(msg, "WorkerCrashedError: The worker died unexpectedly")
+end
+
 @testset "OutOfMemoryError" begin
     e = Ray.OutOfMemoryError("foo")
     @test sprint(showerror, e) == "Ray.OutOfMemoryError: foo"
@@ -60,6 +65,7 @@ end
 end
 
 @testset "RayError" begin
+    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "") == WorkerCrashedError()
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo") == Ray.OutOfMemoryError("foo")
     @test RayError(-1, nothing) == RaySystemError("Unrecognized error type -1")
 end

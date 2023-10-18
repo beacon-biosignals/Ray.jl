@@ -9,7 +9,9 @@ Abstract super type of all Ray exception types.
 abstract type RayError <: Exception end
 
 function RayError(error_type::Integer, data)
-    ex = if error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
+    ex = if error_type == ray_jll.ErrorType(:WORKER_DIED)
+        WorkerCrashedError()
+    elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
@@ -59,6 +61,20 @@ function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
     printstyled(io, "\nnested exception: "; color=Base.error_color())
     # Call 3-argument `showerror` to allow specifying `backtrace`
     showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
+    return nothing
+end
+
+
+"""
+    WorkerCrashedError <: RayError
+
+Indicates that the worker died unexpectedly while executing a task.
+"""
+struct WorkerCrashedError <: RayError end
+
+function Base.showerror(io::IO, ::WorkerCrashedError)
+    print(io, "$WorkerCrashedError: The worker died unexpectedly while executing this " *
+              "task. Check julia-core-worker-*.log files for more information.")
     return nothing
 end
 
