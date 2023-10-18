@@ -34,23 +34,23 @@ public:
 
     ray::Status Connect();
 
-    std::string Get(const std::string &ns,
-                    const std::string &key,
-                    int64_t timeout_ms);
-    int Put(const std::string &ns,
-            const std::string &key,
-            const std::string &val,
-            bool overwrite,
-            int64_t timeout_ms);
-    std::vector<std::string> Keys(const std::string &ns,
-                                  const std::string &prefix,
-                                  int64_t timeout_ms);
-    bool Exists(const std::string &ns,
-                const std::string &key,
-                int64_t timeout_ms);
+    void Disconnect();
 
-    std::unique_ptr<ray::gcs::PythonGcsClient> gcs_client_;
+    std::string Get(const std::string &ns, const std::string &key);
+
+    bool Put(const std::string &ns,
+            const std::string &key,
+            const std::string &value,
+            bool overwrite);
+
+    std::vector<std::string> Keys(const std::string &ns, const std::string &prefix);
+
+    bool Exists(const std::string &ns, const std::string &key);
+
+    std::unique_ptr<ray::gcs::GcsClient> gcs_client_;
     ray::gcs::GcsClientOptions options_;
+    std::unique_ptr<instrumented_io_context> io_service_;
+    std::unique_ptr<std::thread> io_service_thread_;
 };
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
