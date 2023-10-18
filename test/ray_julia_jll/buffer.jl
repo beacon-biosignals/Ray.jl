@@ -5,6 +5,10 @@ using .ray_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
 @testset "LocalMemoryBuffer" begin
     data = UInt16[1:3;]
 
+    # In practise no one should be using `pointer_from_objref` with Ray buffers. We only do
+    # so as part of these tests to demonstrate that basic buffer functionality works without
+    # having to utilize serialization.
+
     @testset "non-copied object reference" begin
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), false)
         @test Data(buffer[]) == pointer_from_objref(data)
@@ -18,11 +22,10 @@ using .ray_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
         @test result === data
     end
 
-    # TODO: Using `sizeof` is probably wrong for `pointer_from_objref` as there is probably
-    # additional Julia type metadata not being accounted for. This may be why we see a
-    # segfault when trying to use `pointer_from_objref`.
-    # https://github.com/beacon-biosignals/Ray.jl/issues/55
     @testset "copied object reference" begin
+        # Using `sizeof` is probably wrong for `pointer_from_objref` as there is probably
+        # additional Julia type metadata not being accounted for. This may be why we see a
+        # segfault when trying to use `pointer_from_objref`.
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), true)
         @test Data(buffer[]) != pointer_from_objref(data)
         @test Size(buffer[]) == sizeof(data)
