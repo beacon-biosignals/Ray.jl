@@ -61,6 +61,13 @@ end
     @test sprint(showerror, e) == "Ray.OutOfMemoryError: foo"
 end
 
+@testset "ObjectLostError" begin
+    hex_str = "f"^(2 * 28)
+    call_site = ""
+    msg = sprint(showerror, ObjectLostError(hex_str, call_site))
+    @test startswith(msg, "ObjectLostError: Failed to retrieve object $hex_str")
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -75,9 +82,13 @@ end
 end
 
 @testset "RayError" begin
-    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "") == WorkerCrashedError()
-    @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "") == LocalRayletDiedError()
-    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "") == TaskCancelledError()
-    @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo") == Ray.OutOfMemoryError("foo")
-    @test RayError(-1, nothing) == RaySystemError("Unrecognized error type -1")
+    hex_str = "f"^(2 * 28)
+    obj_ref = ObjectRef(hex_str; add_local_ref=false)
+
+    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "", obj_ref) == WorkerCrashedError()
+    @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "", obj_ref) == LocalRayletDiedError()
+    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ref) == TaskCancelledError()
+    @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ref) == ObjectLostError(hex_str, "")
+    @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ref) == Ray.OutOfMemoryError("foo")
+    @test RayError(-1, nothing, obj_ref) == RaySystemError("Unrecognized error type -1")
 end

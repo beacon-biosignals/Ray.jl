@@ -21,18 +21,18 @@ using Sockets: IPAddr, getipaddr
 export start_worker, submit_task, @ray_import, ObjectRef
 
 # exceptions
-export LocalRayletDiedError, RayError, RaySystemError, RayTaskError, TaskCancelledError,
-       WorkerCrashedError
+export LocalRayletDiedError, ObjectLostError, RayError, RaySystemError, RayTaskError,
+       TaskCancelledError, WorkerCrashedError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll
 
-include("exceptions.jl")
 include("function_manager.jl")
 include("runtime_env.jl")
 include("remote_function.jl")
 include("runtime.jl")
 include("object_ref.jl")
+include("exceptions.jl")
 include("ray_serializer.jl")
 include("object_store.jl")
 

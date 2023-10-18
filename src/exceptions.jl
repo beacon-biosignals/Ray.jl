@@ -8,13 +8,15 @@ Abstract super type of all Ray exception types.
 """
 abstract type RayError <: Exception end
 
-function RayError(error_type::Integer, data)
+function RayError(error_type::Integer, data, obj_ref::Union{ObjectRef,Nothing})
     ex = if error_type == ray_jll.ErrorType(:WORKER_DIED)
         WorkerCrashedError()
     elseif error_type == ray_jll.ErrorType(:LOCAL_RAYLET_DIED)
         LocalRayletDiedError()
     elseif error_type == ray_jll.ErrorType(:TASK_CANCELLED)
         TaskCancelledError()
+    elseif error_type == ray_jll.ErrorType(:OBJECT_LOST)
+        ObjectLostError(hex_identifier(obj_ref), "")
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -122,6 +124,38 @@ function Base.showerror(io::IO, ex::OutOfMemoryError)
     print(io, "$OutOfMemoryError: $(ex.msg)")
     return nothing
 end
+
+"""
+    ObjectLostError <: RayError
+
+Indicates that the object is lost from distributed memory, due to node failure or system
+error.
+"""
+struct ObjectLostError <: RayError
+    object_ref_hex::String
+    call_site::String
+end
+
+function Base.showerror(io::IO, ex::ObjectLostError)
+    print(io, "$ObjectLostError: Failed to retrieve object $(ex.object_ref_hex). ")
+
+    # TODO: Support reporting call_site information
+    # if !isempty(ex.call_site)
+    #     print(io, "The `ObjectRef` was created at: $(ex.call_site)")
+    # else
+    #     print(io, "To see information about where this `ObjectRef` was created in Julia, " *
+    #               "set the environment variable RAY_record_ref_creation_sites=1 during " *
+    #               "`ray start` and `Ray.init()`.")
+    # end
+    # print(io, "\n\n")
+
+    print(io, "All copies of $(ex.object_ref_hex) have been lost due to node failure. " *
+              "Check cluster logs (\"/tmp/ray/session_latest/logs\") for more " *
+              "information about the failure.")
+
+    return nothing
+end
+
 
 """
     RaySystemError <: RayError
