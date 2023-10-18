@@ -12,6 +12,7 @@ f(x) = x + 1
 end
 
 @testset "ray_julia_jll.jl" begin
+    include("upstream_fixes.jl")
     include("expr.jl")
     include("buffer.jl")
     include("function_descriptor.jl")

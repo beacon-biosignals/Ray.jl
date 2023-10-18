@@ -154,8 +154,41 @@ function JsonStringToMessage(::Type{T}, json::AbstractString) where {T<:Message}
     return message
 end
 
+let msg_types = (Address, JobConfig, ObjectReference)
+    for T in msg_types
+        types = (Symbol(nameof(T), :Allocated), Symbol(nameof(T), :Dereferenced))
+        for A in types, B in types
+            @eval function Base.:(==)(a::$A, b::$B)
+                serialized_a = safe_convert(String, SerializeAsString(a))
+                serialized_b = safe_convert(String, SerializeAsString(b))
+                return serialized_a == serialized_b
+            end
+        end
+    end
+end
+
+function Serialization.serialize(s::AbstractSerializer, message::Message)
+    serialized_message = safe_convert(String, SerializeAsString(message))
+
+    serialize_type(s, Message)
+    serialize(s, supertype(typeof(message)))
+    serialize(s, serialized_message)
+
+    return nothing
+end
+
+function Serialization.deserialize(s::AbstractSerializer, ::Type{Message})
+    T = deserialize(s)
+    serialized_message = deserialize(s)
+
+    message = T()
+    ParseFromString(message, safe_convert(StdString, serialized_message))
+
+    return message
+end
+
 #####
-##### Address
+##### Address <: Message
 #####
 
 # there's annoying conversion from protobuf binary blobs for the "fields" so we
@@ -198,9 +231,10 @@ Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
 # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
 #
 # is shadowed by more specific fallbacks defined by CxxWrap.
-const ObjectIDTypes = (ObjectIDAllocated, ObjectIDDereferenced)
-for Ta in ObjectIDTypes, Tb in ObjectIDTypes
-    @eval Base.:(==)(a::$Ta, b::$Tb) = Hex(a) == Hex(b)
+let types = (ObjectIDAllocated, ObjectIDDereferenced)
+    for A in types, B in types
+        @eval Base.:(==)(a::$A, b::$B) = Hex(a) == Hex(b)
+    end
 end
 
 Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
