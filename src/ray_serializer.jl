@@ -139,9 +139,9 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
     end
 
     for inner_object_ref in s.object_refs
-        metadata = s.object_owner[inner_object_ref]
-        _register_ownership(inner_object_ref, outer_object_ref, metadata.owner_address,
-                            metadata.serialized_object_status)
+        (; owner_address, serialized_object_status) = s.object_owner[inner_object_ref]
+        _register_ownership(inner_object_ref, outer_object_ref, owner_address,
+                            serialized_object_status)
     end
 
     # TODO: add an option to not rethrow
