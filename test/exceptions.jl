@@ -41,6 +41,11 @@
     @test occursin(structure_regex, str)
 end
 
+@testset "TaskCancelledError" begin
+    msg = sprint(showerror, TaskCancelledError())
+    @test msg == "TaskCancelledError: This task or its dependency was cancelled"
+end
+
 @testset "LocalRayletDiedError" begin
     msg = sprint(showerror, LocalRayletDiedError())
     @test startswith(msg, "LocalRayletDiedError: The task's local raylet died")
@@ -72,6 +77,7 @@ end
 @testset "RayError" begin
     @test RayError(ray_jll.ErrorType(:WORKER_DIED), "") == WorkerCrashedError()
     @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "") == LocalRayletDiedError()
+    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "") == TaskCancelledError()
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo") == Ray.OutOfMemoryError("foo")
     @test RayError(-1, nothing) == RaySystemError("Unrecognized error type -1")
 end

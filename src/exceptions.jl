@@ -13,6 +13,8 @@ function RayError(error_type::Integer, data)
         WorkerCrashedError()
     elseif error_type == ray_jll.ErrorType(:LOCAL_RAYLET_DIED)
         LocalRayletDiedError()
+    elseif error_type == ray_jll.ErrorType(:TASK_CANCELLED)
+        TaskCancelledError()
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -63,6 +65,18 @@ function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
     printstyled(io, "\nnested exception: "; color=Base.error_color())
     # Call 3-argument `showerror` to allow specifying `backtrace`
     showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
+    return nothing
+end
+
+"""
+    TaskCancelledError <: RayError
+
+Raised when this task is cancelled.
+"""
+struct TaskCancelledError <: RayError end
+
+function Base.showerror(io::IO, ex::TaskCancelledError)
+    print(io, "$TaskCancelledError: This task or its dependency was cancelled")
     return nothing
 end
 
