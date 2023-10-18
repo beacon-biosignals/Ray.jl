@@ -11,6 +11,8 @@ abstract type RayError <: Exception end
 function RayError(error_type::Integer, data)
     ex = if error_type == ray_jll.ErrorType(:WORKER_DIED)
         WorkerCrashedError()
+    elseif error_type == ray_jll.ErrorType(:LOCAL_RAYLET_DIED)
+        LocalRayletDiedError()
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -64,6 +66,18 @@ function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
     return nothing
 end
 
+"""
+    LocalRayletDiedError <: RayError
+
+Indicates that the task's local raylet died.
+"""
+struct LocalRayletDiedError <: RayError end
+
+function Base.showerror(io::IO, ::LocalRayletDiedError)
+    print(io, "$LocalRayletDiedError: The task's local raylet died. Check raylet.out for " *
+              "more information.")
+    return nothing
+end
 
 """
     WorkerCrashedError <: RayError
