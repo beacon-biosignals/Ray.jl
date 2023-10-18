@@ -61,6 +61,24 @@
         result = Ray.deserialize_from_ray_object(Ray.serialize_to_ray_object(obj))
         @test result.owner_address == Ray.get_owner_address(obj)
     end
+
+    @testset "deepcopy object reference owner address" begin
+        obj1 = Ray.put(42)
+        addr = Ray.get_owner_address(obj1)
+        obj2 = ObjectRef(Ray.hex_identifier(obj1), addr, "")
+        obj3 = deepcopy(obj2)
+
+        @test obj1.owner_address != addr  # Usually only populated upon deserialization
+        @test obj2.owner_address == addr
+        @test obj3.owner_address == addr
+
+        finalize(obj2)
+        yield()
+
+        # Avoid comparing against `addr` here as the finalizer could modify it in place
+        # allowing this test to pass.
+        @test obj3.owner_address == Ray.get_owner_address(obj1)
+    end
 end
 
 @testset "serialize_to_ray_object" begin
