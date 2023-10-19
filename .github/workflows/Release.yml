@@ -1,6 +1,10 @@
 name: "Publish Release"
 on:
   workflow_dispatch:
+# Force a single workflow to run at a time. This ensures we don't accidentally
+# try to perform concurrent publishing of releases.
+concurrency: publish-release
+
 env:
   build_dir: ./build
   tarballs_dir: ./build/tarballs
@@ -9,9 +13,10 @@ jobs:
     name: "Publish Pre-Release"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed determine latest tag
+          persist-credentials: true
           ref: main
       - name: Get Latest Tag
         id: latest_tag
@@ -34,7 +39,6 @@ jobs:
               println(io, "version=$(project.version)")
               println(io, "tag=v$(project.version)")
           end
-      - uses: actions/checkout@v4
       - name: Download artifacts
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
@@ -48,6 +52,8 @@ jobs:
           version: "1.8"
           arch: "x64"
       - uses: julia-actions/cache@v1
+        with:
+          cache-name: "${{ github.workflow }}-${{ github.job }}"
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
         run: |
