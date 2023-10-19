@@ -57,8 +57,9 @@ end
 end
 
 @testset "OutOfDiskError" begin
-    msg = sprint(showerror, OutOfDiskError())
-    @test startswith(msg, "OutOfDiskError: The local object store is full of objects")
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
+    msg = sprint(showerror, OutOfDiskError(obj_ctx))
+    @test startswith(msg, r"OutOfDiskError: (Ray\.)?ObjectContext\(.*?\)\nThe local object store is full of objects")
 end
 
 @testset "OutOfMemoryError" begin
@@ -67,18 +68,16 @@ end
 end
 
 @testset "ObjectLostError" begin
-    hex_str = "f"^(2 * 28)
-    call_site = ""
-    msg = sprint(showerror, ObjectLostError(hex_str, call_site))
-    @test startswith(msg, "ObjectLostError: Failed to retrieve object $hex_str")
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
+    msg = sprint(showerror, ObjectLostError(obj_ctx))
+    @test startswith(msg, "ObjectLostError: Failed to retrieve object")
     @test contains(msg, "All copies of")
 end
 
 @testset "ObjectFetchTimedOutError" begin
-    hex_str = "f"^(2 * 28)
-    call_site = ""
-    msg = sprint(showerror, ObjectFetchTimedOutError(hex_str, call_site))
-    @test startswith(msg, "ObjectFetchTimedOutError: Failed to retrieve object $hex_str")
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
+    msg = sprint(showerror, ObjectFetchTimedOutError(obj_ctx))
+    @test startswith(msg, "ObjectFetchTimedOutError: Failed to retrieve object")
     @test contains(msg, "Fetch for object")
 end
 
@@ -96,15 +95,15 @@ end
 end
 
 @testset "RayError" begin
-    hex_str = "f"^(2 * 28)
-    obj_ref = ObjectRef(hex_str; add_local_ref=false)
+    # TODO: Should we test with `ObjectRef`? The `get_owner_address` call requires a worker context
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
 
-    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "", obj_ref) == WorkerCrashedError()
-    @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "", obj_ref) == LocalRayletDiedError()
-    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ref) == TaskCancelledError()
-    @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ref) == ObjectLostError(hex_str, "")
-    @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ref) == ObjectFetchTimedOutError(hex_str, "")
-    @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ref) == Ray.OutOfDiskError()
-    @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ref) == Ray.OutOfMemoryError("foo")
-    @test RayError(-1, nothing, obj_ref) == RaySystemError("Unrecognized error type -1")
+    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "", obj_ctx) == WorkerCrashedError()
+    @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "", obj_ctx) == LocalRayletDiedError()
+    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ctx) == TaskCancelledError()
+    @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ctx) == ObjectLostError(obj_ctx)
+    @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ctx) == ObjectFetchTimedOutError(obj_ctx)
+    @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ctx) == OutOfDiskError(obj_ctx)
+    @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ctx) == Ray.OutOfMemoryError("foo")
+    @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end

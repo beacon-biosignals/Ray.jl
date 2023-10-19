@@ -1,6 +1,18 @@
 # The exceptions defined here mostly mirror the exceptions supported by Ray for Python:
 # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py
 
+struct ObjectContext
+    object_ref_hex::String
+    owner_address::ray_jll.Address
+    call_site::String
+end
+
+function ObjectContext(obj_ref::ObjectRef)
+    return ObjectContext(hex_identifier(obj_ref), get_owner_address(obj_ref), "")
+end
+
+ObjectContext(ctx::ObjectContext) = ctx
+
 """
     RayError <: Exception
 
@@ -8,7 +20,7 @@ Abstract super type of all Ray exception types.
 """
 abstract type RayError <: Exception end
 
-function RayError(error_type::Integer, data, obj_ref::Union{ObjectRef,Nothing})
+function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,Nothing})
     ex = if error_type == ray_jll.ErrorType(:WORKER_DIED)
         WorkerCrashedError()
     elseif error_type == ray_jll.ErrorType(:LOCAL_RAYLET_DIED)
@@ -16,11 +28,11 @@ function RayError(error_type::Integer, data, obj_ref::Union{ObjectRef,Nothing})
     elseif error_type == ray_jll.ErrorType(:TASK_CANCELLED)
         TaskCancelledError()
     elseif error_type == ray_jll.ErrorType(:OBJECT_LOST)
-        ObjectLostError(hex_identifier(obj_ref), "")
+        ObjectLostError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT)
-        ObjectFetchTimedOutError(hex_identifier(obj_ref), "")
+        ObjectFetchTimedOutError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OUT_OF_DISK_ERROR)
-        OutOfDiskError(hex_identifier(obj_ref), get_owner_address(obj_ref), "")
+        OutOfDiskError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -39,6 +51,23 @@ function deserialize_error_info(data::AbstractString)
 end
 
 deserialize_error_info(data::Vector{UInt8}) = deserialize_error_info(String(data))
+
+function print_object_lost(io::IO, ctx::ObjectContext)
+    print(io, "Failed to retrieve object $(ctx.object_ref_hex). ")
+
+    # TODO: Support reporting call_site information
+    # if !isempty(ex.call_site)
+    #     print(io, "The `ObjectRef` was created at: $(ex.call_site)")
+    # else
+    #     print(io, "To see information about where this `ObjectRef` was created in Julia, " *
+    #               "set the environment variable RAY_record_ref_creation_sites=1 during " *
+    #               "`ray start` and `Ray.init()`.")
+    # end
+    # print(io, "\n\n")
+
+    return nothing
+end
+
 
 """
     RayTaskError <: RayError
@@ -120,12 +149,14 @@ Indicates that the local disk is full.
 This is raised if the attempt to store the object fails because both the object store and
 disk are full.
 """
-struct OutOfDiskError <: RayError end
+struct OutOfDiskError <: RayError
+    object_context::ObjectContext
+end
 
 function Base.showerror(io::IO, ex::OutOfDiskError)
     print(io, "$OutOfDiskError: ")
-    # TODO: Add in other data https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L366
-    print(io, "The local object store is full of objects that are still in scope and " *
+    show(io, ex.object_context)
+    print(io, "\nThe local object store is full of objects that are still in scope and " *
               "cannot be evicted. Tip: Use the `ray memory` command to list active " *
               "objects in the cluster.")
     return nothing
@@ -148,60 +179,40 @@ function Base.showerror(io::IO, ex::OutOfMemoryError)
     return nothing
 end
 
-abstract type ObjectStoreError <: RayError end
-
-function print_prefix(io::IO, ex::ObjectStoreError)
-    print(io, "Failed to retrieve object $(ex.object_ref_hex). "
-
-    # TODO: Support reporting call_site information
-    # if !isempty(ex.call_site)
-    #     print(io, "The `ObjectRef` was created at: $(ex.call_site)")
-    # else
-    #     print(io, "To see information about where this `ObjectRef` was created in Julia, " *
-    #               "set the environment variable RAY_record_ref_creation_sites=1 during " *
-    #               "`ray start` and `Ray.init()`.")
-    # end
-    # print(io, "\n\n")
-
-    return nothing
-end
-
 """
-    ObjectLostError <: ObjectStoreError
+    ObjectLostError <: RayError
 
 Indicates that the object is lost from distributed memory, due to node failure or system
 error.
 """
-struct ObjectLostError <: ObjectStoreError
-    object_ref_hex::String
-    call_site::String
+struct ObjectLostError <: RayError
+    object_context::ObjectContext
 end
 
 function Base.showerror(io::IO, ex::ObjectLostError)
     print(io, "$ObjectLostError: ")
-    print_prefix(io, ex)
-    print(io, "All copies of $(ex.object_ref_hex) have been lost due to node failure. " *
-              "Check cluster logs (\"/tmp/ray/session_latest/logs\") for more " *
-              "information about the failure.")
+    print_object_lost(io, ex.object_context)
+    print(io, "All copies of $(ex.object_context.object_ref_hex) have been lost due to " *
+              "node failure. Check cluster logs (\"/tmp/ray/session_latest/logs\") for " *
+              "more information about the failure.")
 
     return nothing
 end
 
 """
-    ObjectFetchTimedOutError <: ObjectStoreError
+    ObjectFetchTimedOutError <: RayError
 
 Indicates that an object fetch timed out.
 """
-struct ObjectFetchTimedOutError <: ObjectStoreError
-    object_ref_hex::String
-    call_site::String
+struct ObjectFetchTimedOutError <: RayError
+    object_context::ObjectContext
 end
 
 function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
     print(io, "$ObjectFetchTimedOutError: ")
-    print_prefix(io, ex)
-    print(io, "Fetch for object $(ex.object_ref_hex) timed out because no locations were " *
-              "found for the object. This may indicate a system-level bug.")
+    print_object_lost(io, ex.object_context)
+    print(io, "Fetch for object $(ex.object_context.object_ref_hex) timed out because no " *
+              "locations were found for the object. This may indicate a system-level bug.")
 
     return nothing
 end
