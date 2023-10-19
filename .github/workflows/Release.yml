@@ -13,6 +13,9 @@ jobs:
     name: "Publish Pre-Release"
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Needed determine latest tag
       - name: Get Latest Tag
         id: latest_tag
         uses: WyriHaximus/github-action-get-previous-tag@v1

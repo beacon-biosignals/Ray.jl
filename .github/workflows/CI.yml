@@ -49,8 +49,6 @@ jobs:
             arch: x64
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Needed determine latest tag
       - name: Determine Ray commit
         id: ray-commit
         run: |
