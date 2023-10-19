@@ -517,6 +517,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Binary", &WorkerID::Binary)
         .method("Hex", &WorkerID::Hex);
 
+    mod.add_type<NodeID>("NodeID")
+        .method("NodeIDFromBinary", &NodeID::FromBinary)
+        .method("Binary", &NodeID::Binary)
+        .method("Hex", &NodeID::Hex);
+
     mod.method("initialize_driver", &initialize_driver);
     mod.method("_shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
