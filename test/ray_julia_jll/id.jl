@@ -1,22 +1,30 @@
-# Using `ObjectID` and `JobID` to validate `BaseID` methods
-@testset "BaseID" begin
-    using .ray_julia_jll: ray_julia_jll, JobID, ObjectID, Binary, FromBinary, FromHex, FromRandom,
-                          Hex
+using .ray_julia_jll: JobID, ObjectID, TaskID
+
+@testset "$T (shared code)" for T in (ObjectID,)
+    using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom, Hex
+
+    T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
+    T_Dereferenced = @eval ray_julia_jll.$(Symbol(nameof(T), :Dereferenced))
+    Alt = T === ObjectID ? JobID : ObjectID
+
+    @testset "supertype" begin
+        @test T <: BaseID
+    end
 
     @testset "FromRandom" begin
-        object_id = FromRandom(ObjectID)
-        @test object_id isa ObjectID
-        @test ncodeunits(Hex(object_id)) == 2 * 28
+        id = FromRandom(T)
+        @test id isa T
+        @test ncodeunits(Hex(id)) == 2 * 28
     end
 
     @testset "FromHex" begin
-        object_id = FromHex(ObjectID, "a"^(2 * 28))
-        @test object_id isa ObjectID
-        @test Hex(object_id) == "a"^(2 * 28)
+        id = FromHex(T, "a"^(2 * 28))
+        @test id isa T
+        @test Hex(id) == "a"^(2 * 28)
 
-        @test_throws ArgumentError FromHex(ObjectID, "a")
-        @test_throws ArgumentError FromHex(ObjectID, "a"^(2 * 27))
-        @test_throws ArgumentError FromHex(ObjectID, "a"^(2 * 29))
+        @test_throws ArgumentError FromHex(T, "a")
+        @test_throws ArgumentError FromHex(T, "a"^(2 * 27))
+        @test_throws ArgumentError FromHex(T, "a"^(2 * 29))
     end
 
     @testset "FromBinary" begin
@@ -24,55 +32,55 @@
         bytes_str = String(deepcopy(bytes))
         @test length(bytes) == 28
 
-        object_id = FromBinary(ObjectID, bytes)
+        id = FromBinary(T, bytes)
         @test length(bytes) == 28  # Bytes are not consumed by constructor
-        @test object_id isa ObjectID
-        @test Binary(Vector{UInt8}, object_id) == bytes
-        @test Binary(String, object_id) == bytes_str
+        @test id isa ObjectID
+        @test Binary(Vector{UInt8}, id) == bytes
+        @test Binary(String, id) == bytes_str
 
-        object_id = FromBinary(ObjectID, bytes_str)
-        @test object_id isa ObjectID
-        @test Binary(Vector{UInt8}, object_id) == bytes
-        @test Binary(String, object_id) == bytes_str
+        id = FromBinary(T, bytes_str)
+        @test id isa T
+        @test Binary(Vector{UInt8}, id) == bytes
+        @test Binary(String, id) == bytes_str
 
-        @test_throws ArgumentError FromBinary(ObjectID, fill(0xbb, 1))
-        @test_throws ArgumentError FromBinary(ObjectID, fill(0xbb, 27))
-        @test_throws ArgumentError FromBinary(ObjectID, fill(0xbb, 29))
+        @test_throws ArgumentError FromBinary(T, fill(0xbb, 1))
+        @test_throws ArgumentError FromBinary(T, fill(0xbb, 27))
+        @test_throws ArgumentError FromBinary(T, fill(0xbb, 29))
     end
 
     @testset "string constructor" begin
         hex_str = "c"^(2 * 28)
-        @test Hex(ObjectID(hex_str)) == Hex(FromHex(ObjectID, hex_str))
+        @test Hex(T(hex_str)) == Hex(FromHex(T, hex_str))
     end
 
     @testset "show" begin
         hex_str = "d"^(2 * 28)
-        object_id = FromHex(ObjectID, hex_str)
-        @test sprint(show, object_id) == "ObjectID(\"$hex_str\")"
+        id = FromHex(T, hex_str)
+        @test sprint(show, id) == "$T(\"$hex_str\")"
     end
 
     @testset "equality" begin
-        oid_alloc = FromRandom(ObjectID)
-        oid_deref = CxxRef(oid_alloc)[]
-        @test oid_alloc isa ray_julia_jll.ObjectIDAllocated
-        @test oid_deref isa ray_julia_jll.ObjectIDDereferenced
+        id_alloc = FromRandom(T)
+        id_deref = CxxRef(id_alloc)[]
+        @test id_alloc isa T_Allocated
+        @test id_deref isa T_Dereferenced
 
-        @test oid_alloc == oid_deref
-        @test oid_deref == oid_alloc
+        @test id_alloc == id_deref
+        @test id_deref == id_alloc
 
-        oid_alloc2 = FromHex(ObjectID, Hex(oid_alloc))
-        @test oid_alloc2 !== oid_alloc
-        @test oid_alloc2 == oid_alloc
+        id_alloc2 = FromHex(T, Hex(id_alloc))
+        @test id_alloc2 !== id_alloc
+        @test id_alloc2 == id_alloc
 
-        oid_deref2 = CxxRef(FromHex(ObjectID, Hex(oid_alloc)))[]
-        @test oid_deref2 !== oid_deref
+        id_deref2 = CxxRef(FromHex(ObjectID, Hex(id_alloc)))[]
+        @test id_deref2 !== id_deref
         # confirm C++ pointers are different too
-        @test oid_deref2.cpp_object != oid_deref.cpp_object
-        @test oid_deref2 == oid_deref
+        @test id_deref2.cpp_object != id_deref.cpp_object
+        @test id_deref2 == id_deref
 
-        @test hash(oid_alloc) == hash(oid_deref)
-        @test hash(oid_alloc) != hash(JobID(Hex(oid_alloc)))
-        @test issetequal([oid_deref, oid_deref2, oid_alloc2], [oid_alloc])
+        @test hash(id_alloc) == hash(id_deref)
+        @test hash(id_alloc) != hash(Alt(Hex(id_alloc)))
+        @test issetequal([id_deref, id_deref2, id_alloc2], [id_alloc])
     end
 end
 
