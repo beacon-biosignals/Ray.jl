@@ -202,6 +202,66 @@ Base.show(io::IO, addr::Address) = print(io, _string(addr))
 NullPtr(::Type{Buffer}) = BufferFromNull()
 
 #####
+##### BaseID
+#####
+
+for T in (:ObjectID, :JobID, :TaskID)
+    @eval begin
+        function FromBinary(::Type{$T}, str::AbstractString)
+            if ncodeunits(str) != 28
+                msg = "Expected binary size is 28, provided data size is $(ncodeunits(str)): $(repr(str))"
+                throw(ArgumentError(msg))
+            end
+            return $(Symbol(T, :FromBinary))(str)
+        end
+
+        function FromHex(::Type{$T}, str::AbstractString)
+            if length(str) != 2 * 28
+                msg = "Expected hex string length is 2 * 28, provided length is $(length(str))"
+                throw(ArgumentError(msg))
+            end
+            return $(Symbol(T, :FromHex))(str)
+        end
+
+        FromRandom(::Type{$T}) = $(Symbol(T, :FromRandom))()
+        $T(str::AbstractString) = FromHex($T, str)
+    end
+
+    # cannot believe I'm doing this...
+    #
+    # Because ObjectID is a CxxWrap-defined type, it has two subtypes:
+    # `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
+    # construct directly or return by value, the second when you pull a ref out of
+    # say `std::vector<ObjectID>`.
+    #
+    # ObjectID is abstract, so the normal method definition:
+    #
+    # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
+    #
+    # is shadowed by more specific fallbacks defined by CxxWrap.
+    sub_types = (Symbol(T, :Allocated), Symbol(T, :Dereferenced))
+    for A in sub_types, B in sub_types
+        @eval Base.:(==)(a::$A, b::$B) = Hex(a) == Hex(b)
+    end
+end
+
+FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy(bytes)))
+
+Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
+Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
+
+function Base.show(io::IO, x::BaseID)
+    T = supertype(typeof(x))
+    write(io, "$T(\"", Hex(x), "\")")
+    return nothing
+end
+
+function Base.hash(x::BaseID, h::UInt)
+    T = supertype(typeof(x))
+    return hash(T, hash(Hex(x), h))
+end
+
+#####
 ##### JobID
 #####
 
@@ -211,33 +271,7 @@ FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
 ##### ObjectID
 #####
 
-FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
-FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
 FromNil(::Type{ObjectID}) = ObjectIDFromNil()
-
-ObjectID(str::AbstractString) = FromHex(ObjectID, str)
-
-Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
-
-# cannot believe I'm doing this...
-#
-# Because ObjectID is a CxxWrap-defined type, it has two subtypes:
-# `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
-# construct directly or return by value, the second when you pull a ref out of
-# say `std::vector<ObjectID>`.
-#
-# ObjectID is abstract, so the normal method definition:
-#
-# Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
-#
-# is shadowed by more specific fallbacks defined by CxxWrap.
-let types = (ObjectIDAllocated, ObjectIDDereferenced)
-    for A in types, B in types
-        @eval Base.:(==)(a::$A, b::$B) = Hex(a) == Hex(b)
-    end
-end
-
-Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
 
 #####
 ##### RayObject

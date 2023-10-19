@@ -17,7 +17,7 @@ end
     include("buffer.jl")
     include("function_descriptor.jl")
     include("address.jl")
-    include("objectid.jl")
+    include("id.jl")
     include("ray_object.jl")
 
     setup_ray_head_node_basic() do
