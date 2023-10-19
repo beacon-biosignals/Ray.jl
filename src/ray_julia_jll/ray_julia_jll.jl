@@ -7,6 +7,8 @@ using Serialization: Serialization, AbstractSerializer, deserialize, serialize,
                      serialize_type
 using libcxxwrap_julia_jll
 
+abstract type BaseID end
+
 @wrapmodule(joinpath(artifact"ray_julia", "julia_core_worker_lib.so"))
 
 function __init__()

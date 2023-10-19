@@ -478,11 +478,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("ToString", &Status::ToString);
 
     // TODO: Make `ObjectID`, `JobID`, and `TaskID` a subclass of `BaseID`.
-    // The use of templating makes this more work than normal.
+    // The use of templating makes this more work than normal. For now we'll use an
+    // abstract Julia type called `BaseID` to assist with dispatch.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
-    mod.add_type<ObjectID>("ObjectID")
+    mod.add_type<ObjectID>("ObjectID", jlcxx::julia_type("BaseID"))
         .method("ObjectIDFromHex", &ObjectID::FromHex)
         .method("ObjectIDFromRandom", &ObjectID::FromRandom)
         .method("ObjectIDFromNil", []() {
@@ -493,12 +494,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Hex", &ObjectID::Hex);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
-    mod.add_type<JobID>("JobID")
+    mod.add_type<JobID>("JobID", jlcxx::julia_type("BaseID"))
         .method("JobIDFromInt", &JobID::FromInt)
         .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
-    mod.add_type<TaskID>("TaskID")
+    mod.add_type<TaskID>("TaskID", jlcxx::julia_type("BaseID"))
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
 
