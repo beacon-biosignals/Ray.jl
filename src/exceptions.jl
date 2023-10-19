@@ -19,6 +19,8 @@ function RayError(error_type::Integer, data, obj_ref::Union{ObjectRef,Nothing})
         ObjectLostError(hex_identifier(obj_ref), "")
     elseif error_type == ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT)
         ObjectFetchTimedOutError(hex_identifier(obj_ref), "")
+    elseif error_type == ray_jll.ErrorType(:OUT_OF_DISK_ERROR)
+        OutOfDiskError(hex_identifier(obj_ref), get_owner_address(obj_ref), "")
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     else
@@ -107,6 +109,25 @@ struct WorkerCrashedError <: RayError end
 function Base.showerror(io::IO, ::WorkerCrashedError)
     print(io, "$WorkerCrashedError: The worker died unexpectedly while executing this " *
               "task. Check julia-core-worker-*.log files for more information.")
+    return nothing
+end
+
+"""
+    OutOfDiskError <: RayError
+
+Indicates that the local disk is full.
+
+This is raised if the attempt to store the object fails because both the object store and
+disk are full.
+"""
+struct OutOfDiskError <: RayError end
+
+function Base.showerror(io::IO, ex::OutOfDiskError)
+    print(io, "$OutOfDiskError: ")
+    # TODO: Add in other data https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L366
+    print(io, "The local object store is full of objects that are still in scope and " *
+              "cannot be evicted. Tip: Use the `ray memory` command to list active " *
+              "objects in the cluster.")
     return nothing
 end
 

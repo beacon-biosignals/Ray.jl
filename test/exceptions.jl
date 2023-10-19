@@ -56,6 +56,11 @@ end
     @test startswith(msg, "WorkerCrashedError: The worker died unexpectedly")
 end
 
+@testset "OutOfDiskError" begin
+    msg = sprint(showerror, OutOfDiskError())
+    @test startswith(msg, "OutOfDiskError: The local object store is full of objects")
+end
+
 @testset "OutOfMemoryError" begin
     e = Ray.OutOfMemoryError("foo")
     @test sprint(showerror, e) == "Ray.OutOfMemoryError: foo"
@@ -99,6 +104,7 @@ end
     @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ref) == TaskCancelledError()
     @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ref) == ObjectLostError(hex_str, "")
     @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ref) == ObjectFetchTimedOutError(hex_str, "")
+    @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ref) == Ray.OutOfDiskError()
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ref) == Ray.OutOfMemoryError("foo")
     @test RayError(-1, nothing, obj_ref) == RaySystemError("Unrecognized error type -1")
 end
