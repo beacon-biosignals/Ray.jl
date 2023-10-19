@@ -41,6 +41,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         ReferenceCountingAssertionError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_FREED)
         ObjectFreedError(ObjectContext(obj))
+    elseif error_type == ray_jll.ErrorType(:OWNER_DIED)
+        OwnerDiedError(ObjectContext(obj))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -271,6 +273,33 @@ function Base.showerror(io::IO, ex::ObjectFreedError)
     print_object_lost(io, ex.object_context)
     print(io, "The object was manually freed using the internal `free` call. Please " *
                "ensure that `free` is only called once the object is no longer needed.")
+    return nothing
+end
+
+"""
+    OwnerDiedError <: RayError
+
+Indicates that the owner of the object has died while there is still a reference to the
+object.
+"""
+struct OwnerDiedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::OwnerDiedError)
+    log_loc = "/tmp/ray/session_latest/logs"
+
+    # log_loc = if ex.object_context.owner_address != ray_jll.Address()
+    #     "\"/tmp/ray/session_latest/logs/*$(worker_id.hex())*\" at IP address $ip_addr"
+    # else
+    #     "\"/tmp/ray/session_latest/logs\""
+    # end
+
+    print(io, "$OwnerDiedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object's owner has exited. This is the Julia worker that first " *
+              "created the `ObjectRef` via `submit_task` or `Ray.put`. Check cluster " *
+              "logs ($log_loc) for more information about the Julia worker failure.")
     return nothing
 end
 
