@@ -39,6 +39,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         NodeDiedError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:OBJECT_DELETED)
         ReferenceCountingAssertionError(ObjectContext(obj))
+    elseif error_type == ray_jll.ErrorType(:OBJECT_FREED)
+        ObjectFreedError(ObjectContext(obj))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -249,6 +251,26 @@ function Base.showerror(io::IO, ex::ReferenceCountingAssertionError)
     print_object_lost(io, ex.object_context)
     print(io, "The object has already been deleted by the reference counting protocol. " *
               "This should not happen.")
+    return nothing
+end
+
+"""
+    ObjectFreedError <: RayError
+
+Indicates that an object was manually freed by the application.
+
+Currently should never happen as Ray.jl doesn't currently implement `free` like
+[Ray for Python does](https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/internal_api.py#L170).
+"""
+struct ObjectFreedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectFreedError)
+    print(io, "$ObjectFreedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object was manually freed using the internal `free` call. Please " *
+               "ensure that `free` is only called once the object is no longer needed.")
     return nothing
 end
 

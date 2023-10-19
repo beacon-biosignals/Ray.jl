@@ -21,8 +21,8 @@ using Sockets: IPAddr, getipaddr
 export start_worker, submit_task, @ray_import, ObjectRef
 
 # exceptions
-export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectLostError,
-       OutOfDiskError, RayError, RaySystemError, RayTaskError,
+export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectFreedError,
+       ObjectLostError, OutOfDiskError, RayError, RaySystemError, RayTaskError,
        ReferenceCountingAssertionError, TaskCancelledError, WorkerCrashedError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
