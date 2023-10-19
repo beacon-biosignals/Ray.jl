@@ -1,5 +1,10 @@
 using .ray_julia_jll: JobID, NodeID, ObjectID, TaskID, WorkerID
 
+function hasmethodexact(f, t::DataType)
+    mt = methods(f, t)
+    return only(mt).sig == Tuple{typeof(f), t.parameters...}
+end
+
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom, Hex
 
@@ -50,8 +55,13 @@ using .ray_julia_jll: JobID, NodeID, ObjectID, TaskID, WorkerID
         @test_throws ArgumentError FromBinary(T, fill(0xbb, siz + 1))
     end
 
+    @testset "hex string constructor" begin
+        hex_str = "c"^(2 * siz)
+        @test T(hex_str) == FromHex(T, hex_str)
+    end
+
     @testset "equality" begin
-        hex_str = "e"^(2 * siz)
+        hex_str = "d"^(2 * siz)
         id_alloc = FromHex(T, hex_str)
         id_deref = CxxRef(id_alloc)[]
         @test id_alloc isa T_Allocated
@@ -73,6 +83,13 @@ using .ray_julia_jll: JobID, NodeID, ObjectID, TaskID, WorkerID
         @test hash(id_alloc) == hash(id_deref)
         @test issetequal([id_deref, id_deref2, id_alloc2], [id_alloc])
     end
+
+    if !hasmethodexact(show, Tuple{IO, T})
+        @testset "show" begin
+            hex_str = "e"^(2 * siz)
+            @test sprint(show, T(hex_str)) == "$T(\"$hex_str\")"
+        end
+    end
 end
 
 @testset "ObjectID" begin
@@ -82,16 +99,6 @@ end
         object_id = FromNil(ObjectID)
         @test object_id isa ObjectID
         @test Hex(object_id) == "f"^(2 * 28)
-    end
-
-    @testset "string constructor" begin
-        hex_str = "c"^(2 * 28)
-        @test Hex(ObjectID(hex_str)) == Hex(FromHex(ObjectID, hex_str))
-    end
-
-    @testset "show" begin
-        hex_str = "d"^(2 * 28)
-        @test sprint(show, ObjectID(hex_str)) == "ObjectID(\"$hex_str\")"
     end
 end
 
@@ -104,53 +111,11 @@ end
         @test ToInt(job_id) == 1
     end
 
-    @testset "string constructor" begin
+    @testset "int constructor" begin
         @test JobID(2) == FromInt(JobID, 2)
     end
 
     @testset "show" begin
         @test sprint(show, JobID(3)) == "JobID(3)"
-    end
-end
-
-@testset "TaskID" begin
-    using .ray_julia_jll: TaskID, FromHex, Hex
-
-    @testset "string constructor" begin
-        hex_str = "c"^(2 * 24)
-        @test TaskID(hex_str) == FromHex(TaskID, hex_str)
-    end
-
-    @testset "show" begin
-        hex_str = "d"^(2 * 24)
-        @test sprint(show, TaskID(hex_str)) == "TaskID(\"$hex_str\")"
-    end
-end
-
-@testset "WorkerID" begin
-    using .ray_julia_jll: WorkerID, FromHex, Hex
-
-    @testset "string constructor" begin
-        hex_str = "c"^(2 * 28)
-        @test WorkerID(hex_str) == FromHex(WorkerID, hex_str)
-    end
-
-    @testset "show" begin
-        hex_str = "d"^(2 * 28)
-        @test sprint(show, WorkerID(hex_str)) == "WorkerID(\"$hex_str\")"
-    end
-end
-
-@testset "NodeID" begin
-    using .ray_julia_jll: NodeID, FromHex, Hex
-
-    @testset "string constructor" begin
-        hex_str = "c"^(2 * 28)
-        @test NodeID(hex_str) == FromHex(NodeID, hex_str)
-    end
-
-    @testset "show" begin
-        hex_str = "d"^(2 * 28)
-        @test sprint(show, NodeID(hex_str)) == "NodeID(\"$hex_str\")"
     end
 end

@@ -225,6 +225,9 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
             end
             return $(Symbol(T, :FromHex))(str)
         end
+
+        $T(hex::AbstractString) = FromHex($T, hex)
+        Base.hash(x::$T, h::UInt) = hash($T, hash(Hex(x), h))
     end
 
     # Conditionally define `FromRandom` for types that wrap the C++ function
@@ -254,18 +257,17 @@ FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy
 Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
 Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
 
-function Base.hash(x::BaseID, h::UInt)
-    T = supertype(typeof(x))
-    return hash(T, hash(Hex(x), h))
+function Base.show(io::IO, id::BaseID)
+    T = supertype(typeof(id))
+    print(io, "$T(\"", Hex(id), "\")")
+    return nothing
 end
 
 #####
 ##### ObjectID
 #####
 
-ObjectID(hex::AbstractString) = FromHex(ObjectID, hex)
 FromNil(::Type{ObjectID}) = ObjectIDFromNil()
-Base.show(io::IO, id::ObjectID) = print(io, "ObjectID(\"", Hex(id), "\")")
 
 #####
 ##### JobID
@@ -274,27 +276,6 @@ Base.show(io::IO, id::ObjectID) = print(io, "ObjectID(\"", Hex(id), "\")")
 JobID(num::Integer) = FromInt(JobID, num)
 FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
 Base.show(io::IO, id::JobID) = print(io, "JobID(", ToInt(id), ")")
-
-#####
-##### TaskID
-#####
-
-TaskID(hex::AbstractString) = FromHex(TaskID, hex)
-Base.show(io::IO, id::TaskID) = print(io, "TaskID(\"", Hex(id), "\")")
-
-#####
-##### WorkerID
-#####
-
-WorkerID(hex::AbstractString) = FromHex(WorkerID, hex)
-Base.show(io::IO, id::WorkerID) = print(io, "WorkerID(\"", Hex(id), "\")")
-
-#####
-##### NodeID
-#####
-
-NodeID(hex::AbstractString) = FromHex(NodeID, hex)
-Base.show(io::IO, id::NodeID) = print(io, "NodeID(\"", Hex(id), "\")")
 
 #####
 ##### RayObject
