@@ -120,7 +120,6 @@ function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
 end
 
 Base.show(io::IO, status::Status) = print(io, ToString(status))
-Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
 
 const CORE_WORKER = Ref{Union{CoreWorker,Nothing}}()
 
@@ -266,6 +265,7 @@ end
 #####
 
 FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
+Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
 
 #####
 ##### ObjectID
