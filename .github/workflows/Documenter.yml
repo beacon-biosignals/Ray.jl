@@ -17,6 +17,8 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  build_dir: ./build
 jobs:
   docs:
     name: Build
@@ -28,7 +30,22 @@ jobs:
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1"
+      - name: Restore build cache
+        uses: actions/cache/restore@v3
+        id: build-cache
+        with:
+          key: build-cache.ray-jl.documenter
+          path: ~/.cache
       # Use a separate step for instantiation to get more fine grained timing of steps
+      - name: Build ray_julia library
+        id: ray_julia
+        shell: julia --color=yes --project {0}
+        run: |
+          using Pkg
+          Pkg.instantiate()
+          include(joinpath(pwd(), "build_library.jl"))
+          build_library(; override=true)
+        working-directory: ${{ env.build_dir }}
       - name: Configure doc environment
         shell: julia --project=docs --color=yes {0}
         run: |
@@ -52,3 +69,11 @@ jobs:
         env:
           repo: ${{ github.repository }}
           PR: ${{ github.event.number }}
+
+      # https://github.com/actions/cache/tree/main/save#always-save-cache
+      - name: Save build cache
+        uses: actions/cache/save@v3
+        if: always() && steps.build-cache.outputs.cache-hit != 'true'
+        with:
+          key: ${{ steps.build-cache.outputs.cache-primary-key }}
+          path: ~/.cache

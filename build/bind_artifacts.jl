@@ -23,7 +23,7 @@ function sha256sum(tarball_path)
     end
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
+function bind_artifacts()
     # Start with a clean Artifacts.toml so that unsupported platforms are removed
     isfile(ARTIFACTS_TOML) && rm(ARTIFACTS_TOML)
 
@@ -32,9 +32,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
         artifact_url = gen_artifact_url(; repo_url=REPO_HTTPS_URL, tag=TAG,
                                         filename=artifact_name)
 
-        @info "Dowloading artifact $artifact_url"
         artifact_path = joinpath(TARBALL_DIR, artifact_name)
-        Downloads.download(artifact_url, artifact_path)
+        isfile(artifact_path) || error("No such file $artifact_path")
 
         @info "Adding artifact for $(triplet(platform))"
         bind_artifact!(ARTIFACTS_TOML,
@@ -43,4 +42,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
                        platform=platform,
                        download_info=[(artifact_url, sha256sum(artifact_path))])
     end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    bind_artifacts()
 end

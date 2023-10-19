@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-    tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
     paths:
       - "src/**"
       - "test/**"
@@ -21,6 +20,10 @@ concurrency:
   # Cancel intermediate builds: only if it is a pull request build.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
+env:
+  build_dir: ./build
+  ray_dir: ./build/ray
+  tarballs_dir: ./build/tarballs
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -42,9 +45,6 @@ jobs:
             arch: aarch64
           - os: macos-latest-xlarge
             arch: x64
-    env:
-      build_dir: ./build
-      ray_dir: ./build/ray
     steps:
       - uses: actions/checkout@v3
       - name: Determine Ray commit
@@ -148,7 +148,6 @@ jobs:
           tarball_path = build_host_tarball()
           open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "tarball_path=$tarball_path")
-              println(io, "tarball_filename=$(basename(tarball_path))")
           end
         working-directory: ${{ env.build_dir }}
       - uses: julia-actions/julia-buildpkg@v1
@@ -162,10 +161,12 @@ jobs:
           file: lcov.info
           flags: Ray.jl
 
+      # Add the ray_julia library from each job to the same artifact
+      # https://github.com/actions/upload-artifact#uploading-to-the-same-artifact
       - name: Save ray_julia library
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ steps.ray_julia.outputs.tarball_filename }}
+          name: ray_julia_libraries
           path: ${{ steps.ray_julia.outputs.tarball_path }}
 
       - name: Save Ray logs
