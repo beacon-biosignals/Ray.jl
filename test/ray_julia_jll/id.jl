@@ -1,6 +1,6 @@
-using .ray_julia_jll: JobID, ObjectID, TaskID
+using .ray_julia_jll: JobID, NodeID, ObjectID, TaskID, WorkerID
 
-@testset "$T (shared code)" for T in (ObjectID, JobID, TaskID)
+@testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom, Hex
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
@@ -124,5 +124,33 @@ end
     @testset "show" begin
         hex_str = "d"^(2 * 24)
         @test sprint(show, TaskID(hex_str)) == "TaskID(\"$hex_str\")"
+    end
+end
+
+@testset "WorkerID" begin
+    using .ray_julia_jll: WorkerID, FromHex, Hex
+
+    @testset "string constructor" begin
+        hex_str = "c"^(2 * 28)
+        @test WorkerID(hex_str) == FromHex(WorkerID, hex_str)
+    end
+
+    @testset "show" begin
+        hex_str = "d"^(2 * 28)
+        @test sprint(show, WorkerID(hex_str)) == "WorkerID(\"$hex_str\")"
+    end
+end
+
+@testset "NodeID" begin
+    using .ray_julia_jll: NodeID, FromHex, Hex
+
+    @testset "string constructor" begin
+        hex_str = "c"^(2 * 28)
+        @test NodeID(hex_str) == FromHex(NodeID, hex_str)
+    end
+
+    @testset "show" begin
+        hex_str = "d"^(2 * 28)
+        @test sprint(show, NodeID(hex_str)) == "NodeID(\"$hex_str\")"
     end
 end

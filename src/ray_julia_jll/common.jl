@@ -204,7 +204,7 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 ##### BaseID
 #####
 
-for T in (:ObjectID, :JobID, :TaskID)
+for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     siz = eval(Symbol(T, :Size))()
 
     @eval begin
@@ -227,7 +227,7 @@ for T in (:ObjectID, :JobID, :TaskID)
         end
     end
 
-    # Conditionally define `FromRandom` for some types
+    # Conditionally define `FromRandom` for types that wrap the C++ function
     _FromRandom = Symbol(T, :FromRandom)
     isdefined(@__MODULE__(), _FromRandom) && @eval FromRandom(::Type{$T}) = $(_FromRandom)()
 
@@ -281,6 +281,20 @@ Base.show(io::IO, id::JobID) = print(io, "JobID(", ToInt(id), ")")
 
 TaskID(hex::AbstractString) = FromHex(TaskID, hex)
 Base.show(io::IO, id::TaskID) = print(io, "TaskID(\"", Hex(id), "\")")
+
+#####
+##### WorkerID
+#####
+
+WorkerID(hex::AbstractString) = FromHex(WorkerID, hex)
+Base.show(io::IO, id::WorkerID) = print(io, "WorkerID(\"", Hex(id), "\")")
+
+#####
+##### NodeID
+#####
+
+NodeID(hex::AbstractString) = FromHex(NodeID, hex)
+Base.show(io::IO, id::NodeID) = print(io, "NodeID(\"", Hex(id), "\")")
 
 #####
 ##### RayObject

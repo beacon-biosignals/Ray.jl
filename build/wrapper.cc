@@ -516,14 +516,22 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
     mod.method("WorkerIDSize", &WorkerID::Size);
-    mod.add_type<WorkerID>("WorkerID")
+    mod.add_type<WorkerID>("WorkerID", jlcxx::julia_type("BaseID"))
         .method("WorkerIDFromBinary", &WorkerID::FromBinary)
+        .method("WorkerIDFromHex", [](const std::string hex) {
+            UniqueID uid = WorkerID::FromHex(hex);
+            return static_cast<WorkerID>(uid);
+        })
         .method("Binary", &WorkerID::Binary)
         .method("Hex", &WorkerID::Hex);
 
     mod.method("NodeIDSize", &NodeID::Size);
-    mod.add_type<NodeID>("NodeID")
+    mod.add_type<NodeID>("NodeID", jlcxx::julia_type("BaseID"))
         .method("NodeIDFromBinary", &NodeID::FromBinary)
+        .method("NodeIDFromHex", [](const std::string hex) {
+            UniqueID uid = NodeID::FromHex(hex);
+            return static_cast<NodeID>(uid);
+        })
         .method("Binary", &NodeID::Binary)
         .method("Hex", &NodeID::Hex);
 
