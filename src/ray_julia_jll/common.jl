@@ -205,26 +205,33 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 #####
 
 for T in (:ObjectID, :JobID, :TaskID)
+    siz = eval(Symbol(T, :Size))()
+
     @eval begin
+        Size(::Type{$T}) = $siz
+
         function FromBinary(::Type{$T}, str::AbstractString)
-            if ncodeunits(str) != 28
-                msg = "Expected binary size is 28, provided data size is $(ncodeunits(str)): $(repr(str))"
+            if ncodeunits(str) != Size($T)
+                msg = "Expected binary size is $(Size($T)), provided data size is $(ncodeunits(str))"
                 throw(ArgumentError(msg))
             end
             return $(Symbol(T, :FromBinary))(str)
         end
 
         function FromHex(::Type{$T}, str::AbstractString)
-            if length(str) != 2 * 28
-                msg = "Expected hex string length is 2 * 28, provided length is $(length(str))"
+            if length(str) != 2 * Size($T)
+                msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str))"
                 throw(ArgumentError(msg))
             end
             return $(Symbol(T, :FromHex))(str)
         end
 
-        FromRandom(::Type{$T}) = $(Symbol(T, :FromRandom))()
         $T(str::AbstractString) = FromHex($T, str)
     end
+
+    # Conditionally define `FromRandom` for some types
+    _FromRandom = Symbol(T, :FromRandom)
+    isdefined(@__MODULE__(), _FromRandom) && @eval FromRandom(::Type{$T}) = $(_FromRandom)()
 
     # cannot believe I'm doing this...
     #

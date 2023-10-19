@@ -483,6 +483,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.method("ObjectIDSize", &ObjectID::Size);
     mod.add_type<ObjectID>("ObjectID", jlcxx::julia_type("BaseID"))
         .method("ObjectIDFromBinary", &ObjectID::FromBinary)
         .method("ObjectIDFromHex", &ObjectID::FromHex)
@@ -496,6 +497,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Hex", &ObjectID::Hex);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.method("JobIDSize", &JobID::Size);
     mod.add_type<JobID>("JobID", jlcxx::julia_type("BaseID"))
         .method("JobIDFromBinary", &JobID::FromBinary)
         .method("JobIDFromHex", &JobID::FromHex)
@@ -505,6 +507,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
+    mod.method("TaskIDSize", &TaskID::Size);
     mod.add_type<TaskID>("TaskID", jlcxx::julia_type("BaseID"))
         .method("TaskIDFromBinary", &TaskID::FromBinary)
         .method("TaskIDFromHex", &TaskID::FromHex)
@@ -512,11 +515,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Hex", &TaskID::Hex);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
+    mod.method("WorkerIDSize", &WorkerID::Size);
     mod.add_type<WorkerID>("WorkerID")
         .method("WorkerIDFromBinary", &WorkerID::FromBinary)
         .method("Binary", &WorkerID::Binary)
         .method("Hex", &WorkerID::Hex);
 
+    mod.method("NodeIDSize", &NodeID::Size);
     mod.add_type<NodeID>("NodeID")
         .method("NodeIDFromBinary", &NodeID::FromBinary)
         .method("Binary", &NodeID::Binary)
