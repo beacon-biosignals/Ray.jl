@@ -28,8 +28,6 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
     runs-on: ${{ matrix.os }}
-    outputs:
-      make_release: ${{ steps.project_toml.outputs.make_release }}
     strategy:
       fail-fast: false
       matrix:
