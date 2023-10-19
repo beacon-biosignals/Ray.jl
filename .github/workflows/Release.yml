@@ -46,6 +46,7 @@ jobs:
           branch: main
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
+          workflow: CI.yml
       - uses: julia-actions/setup-julia@v1
         with:
           version: "1.8"
