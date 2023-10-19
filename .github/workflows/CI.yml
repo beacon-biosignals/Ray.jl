@@ -254,6 +254,8 @@ jobs:
           git commit -m "$msg" -- Artifacts.toml
           echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
       - name: Tag and push
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_KEY }}  # needed so that artifacts_CI runs after tag created
         # if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           tag=${{ steps.project_toml.outputs.tag }}
