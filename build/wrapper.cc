@@ -511,6 +511,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
 
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
+    mod.add_type<WorkerID>("WorkerID")
+        .method("WorkerIDFromBinary", &WorkerID::FromBinary)
+        .method("Binary", &WorkerID::Binary)
+        .method("Hex", &WorkerID::Hex);
+
     mod.method("initialize_driver", &initialize_driver);
     mod.method("_shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
