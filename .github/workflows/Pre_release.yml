@@ -1,4 +1,4 @@
-name: "Publish Release"
+name: "Publish Pre-Release"
 on:
   workflow_dispatch:
 # Force a single workflow to run at a time. This ensures we don't accidentally

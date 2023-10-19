@@ -15,7 +15,7 @@ If you are working off the `main` branch, or developing Ray.jl locally, you will
 This will also update your `Overrides.toml` to reference the binaries you have built.
 
 To update the Ray.jl artifacts for a new release simply open a PR which bumps the Ray.jl version in the `Project.toml` and includes any other required changes. 
-Once the PR has been merged into `main` and the CI has passed you must trigger the ["Publish Release" GitHub Action](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/Release.yml) and the following actions will be run in the workflow:
+Once the PR has been merged into `main` and the CI has passed you must trigger the ["Publish Release" GitHub Action](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/Pre_release.yml) and the following actions will be run in the workflow:
 1. Download the various artifacts for supported platforms from `main`.
 2. Generate the `Artifacts.toml` bindings and commit them.
 3. Create a new tag and GitHub pre-release which includes the artifacts as assets.
