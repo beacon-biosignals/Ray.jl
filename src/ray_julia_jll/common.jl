@@ -225,8 +225,6 @@ for T in (:ObjectID, :JobID, :TaskID)
             end
             return $(Symbol(T, :FromHex))(str)
         end
-
-        $T(str::AbstractString) = FromHex($T, str)
     end
 
     # Conditionally define `FromRandom` for some types
@@ -256,12 +254,6 @@ FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy
 Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
 Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
 
-function Base.show(io::IO, x::BaseID)
-    T = supertype(typeof(x))
-    write(io, "$T(\"", Hex(x), "\")")
-    return nothing
-end
-
 function Base.hash(x::BaseID, h::UInt)
     T = supertype(typeof(x))
     return hash(T, hash(Hex(x), h))
@@ -271,14 +263,17 @@ end
 ##### JobID
 #####
 
+JobID(num::Integer) = FromInt(JobID, num)
 FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
-Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
+Base.show(io::IO, id::JobID) = print(io, "JobID(", ToInt(id), ")")
 
 #####
 ##### ObjectID
 #####
 
+ObjectID(str::AbstractString) = FromHex(ObjectID, str)
 FromNil(::Type{ObjectID}) = ObjectIDFromNil()
+Base.show(io::IO, id::ObjectID) = print(io, "ObjectID(\"", Hex(id), "\")")
 
 #####
 ##### RayObject

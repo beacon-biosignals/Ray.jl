@@ -74,7 +74,7 @@ using .ray_julia_jll: JobID, ObjectID, TaskID
 end
 
 @testset "ObjectID" begin
-    using .ray_julia_jll: BaseID, ObjectID, FromHex, FromNil, Hex
+    using .ray_julia_jll: ObjectID, FromHex, FromNil, Hex
 
     @testset "FromNil" begin
         object_id = FromNil(ObjectID)
@@ -89,7 +89,26 @@ end
 
     @testset "show" begin
         hex_str = "d"^(2 * 28)
-        object_id = FromHex(ObjectID, hex_str)
+        object_id = ObjectID(hex_str)
         @test sprint(show, object_id) == "ObjectID(\"$hex_str\")"
+    end
+end
+
+@testset "JobID" begin
+    using .ray_julia_jll: JobID, FromInt, ToInt
+
+    @testset "FromInt" begin
+        job_id = FromInt(JobID, 1)
+        @test job_id isa JobID
+        @test ToInt(job_id) == 1
+    end
+
+    @testset "string constructor" begin
+        @test JobID(2) == FromInt(JobID, 2)
+    end
+
+    @testset "show" begin
+        job_id = JobID(3)
+        @test sprint(show, job_id) == "JobID(3)"
     end
 end
