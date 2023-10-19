@@ -43,7 +43,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          branch: $BRANCH
+          branch: main
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
       - uses: julia-actions/setup-julia@v1
