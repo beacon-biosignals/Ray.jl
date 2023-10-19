@@ -1,6 +1,6 @@
 using .ray_julia_jll: JobID, ObjectID, TaskID
 
-@testset "$T (shared code)" for T in (ObjectID, JobID)
+@testset "$T (shared code)" for T in (ObjectID, JobID, TaskID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom, Hex
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
@@ -11,10 +11,12 @@ using .ray_julia_jll: JobID, ObjectID, TaskID
         @test T <: BaseID
     end
 
-    T !== JobID && @testset "FromRandom" begin
-        id = FromRandom(T)
-        @test id isa T
-        @test ncodeunits(Hex(id)) == 2 * siz
+    if hasmethod(FromRandom, Tuple{Type{T}})
+        @testset "FromRandom" begin
+            id = FromRandom(T)
+            @test id isa T
+            @test ncodeunits(Hex(id)) == 2 * siz
+        end
     end
 
     @testset "FromHex" begin
@@ -89,8 +91,7 @@ end
 
     @testset "show" begin
         hex_str = "d"^(2 * 28)
-        object_id = ObjectID(hex_str)
-        @test sprint(show, object_id) == "ObjectID(\"$hex_str\")"
+        @test sprint(show, ObjectID(hex_str)) == "ObjectID(\"$hex_str\")"
     end
 end
 
@@ -108,7 +109,20 @@ end
     end
 
     @testset "show" begin
-        job_id = JobID(3)
-        @test sprint(show, job_id) == "JobID(3)"
+        @test sprint(show, JobID(3)) == "JobID(3)"
+    end
+end
+
+@testset "TaskID" begin
+    using .ray_julia_jll: TaskID, FromHex, Hex
+
+    @testset "string constructor" begin
+        hex_str = "c"^(2 * 24)
+        @test TaskID(hex_str) == FromHex(TaskID, hex_str)
+    end
+
+    @testset "show" begin
+        hex_str = "d"^(2 * 24)
+        @test sprint(show, TaskID(hex_str)) == "TaskID(\"$hex_str\")"
     end
 end

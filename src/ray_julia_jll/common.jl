@@ -260,6 +260,14 @@ function Base.hash(x::BaseID, h::UInt)
 end
 
 #####
+##### ObjectID
+#####
+
+ObjectID(hex::AbstractString) = FromHex(ObjectID, hex)
+FromNil(::Type{ObjectID}) = ObjectIDFromNil()
+Base.show(io::IO, id::ObjectID) = print(io, "ObjectID(\"", Hex(id), "\")")
+
+#####
 ##### JobID
 #####
 
@@ -268,12 +276,11 @@ FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
 Base.show(io::IO, id::JobID) = print(io, "JobID(", ToInt(id), ")")
 
 #####
-##### ObjectID
+##### TaskID
 #####
 
-ObjectID(str::AbstractString) = FromHex(ObjectID, str)
-FromNil(::Type{ObjectID}) = ObjectIDFromNil()
-Base.show(io::IO, id::ObjectID) = print(io, "ObjectID(\"", Hex(id), "\")")
+TaskID(hex::AbstractString) = FromHex(TaskID, hex)
+Base.show(io::IO, id::TaskID) = print(io, "TaskID(\"", Hex(id), "\")")
 
 #####
 ##### RayObject
