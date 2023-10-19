@@ -14,6 +14,11 @@ However, the artifacts are only associated with tagged releases of Ray.jl.
 If you are working off the `main` branch, or developing Ray.jl locally, you will need to [build Ray.jl](./developer-guide.md#build-rayjl) yourself. 
 This will also update your `Overrides.toml` to reference the binaries you have built.
 
-To update the Ray.jl artifacts for a new release simply open a PR which bumps the Ray.jl version in the `Project.toml` and includes any other required changes.
-The Julia CI jobs created by this PR will build the artifacts required to make a new release.
-Upon merging the PR with `main` a new tag will be created and the artifacts will be uploaded to a GitHub Pre-Release, which will be converted as a full Release once the CI for the tag passes.
+To update the Ray.jl artifacts for a new release simply open a PR which bumps the Ray.jl version in the `Project.toml` and includes any other required changes. 
+Once the PR has been merged into `main` and the CI has passed you must trigger the ["Publish Release" GitHub Action](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/Release.yml) and the following actions will be run in the workflow:
+1. Download the various artifacts for supported platforms from `main`.
+2. Generate the `Artifacts.toml` bindings and commit them.
+3. Create a new tag and GitHub pre-release which includes the artifacts as assets.
+
+The creation of the tag will trigger the "Artifacts CI" workflow which is responsible for verifying the generated artifacts work. 
+It will then promote the GitHub pre-release to a full release once those checks pass.
