@@ -35,6 +35,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         OutOfDiskError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
+    elseif error_type == ray_jll.ErrorType(:NODE_DIED)
+        NodeDiedError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -176,6 +178,20 @@ end
 
 function Base.showerror(io::IO, ex::OutOfMemoryError)
     print(io, "$OutOfMemoryError: $(ex.msg)")
+    return nothing
+end
+
+"""
+    NodeDiedError <: RayError
+
+Indicates that the node is either dead or unreachable.
+"""
+struct NodeDiedError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::NodeDiedError)
+    print(io, "$NodeDiedError: $(ex.msg)")
     return nothing
 end
 

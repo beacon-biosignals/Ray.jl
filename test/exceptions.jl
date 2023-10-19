@@ -67,6 +67,11 @@ end
     @test sprint(showerror, e) == "Ray.OutOfMemoryError: foo"
 end
 
+@testset "NodeDiedError" begin
+    msg = sprint(showerror, NodeDiedError("foo"))
+    @test msg == "NodeDiedError: foo"
+end
+
 @testset "ObjectLostError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
     msg = sprint(showerror, ObjectLostError(obj_ctx))
@@ -105,5 +110,6 @@ end
     @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ctx) == ObjectFetchTimedOutError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ctx) == OutOfDiskError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ctx) == Ray.OutOfMemoryError("foo")
+    @test RayError(ray_jll.ErrorType(:NODE_DIED), "foo", obj_ctx) == NodeDiedError("foo")
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end
