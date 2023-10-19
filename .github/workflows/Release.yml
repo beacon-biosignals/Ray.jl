@@ -43,7 +43,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          branch: main
+          branch: gm/tag_gha
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
           workflow: CI.yml
