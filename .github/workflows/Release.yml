@@ -1,12 +1,6 @@
 name: "Publish Release"
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Name of the branch to create the tag from'
-        required: true
-        default: 'main'
-  push:
 env:
   build_dir: ./build
   tarballs_dir: ./build/tarballs
@@ -44,7 +38,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          branch: gm/tag_gha
+          branch: main
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
           workflow: CI.yml
