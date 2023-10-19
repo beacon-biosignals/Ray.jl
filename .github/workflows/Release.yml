@@ -6,6 +6,7 @@ on:
         description: 'Name of the branch to create the tag from'
         required: true
         default: 'main'
+  push:
 env:
   tarballs_dir: ./build/tarballs
 jobs:
