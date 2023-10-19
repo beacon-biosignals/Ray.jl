@@ -29,10 +29,7 @@ jobs:
           latest_tag = parse(VersionNumber, ENV["LATEST_TAG"])
           @info "Project version: project.version"
           @info "Latest tag: latest_tag"
-          make_release = project.version > latest_tag
-          open(ENV["GITHUB_OUTPUT"], "a") do io
-              println(io, "make_release=$make_release")
-          end
+          project.version > latest_tag || exit(1)  # error if can't make a tag
       - uses: actions/checkout@v4
       - name: Download artifacts
         id: download-artifact
