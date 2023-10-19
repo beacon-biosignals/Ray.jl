@@ -24,6 +24,7 @@ env:
   build_dir: ./build
   ray_dir: ./build/ray
   tarballs_dir: ./build/tarballs
+  GITHUB_TOKEN: ${{ secrets.RELEASE_KEY }}  # needed so that artifacts_CI runs after tag created
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -254,8 +255,6 @@ jobs:
           git commit -m "$msg" -- Artifacts.toml
           echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
       - name: Tag and push
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_KEY }}  # needed so that artifacts_CI runs after tag created
         # if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           tag=${{ steps.project_toml.outputs.tag }}
