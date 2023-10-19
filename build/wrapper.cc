@@ -477,9 +477,22 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("message", &Status::message)
         .method("ToString", &Status::ToString);
 
-    // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
-    // than normal.
+    // TODO: Make `ObjectID`, `JobID`, and `TaskID` a subclass of `BaseID`.
+    // The use of templating makes this more work than normal.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.add_type<ObjectID>("ObjectID")
+        .method("ObjectIDFromHex", &ObjectID::FromHex)
+        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("ObjectIDFromNil", []() {
+            auto id = ObjectID::Nil();
+            ObjectID id_deref = id;
+            return id_deref;
+        })
+        .method("Hex", &ObjectID::Hex);
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
     mod.add_type<JobID>("JobID")
         .method("JobIDFromInt", &JobID::FromInt)
         .method("ToInt", &JobID::ToInt);
@@ -492,17 +505,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_driver", &initialize_driver);
     mod.method("_shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
-
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
-    mod.add_type<ObjectID>("ObjectID")
-        .method("ObjectIDFromHex", &ObjectID::FromHex)
-        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
-        .method("ObjectIDFromNil", []() {
-            auto id = ObjectID::Nil();
-            ObjectID id_deref = id;
-            return id_deref;
-        })
-        .method("Hex", &ObjectID::Hex);
 
     // enum Language
     // https://github.com/beacon-biosignals/ray/blob/ray-2.5.1%2B1/src/ray/protobuf/common.proto#L25
