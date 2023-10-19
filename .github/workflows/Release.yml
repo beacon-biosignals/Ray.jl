@@ -38,7 +38,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          branch: main
+          commit: ${{ github.sha }}  # pull the artifacts for the last commit on main
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
           workflow: CI.yml
