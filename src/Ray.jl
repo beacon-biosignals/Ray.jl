@@ -22,8 +22,8 @@ export start_worker, submit_task, @ray_import, ObjectRef
 
 # exceptions
 export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectLostError,
-       OutOfDiskError, RayError, RaySystemError, RayTaskError, TaskCancelledError,
-       WorkerCrashedError
+       OutOfDiskError, RayError, RaySystemError, RayTaskError,
+       ReferenceCountingAssertionError, TaskCancelledError, WorkerCrashedError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll

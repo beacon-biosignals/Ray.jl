@@ -37,6 +37,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         OutOfMemoryError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:NODE_DIED)
         NodeDiedError(deserialize_error_info(data))
+    elseif error_type == ray_jll.ErrorType(:OBJECT_DELETED)
+        ReferenceCountingAssertionError(ObjectContext(obj))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -230,6 +232,23 @@ function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
     print(io, "Fetch for object $(ex.object_context.object_ref_hex) timed out because no " *
               "locations were found for the object. This may indicate a system-level bug.")
 
+    return nothing
+end
+
+"""
+    ReferenceCountingAssertionError <: RayError
+
+Indicates that an object has been deleted while there was still a reference to it.
+"""
+struct ReferenceCountingAssertionError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ReferenceCountingAssertionError)
+    print(io, "$ReferenceCountingAssertionError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object has already been deleted by the reference counting protocol. " *
+              "This should not happen.")
     return nothing
 end
 

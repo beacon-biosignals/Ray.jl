@@ -86,6 +86,13 @@ end
     @test contains(msg, "Fetch for object")
 end
 
+@testset "ReferenceCountingAssertionError" begin
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
+    msg = sprint(showerror, ReferenceCountingAssertionError(obj_ctx))
+    @test startswith(msg, "ReferenceCountingAssertionError: Failed to retrieve object")
+    @test contains(msg, "The object has already been deleted")
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -111,5 +118,6 @@ end
     @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ctx) == OutOfDiskError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), "foo", obj_ctx) == Ray.OutOfMemoryError("foo")
     @test RayError(ray_jll.ErrorType(:NODE_DIED), "foo", obj_ctx) == NodeDiedError("foo")
+    @test RayError(ray_jll.ErrorType(:OBJECT_DELETED), "", obj_ctx) == ReferenceCountingAssertionError(obj_ctx)
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end
