@@ -34,6 +34,10 @@ jobs:
           @info "Project version: project.version"
           @info "Latest tag: latest_tag"
           project.version > latest_tag || exit(1)  # error if can't make a tag
+          open(ENV["GITHUB_OUTPUT"], "a") do io
+              println(io, "version=$(project.version)")
+              println(io, "tag=v$(project.version)")
+          end
       - uses: actions/checkout@v4
       - name: Download artifacts
         id: download-artifact
@@ -47,16 +51,6 @@ jobs:
           version: "1.8"
           arch: "x64"
       - uses: julia-actions/cache@v1
-      - name: Check Project version
-        id: project_toml
-        shell: julia --color=yes --project {0}
-        run: |
-          using Pkg.Types
-          project = read_project("Project.toml")
-          open(ENV["GITHUB_OUTPUT"], "a") do io
-              println(io, "version=$(project.version)")
-              println(io, "tag=v$(project.version)")
-          end
       - name: Update Artifacts.toml
         shell: julia --color=yes --project {0}
         run: |
