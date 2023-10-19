@@ -254,14 +254,14 @@ jobs:
           git commit -m "$msg" -- Artifacts.toml
           echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
       - name: Tag and push
-        if: ${{ github.ref == 'refs/heads/main' }}
+        # if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           tag=${{ steps.project_toml.outputs.tag }}
           git tag $tag ${{ steps.commit.outputs.sha }}
           git push origin $tag
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
-        if: ${{ github.ref == 'refs/heads/main' }}
+        # if: ${{ github.ref == 'refs/heads/main' }}
         with:
           prerelease: true
           tag_name: ${{ steps.project_toml.outputs.tag }}
