@@ -8,6 +8,7 @@ on:
         default: 'main'
   push:
 env:
+  build_dir: ./build
   tarballs_dir: ./build/tarballs
 jobs:
   release:
