@@ -182,12 +182,8 @@ function parse_ray_args_from_raylet_out(session_dir)
     gcs_address = read("/tmp/ray/ray_current_cluster", String)
 
     # --node-ip-address=127.0.0.1
-    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    node_ip = if node_ip_match !== nothing
-        String(node_ip_match[1])
-    else
-        error("Unable to find Node IP address")
-    end
+    node_ip_json = JSON3.read(joinpath(session_dir, "/node_ip_address.json"))
+    node_ip = node_ip_json[:node_ip_address]
 
     # --node-manager-port=63639
     port_match = match(r"node-manager-port=([0-9]{1,5})", line)
