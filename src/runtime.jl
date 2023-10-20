@@ -1,8 +1,5 @@
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
-# In ray-2.5.1 this is constant but in later versions it's read from NODE_IP_ADDRESS.json
-const NODE_IP_ADDRESS = "127.0.0.1"
-
 macro ray_import(ex)
     Ray = gensym(:Ray)
     result = quote
@@ -379,7 +376,7 @@ function start_worker(args=ARGS)
     return ray_jll.initialize_worker(parsed_args["raylet_socket"],
                                      parsed_args["store_socket"],
                                      parsed_args["address"],
-                                     parsed_args["NODE_IP_ADDRESS"],
+                                     parsed_args["node_ip_address"],
                                      parsed_args["node_manager_port"],
                                      parsed_args["startup_token"],
                                      parsed_args["runtime_env_hash"],
