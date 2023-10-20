@@ -233,6 +233,9 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
         Size(::Type{$T}) = $siz
 
         function FromBinary(::Type{$T}, str::StdString)
+            # Perform this check on the Julia side as an invalid string will run `RAY_CHECK`
+            # on the backend causing the Julia process to terminate:
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L433-L434
             if ncodeunits(str) != Size($T) && ncodeunits(str) != 0
                 msg = "Expected binary size is $(Size($T)) or 0, provided data size is $(ncodeunits(str))"
                 throw(ArgumentError(msg))
@@ -241,6 +244,11 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
         end
 
         function FromHex(::Type{$T}, str::StdString)
+            # Perform these checks on the Julia side since an invalid length hex string will
+            # use `RAY_LOG` and report a C-style error or a non-hex string with the correct
+            # length will silently return `Nil($T)`.
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L459-L460
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L468-L473
             if length(str) != 2 * Size($T)
                 msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str)). Hex string: $str"
                 throw(ArgumentError(msg))
