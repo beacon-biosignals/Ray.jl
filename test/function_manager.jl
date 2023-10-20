@@ -20,9 +20,6 @@
     @test f2.(1:10) == f.(1:10)
 
     mfd = function_descriptor(MyMod.f)
-    # TODO: COME BACK TO THESE
-    # @test_throws ErrorException import_function!(fm, mfd, jobid)
-    # @test timedwait_for_function(fm, mfd, jobid; timeout_s=1) == :timed_out
     export_function!(fm, MyMod.f, jobid)
 
     # can import the function even when it's aliased in another module:

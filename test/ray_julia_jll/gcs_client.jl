@@ -35,14 +35,5 @@
     # throw on missing key
     @test_throws ErrorException Get(client, ns, "none")
 
-    # TODO: COME BACK TO THESE
-    # ideally we'd throw on connect but it returns OK......
-    # badclient = JuliaGcsClient("127.0.0.1:6378")
-    # status = Connect(badclient)
-
-    # ...but then throws when we try to do anything so at least there's that
-    # @test_throws ErrorException Put(badclient, ns, "computer", "mistaek", false)
-
     Disconnect(client)
-    # Disconnect(badclient)
 end
