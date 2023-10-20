@@ -70,12 +70,13 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         runtime_env = JOB_RUNTIME_ENV[]
     end
 
-     #gcs-address=127.0.0.1:6379
+    #gcs-address=127.0.0.1:6379
     gcs_address = read("/tmp/ray/ray_current_cluster", String)
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
-    ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) || error("Failed to connect to Ray GCS at $(gcs_address)")
+    ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) ||
+        error("Failed to connect to Ray GCS at $(gcs_address)")
     atexit(() -> ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
