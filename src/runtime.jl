@@ -179,12 +179,7 @@ function parse_ray_args_from_raylet_out(session_dir)
     end
 
     # --gcs-address=127.0.0.1:6379
-    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
-    gcs_address = if gcs_match !== nothing
-        String(gcs_match[1])
-    else
-        error("Unable to find GCS address")
-    end
+    gcs_address = read("/tmp/ray/ray_current_cluster", String)
 
     # --node-ip-address=127.0.0.1
     node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
