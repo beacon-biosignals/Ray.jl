@@ -19,6 +19,7 @@
     @test f2.(1:10) == f.(1:10)
 
     mfd = function_descriptor(MyMod.f)
+    @test_throws ErrorException import_function!(fm, mfd, jobid)
     export_function!(fm, MyMod.f, jobid)
 
     # can import the function even when it's aliased in another module:
