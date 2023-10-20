@@ -94,7 +94,13 @@ function serialize_to_ray_object(data, metadata=nothing)
         ray_jll.NullPtr(ray_jll.Buffer)
     end
 
-    inlined_ids = StdVector(collect(s.object_ids))::StdVector{ray_jll.ObjectID}
+    # https://github.com/JuliaInterop/CxxWrap.jl/issues/367
+    inlined_ids = if !isempty(s.object_ids)
+        StdVector(collect(s.object_ids))::StdVector{ray_jll.ObjectID}
+    else
+        StdVector{ray_jll.ObjectID}()
+    end
+
     worker = ray_jll.GetCoreWorker()
     inlined_refs = ray_jll.GetObjectRefs(worker, inlined_ids)
 
