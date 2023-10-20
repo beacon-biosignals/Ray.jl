@@ -18,7 +18,7 @@ end
 
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom,
-                          Hex, Nil, safe_convert
+                          Hex, IsNil, Nil, safe_convert
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
     T_Dereferenced = @eval ray_julia_jll.$(Symbol(nameof(T), :Dereferenced))
@@ -94,6 +94,7 @@ end
         id = Nil(T)
         @test id isa T
         @test Hex(id) == "f"^(2 * siz)
+        @test IsNil(id)
     end
 
     @testset "equality" begin

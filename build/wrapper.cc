@@ -478,7 +478,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return (ObjectID) id;
         })
         .method("Binary", &ObjectID::Binary)
-        .method("Hex", &ObjectID::Hex);
+        .method("Hex", &ObjectID::Hex)
+        .method("IsNil", &ObjectID::IsNil);
+
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
     mod.method("JobIDSize", &JobID::Size);
@@ -492,6 +494,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         })
         .method("Binary", &JobID::Binary)
         .method("Hex", &JobID::Hex)
+        .method("IsNil", &JobID::IsNil)
         .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
@@ -504,7 +507,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             return (TaskID) id;
         })
         .method("Binary", &TaskID::Binary)
-        .method("Hex", &TaskID::Hex);
+        .method("Hex", &TaskID::Hex)
+        .method("IsNil", &TaskID::IsNil);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
     mod.method("WorkerIDSize", &WorkerID::Size);
@@ -516,7 +520,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         })
         .method("WorkerIDNil", &WorkerID::Nil)
         .method("Binary", &WorkerID::Binary)
-        .method("Hex", &WorkerID::Hex);
+        .method("Hex", &WorkerID::Hex)
+        .method("IsNil", &WorkerID::IsNil);
 
     mod.method("NodeIDSize", &NodeID::Size);
     mod.add_type<NodeID>("NodeID", jlcxx::julia_type("BaseID"))
@@ -527,7 +532,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         })
         .method("NodeIDNil", &NodeID::Nil)
         .method("Binary", &NodeID::Binary)
-        .method("Hex", &NodeID::Hex);
+        .method("Hex", &NodeID::Hex)
+        .method("IsNil", &NodeID::IsNil);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("_shutdown_driver", &shutdown_driver);
