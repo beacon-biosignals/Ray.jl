@@ -11,7 +11,7 @@ Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
-CxxWrap = "0.13.4"
+CxxWrap = "0.14.1"
 Mustache = "1"
 TOML = "1"
 julia = "1.6"

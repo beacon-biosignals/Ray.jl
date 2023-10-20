@@ -20,11 +20,11 @@ libcxxwrap_julia_jll = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
 [compat]
 Aqua = "0.5"
 ArgParse = "1"
-CxxWrap = "0.13.4"
+CxxWrap = "0.14.1"
 JSON3 = "1"
 LoggingExtras = "1"
 julia = "1.8"
-libcxxwrap_julia_jll = "0.9.7"
+libcxxwrap_julia_jll = "0.11"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
