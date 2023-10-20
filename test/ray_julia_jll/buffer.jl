@@ -25,7 +25,9 @@ using .ray_julia_jll: LocalMemoryBuffer, Data, Size, OwnsData, IsPlasmaBuffer
     @testset "copied object reference" begin
         # Using `sizeof` is probably wrong for `pointer_from_objref` as there is probably
         # additional Julia type metadata not being accounted for. This may be why we see a
-        # segfault when trying to use `pointer_from_objref`.
+        # segfault when trying to use `pointer_from_objref`.  However as noted above, no
+        # one should be using this in practice, and it's only used here to test buffer
+        # functionality separately from testing serialization.
         buffer = LocalMemoryBuffer(pointer_from_objref(data), sizeof(data), true)
         @test Data(buffer[]) != pointer_from_objref(data)
         @test Size(buffer[]) == sizeof(data)
