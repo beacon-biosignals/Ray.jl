@@ -222,7 +222,7 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     @eval begin
         Size(::Type{$T}) = $siz
 
-        function FromBinary(::Type{$T}, str::AbstractString)
+        function FromBinary(::Type{$T}, str::StdString)
             if ncodeunits(str) != Size($T) && ncodeunits(str) != 0
                 msg = "Expected binary size is $(Size($T)) or 0, provided data size is $(ncodeunits(str))"
                 throw(ArgumentError(msg))
@@ -264,6 +264,10 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     end
 end
 
+function FromBinary(::Type{T}, str::AbstractString) where {T <: BaseID}
+    return FromBinary(T, safe_convert(StdString, str))
+end
+FromBinary(::Type{T}, ref::ConstCxxRef) where {T <: BaseID} = FromBinary(T, ref[])
 FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy(bytes)))
 
 Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))

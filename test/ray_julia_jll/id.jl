@@ -6,7 +6,8 @@ function hasmethodexact(f, t::DataType)
 end
 
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
-    using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom, Hex
+    using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom,
+                          Hex, safe_convert
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
     T_Dereferenced = @eval ray_julia_jll.$(Symbol(nameof(T), :Dereferenced))
@@ -36,6 +37,7 @@ end
 
     @testset "FromBinary" begin
         bytes = fill(0xbb, siz)
+        bytes[2] = 0x00  # Add a null terminator
         bytes_str = String(deepcopy(bytes))
         @test length(bytes) == siz
 
@@ -46,6 +48,11 @@ end
         @test Binary(String, id) == bytes_str
 
         id = FromBinary(T, bytes_str)
+        @test id isa T
+        @test Binary(Vector{UInt8}, id) == bytes
+        @test Binary(String, id) == bytes_str
+
+        id = FromBinary(T, ConstCxxRef(safe_convert(StdString, bytes_str)))
         @test id isa T
         @test Binary(Vector{UInt8}, id) == bytes
         @test Binary(String, id) == bytes_str
