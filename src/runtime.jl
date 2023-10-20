@@ -1,5 +1,8 @@
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
+# In ray-2.5.1 this is constant but in later versions it's read from NODE_IP_ADDRESS.json
+const NODE_IP_ADDRESS = "127.0.0.1"
+
 macro ray_import(ex)
     Ray = gensym(:Ray)
     result = quote
