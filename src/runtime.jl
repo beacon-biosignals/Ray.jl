@@ -70,13 +70,6 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
      #gcs-address=127.0.0.1:6379
     gcs_address = read("/tmp/ray/ray_current_cluster", String)
 
-    # node-ip-address=127.0.0.1
-    node_ip_json = JSON3.read(joinpath(session_dir, "/node_ip_address.json"))
-    node_ip = node_ip_json[:node_ip_address]
-
-    node_info = CxxPtr{String}
-    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], node_ip, node_info)
-
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
     ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) || error("Failed to connect to Ray GCS at $(gcs_address)")
@@ -97,9 +90,22 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    args = (raylet, store, gcs_address, node_ip, node_port)
+    # node-ip-address=127.0.0.1
+    node_ip_json = JSON3.read(joinpath(session_dir, "/node_ip_address.json"))
+    node_ip = node_ip_json[:node_ip_address]
 
-    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
+    node_info = CxxPtr{String}
+    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], node_ip, node_info)
+
+    ray_jll.initialize_driver(raylet,
+                              store,
+                              gcs_address,
+                              node_ip,
+                              node_port,
+                              job_id,
+                              logs_dir,
+                              serialized_job_config)
+
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
