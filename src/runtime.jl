@@ -1,5 +1,8 @@
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
+# In ray-2.5.1 this is constant but in later versions it's read from NODE_IP_ADDRESS.json
+const NODE_IP_ADDRESS = "127.0.0.1"
+
 macro ray_import(ex)
     Ray = gensym(:Ray)
     result = quote
@@ -90,17 +93,13 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    # node-ip-address=127.0.0.1
-    node_ip_json = JSON3.read(joinpath(session_dir, "node_ip_address.json"))
-    node_ip = node_ip_json[:node_ip_address]
-
     node_info = CxxPtr{String}
-    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], node_ip, node_info)
+    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], NODE_IP_ADDRESS, node_info)
 
     ray_jll.initialize_driver(raylet,
                               store,
                               gcs_address,
-                              node_ip,
+                              NODE_IP_ADDRESS,
                               node_port,
                               job_id,
                               logs_dir,
@@ -131,9 +130,9 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
-function get_node_to_connect_for_driver(node_ip)
+function get_node_to_connect_for_driver()
     node_to_connect = CxxPtr(StdString())
-    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], node_ip,
+    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], NODE_IP_ADDRESS,
                                                node_to_connect)
     node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect[])
 
@@ -299,7 +298,7 @@ julia -e 'using Ray; start_worker()' -- \
   --ray_redis_password= \
   --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
   --ray_logs_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/logs \
-  --ray_node_ip_address=127.0.0.1
+  --ray_node_ip_ADDRESS=127.0.0.1
 =#
 function start_worker(args=ARGS)
     s = ArgParseSettings()
@@ -376,7 +375,7 @@ function start_worker(args=ARGS)
     return ray_jll.initialize_worker(parsed_args["raylet_socket"],
                                      parsed_args["store_socket"],
                                      parsed_args["address"],
-                                     parsed_args["node_ip_address"],
+                                     parsed_args["NODE_IP_ADDRESS"],
                                      parsed_args["node_manager_port"],
                                      parsed_args["startup_token"],
                                      parsed_args["runtime_env_hash"],
