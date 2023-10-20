@@ -94,22 +94,6 @@ function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     end
 end
 
-function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                                job_id=get_job_id(); timeout_s=10)
-    key = function_key(fd, job_id)
-    status = try
-        exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key)
-        exists ? :ok : :timed_out
-    catch e
-        if e isa ErrorException && contains(e.msg, "Deadline Exceeded")
-            return :timed_out
-        else
-            rethrow()
-        end
-    end
-    return status
-end
-
 # XXX: this will error if the function is not found in the store.
 # TODO: consider _trying_ to resolve the function descriptor locally (i.e.,
 # somthing like `eval(Meta.parse(CallString(fd)))`), falling back to the function

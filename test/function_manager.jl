@@ -1,5 +1,5 @@
 @testset "function manager" begin
-    using Ray: FunctionManager, export_function!, import_function!, timedwait_for_function
+    using Ray: FunctionManager, export_function!, import_function!
     using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, function_descriptor,
                           JuliaFunctionDescriptor, Exists
 
@@ -14,7 +14,6 @@
     export_function!(fm, f, jobid)
 
     fd = function_descriptor(f)
-    @test timedwait_for_function(fm, fd, jobid; timeout_s=10) == :ok
     f2 = import_function!(fm, fd, jobid)
 
     @test f2.(1:10) == f.(1:10)
