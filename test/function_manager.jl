@@ -1,5 +1,6 @@
 @testset "function manager" begin
-    using Ray: FunctionManager, export_function!, import_function!
+    using Ray: FUNCTION_MANAGER_NAMESPACE, FunctionManager, function_key, export_function!,
+               import_function!
     using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, function_descriptor,
                           JuliaFunctionDescriptor, Exists
 
@@ -14,12 +15,16 @@
     export_function!(fm, f, jobid)
 
     fd = function_descriptor(f)
+    key = function_key(fd, jobid)
+    @test ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key)
     f2 = import_function!(fm, fd, jobid)
 
     @test f2.(1:10) == f.(1:10)
 
     mfd = function_descriptor(MyMod.f)
     @test_throws ErrorException import_function!(fm, mfd, jobid)
+    mkey = function_key(mfd, jobid)
+    @test !(ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey))
     export_function!(fm, MyMod.f, jobid)
 
     # can import the function even when it's aliased in another module:
