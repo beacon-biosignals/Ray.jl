@@ -53,7 +53,7 @@ function Serialization.serialize(s::RaySerializer, obj_ref::ObjectRef)
     # This information will be deserialized another worker process and used during object
     # reference registration.
     serialize(s, owner_address)
-    serialize(s, safe_convert(String, serialized_object_status))
+    serialize(s, String(serialized_object_status))
 
     return nothing
 end

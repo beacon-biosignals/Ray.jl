@@ -17,7 +17,6 @@ function __init__()
     @initcxx
 end  # __init__()
 
-include("upstream_fixes.jl")
 include("expr.jl")
 include("common.jl")
 
