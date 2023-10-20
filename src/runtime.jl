@@ -140,7 +140,8 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 # TODO: Move task related code into a "task.jl" file
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
-                     resources::Dict{String,Float64}=Dict("CPU" => 1.0))
+                     resources::Dict{String,Float64}=Dict("CPU" => 1.0),
+                     max_retries::Integer=0)
     export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
     task_args = serialize_args(flatten_args(args, kwargs))
@@ -155,7 +156,8 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ray_jll._submit_task(fd,
                              transform_task_args(task_args),
                              serialized_runtime_env_info,
-                             resources)
+                             resources,
+                             max_retries)
     end
     # CoreWorker::SubmitTask calls TaskManager::AddPendingTask which initializes
     # the local ref count to 1, so we don't need to do that here.

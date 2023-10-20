@@ -144,7 +144,8 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<TaskArg *> &task_args,
                       const std::string &serialized_runtime_env_info,
-                      const std::unordered_map<std::string, double> &resources) {
+                      const std::unordered_map<std::string, double> &resources,
+                      int max_retries) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
@@ -171,8 +172,8 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
         func,
         args,
         options,
-        /*max_retries=*/0,
-        /*retry_exceptions=*/false,
+        max_retries,                // application error counter, gate for OOM retry (!=0)
+        /*retry_exceptions=*/false, // only applies to application errors
         scheduling_strategy,
         /*debugger_breakpoint=*/""
     );
