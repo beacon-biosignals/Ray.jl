@@ -80,8 +80,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
-    ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) ||
-        error("Failed to connect to Ray GCS at $(gcs_address)")
+    ray_jll.Connect(GLOBAL_STATE_ACCESSOR[]) || error("Failed to connect to Ray GCS at $(gcs_address)")
     atexit(() -> ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
@@ -124,6 +123,19 @@ get_job_id() = ray_jll.ToInt(ray_jll.GetCurrentJobId(ray_jll.GetCoreWorker()))::
 Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
+
+function get_node_to_connect_for_driver(node_ip)
+    node_to_connect = CxxPtr(StdString())
+    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], node_ip,
+                                               node_to_connect)
+    node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect[])
+
+    raylet_socket_name = ray_jll.raylet_socket_name(node_info)[]
+    store_socket_name = ray_jll.object_store_socket_name(node_info)[]
+    node_manager_port = ray_jll.node_manager_port(node_info)
+
+    return (raylet_socket_name, store_socket_name, node_manager_port)
+end
 
 function parse_ray_args_from_raylet_out(session_dir)
     #=
