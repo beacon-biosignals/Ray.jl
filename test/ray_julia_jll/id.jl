@@ -18,7 +18,7 @@ end
 
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom,
-                          Hex, safe_convert
+                          Hex, Nil, safe_convert
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
     T_Dereferenced = @eval ray_julia_jll.$(Symbol(nameof(T), :Dereferenced))
@@ -90,6 +90,12 @@ end
         @test T(hex_str) == FromHex(T, hex_str)
     end
 
+    @testset "Nil" begin
+        id = Nil(T)
+        @test id isa T
+        @test Hex(id) == "f"^(2 * siz)
+    end
+
     @testset "equality" begin
         hex_str = "d"^(2 * siz)
         id_alloc = FromHex(T, hex_str)
@@ -119,16 +125,6 @@ end
             hex_str = "e"^(2 * siz)
             @test sprint(show, T(hex_str)) == "$T(\"$hex_str\")"
         end
-    end
-end
-
-@testset "ObjectID" begin
-    using .ray_julia_jll: ObjectID, FromHex, FromNil, Hex
-
-    @testset "FromNil" begin
-        object_id = FromNil(ObjectID)
-        @test object_id isa ObjectID
-        @test Hex(object_id) == "f"^(2 * 28)
     end
 end
 

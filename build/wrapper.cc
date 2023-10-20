@@ -473,10 +473,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("ObjectIDFromBinary", &ObjectID::FromBinary)
         .method("ObjectIDFromHex", &ObjectID::FromHex)
         .method("ObjectIDFromRandom", &ObjectID::FromRandom)
-        .method("ObjectIDFromNil", []() {
-            auto id = ObjectID::Nil();
-            ObjectID id_deref = id;
-            return id_deref;
+        .method("ObjectIDNil", []() {
+            const ObjectID &id = ObjectID::Nil();
+            return (ObjectID) id;
         })
         .method("Binary", &ObjectID::Binary)
         .method("Hex", &ObjectID::Hex);
@@ -487,6 +486,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("JobIDFromBinary", &JobID::FromBinary)
         .method("JobIDFromHex", &JobID::FromHex)
         .method("JobIDFromInt", &JobID::FromInt)
+        .method("JobIDNil", []() {
+            const JobID &id = JobID::Nil();
+            return (JobID) id;
+        })
         .method("Binary", &JobID::Binary)
         .method("Hex", &JobID::Hex)
         .method("ToInt", &JobID::ToInt);
@@ -496,6 +499,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<TaskID>("TaskID", jlcxx::julia_type("BaseID"))
         .method("TaskIDFromBinary", &TaskID::FromBinary)
         .method("TaskIDFromHex", &TaskID::FromHex)
+        .method("TaskIDNil", []() {
+            const TaskID &id = TaskID::Nil();
+            return (TaskID) id;
+        })
         .method("Binary", &TaskID::Binary)
         .method("Hex", &TaskID::Hex);
 
@@ -507,6 +514,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             UniqueID uid = WorkerID::FromHex(hex);
             return static_cast<WorkerID>(uid);
         })
+        .method("WorkerIDNil", &WorkerID::Nil)
         .method("Binary", &WorkerID::Binary)
         .method("Hex", &WorkerID::Hex);
 
@@ -517,6 +525,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
             UniqueID uid = NodeID::FromHex(hex);
             return static_cast<NodeID>(uid);
         })
+        .method("NodeIDNil", &NodeID::Nil)
         .method("Binary", &NodeID::Binary)
         .method("Hex", &NodeID::Hex);
 

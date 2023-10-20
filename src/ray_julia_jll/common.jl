@@ -259,6 +259,7 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
         end
 
         $T(hex::AbstractString) = FromHex($T, hex)
+        Nil(::Type{$T}) = $(Symbol(T, :Nil))()
         Base.hash(x::$T, h::UInt) = hash($T, hash(Hex(x), h))
     end
 
@@ -303,12 +304,6 @@ function Base.show(io::IO, id::BaseID)
     print(io, "$T(\"", Hex(id), "\")")
     return nothing
 end
-
-#####
-##### ObjectID
-#####
-
-FromNil(::Type{ObjectID}) = ObjectIDFromNil()
 
 #####
 ##### JobID
