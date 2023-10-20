@@ -2,7 +2,7 @@ using .ray_julia_jll: JobID, NodeID, ObjectID, TaskID, WorkerID
 
 function hasmethodexact(f, t::DataType)
     mt = methods(f, t)
-    return only(mt).sig == Tuple{typeof(f), t.parameters...}
+    return only(mt).sig == Tuple{typeof(f),t.parameters...}
 end
 
 @testset "ishex" begin
@@ -114,7 +114,7 @@ end
         @test issetequal([id_deref, id_deref2, id_alloc2], [id_alloc])
     end
 
-    if !hasmethodexact(show, Tuple{IO, T})
+    if !hasmethodexact(show, Tuple{IO,T})
         @testset "show" begin
             hex_str = "e"^(2 * siz)
             @test sprint(show, T(hex_str)) == "$T(\"$hex_str\")"

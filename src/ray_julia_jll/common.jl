@@ -204,6 +204,7 @@ function Base.show(io::IO, addr::Address)
 
     print(io, "$Address((raylet_id=\"$raylet_hex\", ip_address=\"$ip_addr_str\", ")
     print(io, "port=$(port(addr)), worker_id=\"$worker_hex\"))")
+    return nothing
 end
 
 #####
@@ -275,16 +276,16 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     end
 end
 
-function FromBinary(::Type{T}, str::AbstractString) where {T <: BaseID}
+function FromBinary(::Type{T}, str::AbstractString) where {T<:BaseID}
     return FromBinary(T, safe_convert(StdString, str))
 end
-FromBinary(::Type{T}, ref::ConstCxxRef) where {T <: BaseID} = FromBinary(T, ref[])
-FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy(bytes)))
+FromBinary(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromBinary(T, ref[])
+FromBinary(::Type{T}, bytes) where {T<:BaseID} = FromBinary(T, String(deepcopy(bytes)))
 
-function FromHex(::Type{T}, str::AbstractString) where {T <: BaseID}
+function FromHex(::Type{T}, str::AbstractString) where {T<:BaseID}
     return FromHex(T, safe_convert(StdString, str))
 end
-FromHex(::Type{T}, ref::ConstCxxRef) where {T <: BaseID} = FromHex(T, ref[])
+FromHex(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromHex(T, ref[])
 
 Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
 Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
