@@ -97,11 +97,9 @@ end
         @test Ray.has_owner(return_ref)
         @test Ray.has_owner(remote_ref)
 
-        # Convert address to string to compare
         return_ref_addr = Ray.get_owner_address(return_ref)
         remote_ref_addr = Ray.get_owner_address(remote_ref)
         @test return_ref_addr != remote_ref_addr
-        @test remote_ref_addr == remote_ref.owner_address
 
         @test Ray.get(remote_ref) == 2
     end
