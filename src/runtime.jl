@@ -91,7 +91,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     serialized_job_config = _serialize(job_config)
 
     # node-ip-address=127.0.0.1
-    node_ip_json = JSON3.read(joinpath(session_dir, "/node_ip_address.json"))
+    node_ip_json = JSON3.read(joinpath(session_dir, "node_ip_address.json"))
     node_ip = node_ip_json[:node_ip_address]
 
     node_info = CxxPtr{String}
