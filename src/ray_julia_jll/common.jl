@@ -242,7 +242,7 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
 
         function FromHex(::Type{$T}, str::StdString)
             if length(str) != 2 * Size($T)
-                msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str))"
+                msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str)). Hex string: $str"
                 throw(ArgumentError(msg))
             elseif !ishex(str)
                 throw(ArgumentError("Expected hex string, found: $str"))
