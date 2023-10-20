@@ -190,9 +190,21 @@ end
 ##### Address <: Message
 #####
 
-# there's annoying conversion from protobuf binary blobs for the "fields" so we
-# handle it on the C++ side rather than wrapping everything.
-Base.show(io::IO, addr::Address) = print(io, _string(addr))
+function Address(nt::NamedTuple)
+    raylet_id = base64encode(safe_convert(String, Binary(FromHex(NodeID, nt.raylet_id))))
+    worker_id = base64encode(safe_convert(String, Binary(FromHex(WorkerID, nt.worker_id))))
+    nt = (; raylet_id, nt.ip_address, nt.port, worker_id)
+    return JsonStringToMessage(Address, JSON3.write(nt))
+end
+
+function Base.show(io::IO, addr::Address)
+    raylet_hex = Hex(FromBinary(NodeID, raylet_id(addr)))
+    ip_addr_str = safe_convert(String, ip_address(addr))
+    worker_hex = Hex(FromBinary(WorkerID, worker_id(addr)))
+
+    print(io, "$Address((raylet_id=\"$raylet_hex\", ip_address=\"$ip_addr_str\", ")
+    print(io, "port=$(port(addr)), worker_id=\"$worker_hex\"))")
+end
 
 #####
 ##### Buffer
@@ -211,8 +223,8 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
         Size(::Type{$T}) = $siz
 
         function FromBinary(::Type{$T}, str::AbstractString)
-            if ncodeunits(str) != Size($T)
-                msg = "Expected binary size is $(Size($T)), provided data size is $(ncodeunits(str))"
+            if ncodeunits(str) != Size($T) && ncodeunits(str) != 0
+                msg = "Expected binary size is $(Size($T)) or 0, provided data size is $(ncodeunits(str))"
                 throw(ArgumentError(msg))
             end
             return $(Symbol(T, :FromBinary))(str)

@@ -360,21 +360,6 @@ void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
     vector.push_back(el);
 }
 
-std::string address_string(const rpc::Address &addr) {
-    // getting printable string representations of the raylet_id and worker_id
-    // fields requires constructing the `NodeID` and `WorkerID` instances from
-    // these protobuf-serialized fields.  we're not using them anywhere else
-    // other than printing an Address, so rather than wrapping them and doing
-    // this shuffle on the julia side, we do it here directly.
-    std::ostringstream addr_str;
-    addr_str << "Address("
-             << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
-             << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
-             << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
-             << ")";
-    return addr_str.str();
-}
-
 namespace jlcxx
 {
     // Needed for upcasting
@@ -666,8 +651,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("raylet_id", &rpc::Address::raylet_id)
         .method("ip_address", &rpc::Address::ip_address)
         .method("port", &rpc::Address::port)
-        .method("worker_id", &rpc::Address::worker_id)
-        .method("_string", &address_string);
+        .method("worker_id", &rpc::Address::worker_id);
 
 
     // message JobConfig
