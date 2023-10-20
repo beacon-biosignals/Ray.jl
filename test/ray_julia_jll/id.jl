@@ -5,6 +5,17 @@ function hasmethodexact(f, t::DataType)
     return only(mt).sig == Tuple{typeof(f), t.parameters...}
 end
 
+@testset "ishex" begin
+    using .ray_julia_jll: ishex
+
+    @test ishex(String(['0':'9'; 'a':'f'; 'A':'F']))
+    @test ishex("")
+
+    for c in ['\0'; 'g':'z'; 'G':'Z']
+        @test !ishex(string(c))
+    end
+end
+
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom,
                           Hex, safe_convert
@@ -30,9 +41,16 @@ end
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
 
+        id = FromHex(T, ConstCxxRef(safe_convert(StdString, "a"^(2 * siz))))
+        @test id isa T
+        @test Hex(id) == "a"^(2 * siz)
+
+        @test_throws ArgumentError FromHex(T, "")
         @test_throws ArgumentError FromHex(T, "a")
         @test_throws ArgumentError FromHex(T, "a"^(2 * (siz - 1)))
         @test_throws ArgumentError FromHex(T, "a"^(2 * (siz + 1)))
+        @test_throws ArgumentError FromHex(T, "z"^(2 * siz))
+        @test_throws ArgumentError FromHex(T, "α"^(2 * siz))
     end
 
     @testset "FromBinary" begin
@@ -46,6 +64,11 @@ end
         @test id isa T
         @test Binary(Vector{UInt8}, id) == bytes
         @test Binary(String, id) == bytes_str
+
+        id = FromBinary(T, UInt8[])
+        @test id isa T
+        @test Binary(Vector{UInt8}, id) == fill(0xff, siz)
+        @test Binary(String, id) == "\xff"^siz
 
         id = FromBinary(T, bytes_str)
         @test id isa T

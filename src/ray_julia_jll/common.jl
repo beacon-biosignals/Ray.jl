@@ -216,6 +216,15 @@ NullPtr(::Type{Buffer}) = BufferFromNull()
 ##### BaseID
 #####
 
+const HEX_CODEUNITS = Tuple(UInt8['0':'9'; 'a':'f'; 'A':'F'])
+
+function ishex(s::AbstractString)
+    for i in 1:ncodeunits(s)
+        codeunit(s, i) in HEX_CODEUNITS || return false
+    end
+    return true
+end
+
 for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     siz = eval(Symbol(T, :Size))()
 
@@ -230,10 +239,12 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
             return $(Symbol(T, :FromBinary))(str)
         end
 
-        function FromHex(::Type{$T}, str::AbstractString)
+        function FromHex(::Type{$T}, str::StdString)
             if length(str) != 2 * Size($T)
                 msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str))"
                 throw(ArgumentError(msg))
+            elseif !ishex(str)
+                throw(ArgumentError("Expected hex string, found: $str"))
             end
             return $(Symbol(T, :FromHex))(str)
         end
@@ -269,6 +280,11 @@ function FromBinary(::Type{T}, str::AbstractString) where {T <: BaseID}
 end
 FromBinary(::Type{T}, ref::ConstCxxRef) where {T <: BaseID} = FromBinary(T, ref[])
 FromBinary(::Type{T}, bytes) where {T <: BaseID} = FromBinary(T, String(deepcopy(bytes)))
+
+function FromHex(::Type{T}, str::AbstractString) where {T <: BaseID}
+    return FromHex(T, safe_convert(StdString, str))
+end
+FromHex(::Type{T}, ref::ConstCxxRef) where {T <: BaseID} = FromHex(T, ref[])
 
 Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
 Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
