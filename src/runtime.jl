@@ -93,8 +93,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    node_info = CxxPtr{String}
-    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], NODE_IP_ADDRESS, node_info)
+    raylet, store, node_port = get_node_to_connect_for_driver()
 
     ray_jll.initialize_driver(raylet,
                               store,
