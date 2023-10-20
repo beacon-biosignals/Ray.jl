@@ -13,4 +13,10 @@
     @test collect(str) == collect(expected)
     @test ncodeunits(str) == ncodeunits(expected)
     @test codeunits(str) == codeunits(expected)
+
+    str = Ray.safe_convert(String, ConstCxxRef(std_str))
+    @test length(str) == length(expected)
+    @test collect(str) == collect(expected)
+    @test ncodeunits(str) == ncodeunits(expected)
+    @test codeunits(str) == codeunits(expected)
 end

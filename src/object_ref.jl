@@ -116,7 +116,7 @@ function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,
         outer_object_id = if outer_obj_ref !== nothing
             outer_obj_ref.oid
         else
-            ray_jll.FromNil(ray_jll.ObjectID)
+            ray_jll.Nil(ray_jll.ObjectID)
         end
 
         serialized_object_status = safe_convert(StdString, serialized_object_status)

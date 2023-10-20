@@ -120,7 +120,6 @@ function Base.getproperty(fd::JuliaFunctionDescriptor, field::Symbol)
 end
 
 Base.show(io::IO, status::Status) = print(io, ToString(status))
-Base.show(io::IO, jobid::JobID) = print(io, ToInt(jobid))
 
 const CORE_WORKER = Ref{Union{CoreWorker,Nothing}}()
 
@@ -191,9 +190,22 @@ end
 ##### Address <: Message
 #####
 
-# there's annoying conversion from protobuf binary blobs for the "fields" so we
-# handle it on the C++ side rather than wrapping everything.
-Base.show(io::IO, addr::Address) = print(io, _string(addr))
+function Address(nt::NamedTuple)
+    raylet_id = base64encode(safe_convert(String, Binary(FromHex(NodeID, nt.raylet_id))))
+    worker_id = base64encode(safe_convert(String, Binary(FromHex(WorkerID, nt.worker_id))))
+    nt = (; raylet_id, nt.ip_address, nt.port, worker_id)
+    return JsonStringToMessage(Address, JSON3.write(nt))
+end
+
+function Base.show(io::IO, addr::Address)
+    raylet_hex = Hex(FromBinary(NodeID, raylet_id(addr)))
+    ip_addr_str = safe_convert(String, ip_address(addr))
+    worker_hex = Hex(FromBinary(WorkerID, worker_id(addr)))
+
+    print(io, "$Address((raylet_id=\"$raylet_hex\", ip_address=\"$ip_addr_str\", ")
+    print(io, "port=$(port(addr)), worker_id=\"$worker_hex\"))")
+    return nothing
+end
 
 #####
 ##### Buffer
@@ -202,42 +214,104 @@ Base.show(io::IO, addr::Address) = print(io, _string(addr))
 NullPtr(::Type{Buffer}) = BufferFromNull()
 
 #####
-##### JobID
+##### BaseID
 #####
 
-FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
+const HEX_CODEUNITS = Tuple(UInt8['0':'9'; 'a':'f'; 'A':'F'])
 
-#####
-##### ObjectID
-#####
+function ishex(s::AbstractString)
+    for i in 1:ncodeunits(s)
+        codeunit(s, i) in HEX_CODEUNITS || return false
+    end
+    return true
+end
 
-FromHex(::Type{ObjectID}, str::AbstractString) = ObjectIDFromHex(str)
-FromRandom(::Type{ObjectID}) = ObjectIDFromRandom()
-FromNil(::Type{ObjectID}) = ObjectIDFromNil()
+for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
+    siz = eval(Symbol(T, :Size))()
 
-ObjectID(str::AbstractString) = FromHex(ObjectID, str)
+    @eval begin
+        Size(::Type{$T}) = $siz
 
-Base.show(io::IO, x::ObjectID) = write(io, "ObjectID(\"", Hex(x), "\")")
+        function FromBinary(::Type{$T}, str::StdString)
+            # Perform this check on the Julia side as an invalid string will run `RAY_CHECK`
+            # on the backend causing the Julia process to terminate:
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L433-L434
+            if ncodeunits(str) != Size($T) && ncodeunits(str) != 0
+                msg = "Expected binary size is $(Size($T)) or 0, provided data size is $(ncodeunits(str))"
+                throw(ArgumentError(msg))
+            end
+            return $(Symbol(T, :FromBinary))(str)
+        end
 
-# cannot believe I'm doing this...
-#
-# Because ObjectID is a CxxWrap-defined type, it has two subtypes:
-# `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
-# construct directly or return by value, the second when you pull a ref out of
-# say `std::vector<ObjectID>`.
-#
-# ObjectID is abstract, so the normal method definition:
-#
-# Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
-#
-# is shadowed by more specific fallbacks defined by CxxWrap.
-let types = (ObjectIDAllocated, ObjectIDDereferenced)
-    for A in types, B in types
+        function FromHex(::Type{$T}, str::StdString)
+            # Perform these checks on the Julia side since an invalid length hex string will
+            # use `RAY_LOG` and report a C-style error or a non-hex string with the correct
+            # length will silently return `Nil($T)`.
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L459-L460
+            # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L468-L473
+            if length(str) != 2 * Size($T)
+                msg = "Expected hex string length is 2 * $(Size($T)), provided length is $(length(str)). Hex string: $str"
+                throw(ArgumentError(msg))
+            elseif !ishex(str)
+                throw(ArgumentError("Expected hex string, found: $str"))
+            end
+            return $(Symbol(T, :FromHex))(str)
+        end
+
+        $T(hex::AbstractString) = FromHex($T, hex)
+        Nil(::Type{$T}) = $(Symbol(T, :Nil))()
+        Base.hash(x::$T, h::UInt) = hash($T, hash(Hex(x), h))
+    end
+
+    # Conditionally define `FromRandom` for types that wrap the C++ function
+    _FromRandom = Symbol(T, :FromRandom)
+    isdefined(@__MODULE__(), _FromRandom) && @eval FromRandom(::Type{$T}) = $(_FromRandom)()
+
+    # cannot believe I'm doing this...
+    #
+    # Because ObjectID is a CxxWrap-defined type, it has two subtypes:
+    # `ObjectIDAllocated` and `ObjectIDDereferenced`.  The first is returned when we
+    # construct directly or return by value, the second when you pull a ref out of
+    # say `std::vector<ObjectID>`.
+    #
+    # ObjectID is abstract, so the normal method definition:
+    #
+    # Base.:(==)(a::ObjectID, b::ObjectID) = Hex(a) == Hex(b)
+    #
+    # is shadowed by more specific fallbacks defined by CxxWrap.
+    sub_types = (Symbol(T, :Allocated), Symbol(T, :Dereferenced))
+    for A in sub_types, B in sub_types
         @eval Base.:(==)(a::$A, b::$B) = Hex(a) == Hex(b)
     end
 end
 
-Base.hash(x::ObjectID, h::UInt) = hash(ObjectID, hash(Hex(x), h))
+function FromBinary(::Type{T}, str::AbstractString) where {T<:BaseID}
+    return FromBinary(T, safe_convert(StdString, str))
+end
+FromBinary(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromBinary(T, ref[])
+FromBinary(::Type{T}, bytes) where {T<:BaseID} = FromBinary(T, String(deepcopy(bytes)))
+
+function FromHex(::Type{T}, str::AbstractString) where {T<:BaseID}
+    return FromHex(T, safe_convert(StdString, str))
+end
+FromHex(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromHex(T, ref[])
+
+Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
+Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
+
+function Base.show(io::IO, id::BaseID)
+    T = supertype(typeof(id))
+    print(io, "$T(\"", Hex(id), "\")")
+    return nothing
+end
+
+#####
+##### JobID
+#####
+
+JobID(num::Integer) = FromInt(JobID, num)
+FromInt(::Type{JobID}, num::Integer) = JobIDFromInt(num)
+Base.show(io::IO, id::JobID) = print(io, "JobID(", ToInt(id), ")")
 
 #####
 ##### RayObject

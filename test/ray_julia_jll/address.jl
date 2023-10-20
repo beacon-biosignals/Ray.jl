@@ -1,6 +1,6 @@
-using .ray_julia_jll: Address
-
 @testset "Address" begin
+    using .ray_julia_jll: Address, NodeID, WorkerID, FromBinary, Hex
+
     @testset "equality" begin
         addr = Address()
         @test addr == Address()
@@ -40,5 +40,23 @@ using .ray_julia_jll: Address
         @test result == addr_deref
 
         @test serialized_addr_deref == serialized_addr_alloc
+    end
+
+    @testset "namedtuple constructor" begin
+        nt = (; raylet_id="a"^(2 * 28), ip_address="127.0.0.1", port=1000,
+              worker_id="b"^(2 * 28))
+        addr = Address(nt)
+        @test Hex(FromBinary(NodeID, ray_julia_jll.raylet_id(addr))) == nt.raylet_id
+        @test ray_julia_jll.ip_address(addr)[] == nt.ip_address
+        @test ray_julia_jll.port(addr) == nt.port
+        @test Hex(FromBinary(WorkerID, ray_julia_jll.worker_id(addr))) == nt.worker_id
+    end
+
+    @testset "show" begin
+        nt = (; raylet_id="a"^(2 * 28), ip_address="127.0.0.1", port=1000,
+              worker_id="b"^(2 * 28))
+        expected = "Address((raylet_id=\"$(nt.raylet_id)\", ip_address=\"$(nt.ip_address)\", " *
+                   "port=$(nt.port), worker_id=\"$(nt.worker_id)\"))"
+        @test sprint(show, Address(nt)) == expected
     end
 end

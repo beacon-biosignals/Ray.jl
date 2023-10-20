@@ -360,21 +360,6 @@ void _push_back(std::vector<TaskArg *> &vector, TaskArg *el) {
     vector.push_back(el);
 }
 
-std::string address_string(const rpc::Address &addr) {
-    // getting printable string representations of the raylet_id and worker_id
-    // fields requires constructing the `NodeID` and `WorkerID` instances from
-    // these protobuf-serialized fields.  we're not using them anywhere else
-    // other than printing an Address, so rather than wrapping them and doing
-    // this shuffle on the julia side, we do it here directly.
-    std::ostringstream addr_str;
-    addr_str << "Address("
-             << "raylet_id=" << NodeID::FromBinary(addr.raylet_id()).Hex() << ", "
-             << "uri=" << addr.ip_address() << ":" << addr.port() << ", "
-             << "worker_id=" << WorkerID::FromBinary(addr.worker_id()).Hex()
-             << ")";
-    return addr_str.str();
-}
-
 namespace jlcxx
 {
     // Needed for upcasting
@@ -477,32 +462,82 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("message", &Status::message)
         .method("ToString", &Status::ToString);
 
-    // TODO: Make `JobID` is a subclass of `BaseID`. The use of templating makes this more work
-    // than normal.
+    // TODO: Make `ObjectID`, `JobID`, and `TaskID` a subclass of `BaseID`.
+    // The use of templating makes this more work than normal. For now we'll use an
+    // abstract Julia type called `BaseID` to assist with dispatch.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
-    mod.add_type<JobID>("JobID")
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.method("ObjectIDSize", &ObjectID::Size);
+    mod.add_type<ObjectID>("ObjectID", jlcxx::julia_type("BaseID"))
+        .method("ObjectIDFromBinary", &ObjectID::FromBinary)
+        .method("ObjectIDFromHex", &ObjectID::FromHex)
+        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
+        .method("ObjectIDNil", []() {
+            const ObjectID &id = ObjectID::Nil();
+            return (ObjectID) id;
+        })
+        .method("Binary", &ObjectID::Binary)
+        .method("Hex", &ObjectID::Hex)
+        .method("IsNil", &ObjectID::IsNil);
+
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    mod.method("JobIDSize", &JobID::Size);
+    mod.add_type<JobID>("JobID", jlcxx::julia_type("BaseID"))
+        .method("JobIDFromBinary", &JobID::FromBinary)
+        .method("JobIDFromHex", &JobID::FromHex)
         .method("JobIDFromInt", &JobID::FromInt)
+        .method("JobIDNil", []() {
+            const JobID &id = JobID::Nil();
+            return (JobID) id;
+        })
+        .method("Binary", &JobID::Binary)
+        .method("Hex", &JobID::Hex)
+        .method("IsNil", &JobID::IsNil)
         .method("ToInt", &JobID::ToInt);
 
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
-    mod.add_type<TaskID>("TaskID")
+    mod.method("TaskIDSize", &TaskID::Size);
+    mod.add_type<TaskID>("TaskID", jlcxx::julia_type("BaseID"))
+        .method("TaskIDFromBinary", &TaskID::FromBinary)
+        .method("TaskIDFromHex", &TaskID::FromHex)
+        .method("TaskIDNil", []() {
+            const TaskID &id = TaskID::Nil();
+            return (TaskID) id;
+        })
         .method("Binary", &TaskID::Binary)
-        .method("Hex", &TaskID::Hex);
+        .method("Hex", &TaskID::Hex)
+        .method("IsNil", &TaskID::IsNil);
+
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
+    mod.method("WorkerIDSize", &WorkerID::Size);
+    mod.add_type<WorkerID>("WorkerID", jlcxx::julia_type("BaseID"))
+        .method("WorkerIDFromBinary", &WorkerID::FromBinary)
+        .method("WorkerIDFromHex", [](const std::string hex) {
+            UniqueID uid = WorkerID::FromHex(hex);
+            return static_cast<WorkerID>(uid);
+        })
+        .method("WorkerIDNil", &WorkerID::Nil)
+        .method("Binary", &WorkerID::Binary)
+        .method("Hex", &WorkerID::Hex)
+        .method("IsNil", &WorkerID::IsNil);
+
+    mod.method("NodeIDSize", &NodeID::Size);
+    mod.add_type<NodeID>("NodeID", jlcxx::julia_type("BaseID"))
+        .method("NodeIDFromBinary", &NodeID::FromBinary)
+        .method("NodeIDFromHex", [](const std::string hex) {
+            UniqueID uid = NodeID::FromHex(hex);
+            return static_cast<NodeID>(uid);
+        })
+        .method("NodeIDNil", &NodeID::Nil)
+        .method("Binary", &NodeID::Binary)
+        .method("Hex", &NodeID::Hex)
+        .method("IsNil", &NodeID::IsNil);
 
     mod.method("initialize_driver", &initialize_driver);
     mod.method("_shutdown_driver", &shutdown_driver);
     mod.method("initialize_worker", &initialize_worker);
-
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
-    mod.add_type<ObjectID>("ObjectID")
-        .method("ObjectIDFromHex", &ObjectID::FromHex)
-        .method("ObjectIDFromRandom", &ObjectID::FromRandom)
-        .method("ObjectIDFromNil", []() {
-            auto id = ObjectID::Nil();
-            ObjectID id_deref = id;
-            return id_deref;
-        })
-        .method("Hex", &ObjectID::Hex);
 
     // enum Language
     // https://github.com/beacon-biosignals/ray/blob/ray-2.5.1%2B1/src/ray/protobuf/common.proto#L25
@@ -631,8 +666,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("raylet_id", &rpc::Address::raylet_id)
         .method("ip_address", &rpc::Address::ip_address)
         .method("port", &rpc::Address::port)
-        .method("worker_id", &rpc::Address::worker_id)
-        .method("_string", &address_string);
+        .method("worker_id", &rpc::Address::worker_id);
 
 
     // message JobConfig

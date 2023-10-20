@@ -1,7 +1,7 @@
 name = "Ray"
 uuid = "3f779ece-f0b6-4c4f-a81a-0cb2add9eb95"
 authors = ["Beacon Biosignals, Inc"]
-version = "0.0.2"
+version = "0.0.3"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
