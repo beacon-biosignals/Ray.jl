@@ -66,7 +66,6 @@ Base.@kwdef mutable struct FunctionManager
     end
 end
 
-
 const FUNCTION_MANAGER = Ref{FunctionManager}()
 
 function _init_global_function_manager(gcs_address)

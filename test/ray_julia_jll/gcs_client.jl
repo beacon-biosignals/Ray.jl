@@ -15,7 +15,6 @@
     @test_throws ErrorException Exists(client, ns, "computer")
 
     Connect(client) do client
-
         @test Put(client, ns, "computer", "mistaek", false) == 1
         @test Get(client, ns, "computer") == "mistaek"
         @test Keys(client, ns, "") == ["computer"]
@@ -33,7 +32,5 @@
 
         # throw on missing key
         @test_throws ErrorException Get(client, ns, "none")
-
     end
-        # Disconnect(client)
 end
