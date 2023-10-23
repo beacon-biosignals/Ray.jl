@@ -104,5 +104,4 @@
     # finally
     #     rmprocs(workers())
     # end
-    Disconnect(client)
 end
