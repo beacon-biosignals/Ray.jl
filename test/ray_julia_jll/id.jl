@@ -33,6 +33,10 @@ end
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
 
+        id = FromHex(T, "A"^(2 * siz))
+        @test id isa T
+        @test Hex(id) == "a"^(2 * siz)
+
         id = FromHex(T, ConstCxxRef(safe_convert(StdString, "a"^(2 * siz))))
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
