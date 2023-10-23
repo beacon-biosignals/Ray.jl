@@ -12,10 +12,6 @@
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR,
                                                               NODE_IP_ADDRESS)
 
-    @show raylet, store, node_port
-
-    @show typeof(raylet), typeof(store), typeof(node_port)
-
     raylet_regex = r"^/tmp/ray/session_[0-9,_,-]+/sockets/raylet"
     @test !isnothing(match(raylet_regex, String(raylet)))
 
