@@ -2,9 +2,8 @@
     const GLOBAL_STATE_ACCESSOR::Ref{ray_jll.GlobalStateAccessor}
 
 Global binding for GCS client interface to access global state information.
-Currently only used to get the next job ID.
-
-This is set during `init` and used there to get the Job ID for the driver.
+This is set during [`Ray.init`](@ref) and used there to get the the raylet name, object
+store name, node manager port, and the next job IDJob ID for the driver.
 """
 const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
 
