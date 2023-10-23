@@ -5,8 +5,6 @@
                           JuliaFunctionDescriptor, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
-    Connect(client)
-
     fm = FunctionManager(client, Dict{String,Any}())
 
     jobid = 1337
