@@ -97,8 +97,14 @@ end
     @testset "Nil / IsNil" begin
         id = Nil(T)
         @test id isa T
-        @test Hex(id) == "f"^(2 * siz)
         @test IsNil(id)
+        @test Hex(id) == "f"^(2 * siz)
+
+        @test IsNil(FromBinary(T, UInt8[]))
+        @test IsNil(FromBinary(T, fill(0xff, siz)))
+        @test IsNil(FromHex(T, "f"^(2 * siz)))
+        @test IsNil(FromHex(T, "F"^(2 * siz)))
+        @test !IsNil(FromHex(T, "e"^(2 * siz)))
     end
 
     @testset "equality" begin
