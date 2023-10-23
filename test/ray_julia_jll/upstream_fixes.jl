@@ -3,8 +3,8 @@
     cpp_expected = "Â¿\0Ã¿"
 
     std_str = Ray.safe_convert(StdString, expected)
-    @test length(std_str) == length(cpp_expected)
-    @test collect(std_str) == collect(cpp_expected)
+    @test length(std_str) == length(expected)
+    @test collect(std_str) == collect(expected)
     @test ncodeunits(std_str) == ncodeunits(expected)
     @test codeunits(std_str) == codeunits(expected)
 
