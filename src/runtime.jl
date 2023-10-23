@@ -94,7 +94,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR, NODE_IP_ADDRESS)
+    raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR,
+                                                              NODE_IP_ADDRESS)
 
     # TODO: downgrade to debug
     # https://github.com/beacon-biosignals/Ray.jl/issues/53
