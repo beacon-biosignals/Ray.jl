@@ -94,7 +94,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    raylet, store, node_port = get_node_to_connect_for_driver()
+    raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR, NODE_IP_ADDRESS)
 
     @info begin
         "Raylet socket: $raylet, Object store: $store, Node IP: $NODE_IP_ADDRESS, " *
@@ -135,9 +135,9 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
-function get_node_to_connect_for_driver()
+function get_node_to_connect_for_driver(global_state_access, node_ip_address)
     node_to_connect = CxxPtr(StdString())
-    status = ray_jll.GetNodeToConnectForDriver(GLOBAL_STATE_ACCESSOR[], NODE_IP_ADDRESS,
+    status = ray_jll.GetNodeToConnectForDriver(global_state_access[], node_ip_address,
                                                node_to_connect)
     node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect[])
 
@@ -303,7 +303,7 @@ julia -e 'using Ray; start_worker()' -- \
   --ray_redis_password= \
   --ray_session_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400 \
   --ray_logs_dir=/tmp/ray/session_2023-08-09_14-14-28_230005_27400/logs \
-  --ray_node_ip_ADDRESS=127.0.0.1
+  --ray_node_ip_address=127.0.0.1
 =#
 function start_worker(args=ARGS)
     s = ArgParseSettings()
