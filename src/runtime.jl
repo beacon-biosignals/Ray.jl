@@ -96,6 +96,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR, NODE_IP_ADDRESS)
 
+    # TODO: downgrade to debug
+    # https://github.com/beacon-biosignals/Ray.jl/issues/53
     @info begin
         "Raylet socket: $raylet, Object store: $store, Node IP: $NODE_IP_ADDRESS, " *
         "Node port: $node_port, GCS Address: $gcs_address, JobID: $job_id"
