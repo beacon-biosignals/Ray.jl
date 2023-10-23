@@ -257,6 +257,7 @@ JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
 }
 
 Status JuliaGcsClient::Connect() {
+    // https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/test/usage_stats_client_test.cc#L34-L41
     io_service_ = std::make_unique<instrumented_io_context>();
     io_service_thread_ = std::make_unique<std::thread>([this] {
         std::unique_ptr<boost::asio::io_service::work> work(

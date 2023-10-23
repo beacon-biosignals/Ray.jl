@@ -23,10 +23,16 @@ using ray::core::TaskOptions;
 using ray::core::WorkerType;
 std::string ToString(ray::FunctionDescriptor function_descriptor);
 
-// a wrapper class to manage the IO service + thread that the GcsClient needs.
-// we may want to use the PythonGcsClient however, which does not do async
-// operations in separate threads as far as I can tell...in which case we would
-// not need this wrapper at all.
+// JuliaGCSClient is a wrapper class to manage the IO service + thread that the GcsClient needs.
+// https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/gcs_client.h#L61-L87
+// Note that connection timeout information, etc. is parsed from the RayConfig parameters:
+// https://github.com/ray-project/ray/blob/e060dc2de2251cf883de9b43dda9c73e448e6cbd/src/ray/common/ray_config_def.h
+// these can be overwritten via environment variables before initializing the RayConfig / GCSClient, e.g.
+// ENV["RAY_gcs_server_request_timeout_seconds"] = 10
+// Timeouts that may be useful to configure:
+// - gcs_rpc_server_reconnect_timeout_s (default 5): timeout for connecting to GCSClient
+// - gcs_rpc_server_reconnect_timeout_s (default 60): timeout for reconnecting to GCSClient
+// - gcs_server_request_timeout_seconds (default 60): timeout for fetching from GCSClient
 class JuliaGcsClient {
 public:
     JuliaGcsClient(const ray::gcs::GcsClientOptions &options);
@@ -36,6 +42,8 @@ public:
 
     void Disconnect();
 
+    // Get, Put, Exists, Keys use methods belonging to an InternalKV field of the GCSClient
+    // https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/accessor.h#L687
     std::string Get(const std::string &ns, const std::string &key);
 
     bool Put(const std::string &ns,
