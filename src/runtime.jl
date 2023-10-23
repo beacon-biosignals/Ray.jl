@@ -138,9 +138,9 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
-function get_node_to_connect_for_driver(global_state_access, node_ip_address)
+function get_node_to_connect_for_driver(global_state_accessor, node_ip_address)
     node_to_connect = CxxPtr(StdString())
-    status = ray_jll.GetNodeToConnectForDriver(global_state_access[], node_ip_address,
+    status = ray_jll.GetNodeToConnectForDriver(global_state_accessor[], node_ip_address,
                                                node_to_connect)
     node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect[])
 
