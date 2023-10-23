@@ -157,21 +157,17 @@ let msg_types = (Address, JobConfig, ObjectReference)
     for T in msg_types
         types = (Symbol(nameof(T), :Allocated), Symbol(nameof(T), :Dereferenced))
         for A in types, B in types
-            @eval function Base.:(==)(a::$A, b::$B)
-                serialized_a = safe_convert(String, SerializeAsString(a))
-                serialized_b = safe_convert(String, SerializeAsString(b))
-                return serialized_a == serialized_b
-            end
+            @eval Base.:(==)(a::$A, b::$B) = SerializeAsString(a) == SerializeAsString(b)
         end
     end
 end
 
 function Serialization.serialize(s::AbstractSerializer, message::Message)
-    serialized_message = safe_convert(String, SerializeAsString(message))
+    serialized_message = SerializeAsString(message)
 
     serialize_type(s, Message)
     serialize(s, supertype(typeof(message)))
-    serialize(s, serialized_message)
+    serialize(s, String(serialized_message))
 
     return nothing
 end
@@ -181,7 +177,7 @@ function Serialization.deserialize(s::AbstractSerializer, ::Type{Message})
     serialized_message = deserialize(s)
 
     message = T()
-    ParseFromString(message, safe_convert(StdString, serialized_message))
+    ParseFromString(message, serialized_message)
 
     return message
 end
@@ -191,15 +187,15 @@ end
 #####
 
 function Address(nt::NamedTuple)
-    raylet_id = base64encode(safe_convert(String, Binary(FromHex(NodeID, nt.raylet_id))))
-    worker_id = base64encode(safe_convert(String, Binary(FromHex(WorkerID, nt.worker_id))))
+    raylet_id = base64encode(Binary(FromHex(NodeID, nt.raylet_id)))
+    worker_id = base64encode(Binary(FromHex(WorkerID, nt.worker_id)))
     nt = (; raylet_id, nt.ip_address, nt.port, worker_id)
     return JsonStringToMessage(Address, JSON3.write(nt))
 end
 
 function Base.show(io::IO, addr::Address)
     raylet_hex = Hex(FromBinary(NodeID, raylet_id(addr)))
-    ip_addr_str = safe_convert(String, ip_address(addr))
+    ip_addr_str = ip_address(addr)[]
     worker_hex = Hex(FromBinary(WorkerID, worker_id(addr)))
 
     print(io, "$Address((raylet_id=\"$raylet_hex\", ip_address=\"$ip_addr_str\", ")
@@ -232,7 +228,7 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     @eval begin
         Size(::Type{$T}) = $siz
 
-        function FromBinary(::Type{$T}, str::StdString)
+        function FromBinary(::Type{$T}, str::AbstractString)
             # Perform this check on the Julia side as an invalid string will run `RAY_CHECK`
             # on the backend causing the Julia process to terminate:
             # https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L433-L434
@@ -243,7 +239,7 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
             return $(Symbol(T, :FromBinary))(str)
         end
 
-        function FromHex(::Type{$T}, str::StdString)
+        function FromHex(::Type{$T}, str::AbstractString)
             # Perform these checks on the Julia side since an invalid length hex string will
             # use `RAY_LOG` and report a C-style error or a non-hex string with the correct
             # length will silently return `Nil($T)`.
@@ -285,19 +281,9 @@ for T in (:ObjectID, :JobID, :TaskID, :WorkerID, :NodeID)
     end
 end
 
-function FromBinary(::Type{T}, str::AbstractString) where {T<:BaseID}
-    return FromBinary(T, safe_convert(StdString, str))
-end
 FromBinary(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromBinary(T, ref[])
 FromBinary(::Type{T}, bytes) where {T<:BaseID} = FromBinary(T, String(deepcopy(bytes)))
-
-function FromHex(::Type{T}, str::AbstractString) where {T<:BaseID}
-    return FromHex(T, safe_convert(StdString, str))
-end
 FromHex(::Type{T}, ref::ConstCxxRef) where {T<:BaseID} = FromHex(T, ref[])
-
-Binary(::Type{String}, id::BaseID) = safe_convert(String, Binary(id))
-Binary(::Type{Vector{UInt8}}, id::BaseID) = Vector{UInt8}(Binary(String, id))
 
 function Base.show(io::IO, id::BaseID)
     T = supertype(typeof(id))

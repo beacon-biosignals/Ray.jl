@@ -18,7 +18,7 @@ end
 
 @testset "$T (shared code)" for T in (ObjectID, JobID, TaskID, WorkerID, NodeID)
     using .ray_julia_jll: ray_julia_jll, BaseID, Binary, FromBinary, FromHex, FromRandom,
-                          Hex, IsNil, Nil, safe_convert
+                          Hex, IsNil, Nil
 
     T_Allocated = @eval ray_julia_jll.$(Symbol(nameof(T), :Allocated))
     T_Dereferenced = @eval ray_julia_jll.$(Symbol(nameof(T), :Dereferenced))
@@ -37,7 +37,7 @@ end
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
 
-        id = FromHex(T, ConstCxxRef(safe_convert(StdString, "a"^(2 * siz))))
+        id = FromHex(T, ConstCxxRef(StdString("a"^(2 * siz))))
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
 
@@ -58,23 +58,23 @@ end
         id = FromBinary(T, bytes)
         @test length(bytes) == siz  # Bytes are not consumed by constructor
         @test id isa T
-        @test Binary(Vector{UInt8}, id) == bytes
-        @test Binary(String, id) == bytes_str
+        @test Binary(id) == bytes_str
+        @test Vector{UInt8}(Binary(id)) == bytes
 
         id = FromBinary(T, UInt8[])
         @test id isa T
-        @test Binary(Vector{UInt8}, id) == fill(0xff, siz)
-        @test Binary(String, id) == "\xff"^siz
+        @test Binary(id) == "\xff"^siz
+        @test Vector{UInt8}(Binary(id)) == fill(0xff, siz)
 
         id = FromBinary(T, bytes_str)
         @test id isa T
-        @test Binary(Vector{UInt8}, id) == bytes
-        @test Binary(String, id) == bytes_str
+        @test Binary(id) == bytes_str
+        @test Vector{UInt8}(Binary(id)) == bytes
 
-        id = FromBinary(T, ConstCxxRef(safe_convert(StdString, bytes_str)))
+        id = FromBinary(T, ConstCxxRef(StdString(bytes_str)))
         @test id isa T
-        @test Binary(Vector{UInt8}, id) == bytes
-        @test Binary(String, id) == bytes_str
+        @test Binary(id) == bytes_str
+        @test Vector{UInt8}(Binary(id)) == bytes
 
         @test_throws ArgumentError FromBinary(T, fill(0xbb, 1))
         @test_throws ArgumentError FromBinary(T, fill(0xbb, siz - 1))
