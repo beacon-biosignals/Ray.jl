@@ -22,15 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed determine latest tag
+          fetch-depth: 0  # Needed determine tags
           persist-credentials: true
           ref: ${{ inputs.commit }}
-      - name: Get Latest Tag
-        id: latest_tag
-        uses: WyriHaximus/github-action-get-previous-tag@v1
-        # TODO: in future we might need to perform backports, at which point we'll need to check
-        # that the project.version has not already been tagged 
-      - name: Check for updated Project version
+      - name: Check for new Project version
         id: project_toml
         shell: julia --color=yes --project {0}
         env:
@@ -38,10 +33,9 @@ jobs:
         run: |
           using Pkg.Types
           project = read_project("Project.toml")
-          latest_tag = parse(VersionNumber, ENV["LATEST_TAG"])
+          tags = parse.(VersionNumber, split(readchomp(`git tag -l`), "\n"))
           @info "Project version: project.version"
-          @info "Latest tag: latest_tag"
-          project.version > latest_tag || exit(1)  # error if can't make a tag
+          project.version in tags && error("Tag v$(project.version) already exists")
           open(ENV["GITHUB_OUTPUT"], "a") do io
               println(io, "version=$(project.version)")
               println(io, "tag=v$(project.version)")
