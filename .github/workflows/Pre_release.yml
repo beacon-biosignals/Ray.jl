@@ -69,7 +69,7 @@ jobs:
           include(joinpath(pwd(), "bind_artifacts.jl"))
           bind_artifacts()
         working-directory: ${{ env.build_dir }}
-      - name: Commit Changes
+      - name: Commit Changes and Push Tag
         id: commit
         env:
           # Avoid using the workflows GITHUB_TOKEN as it will not re-trigger CI jobs
@@ -81,23 +81,15 @@ jobs:
           git config user.name beacon-buddy
           git config user.email beacon-buddy@beacon.bio
 
+          # Commit changes
           msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
           echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
-      - name: Tag and push
-        env:
-          # Avoid using the workflows GITHUB_TOKEN as it will not re-trigger CI jobs
-          # https://github.community/t/push-from-action-does-not-trigger-subsequent-action/16854
-          GITHUB_TOKEN: ${{ secrets.BEACON_BUDDY_GH_TOKEN }}
-        run: |
-          # Alternatively environment variables can be used but both author/committer need to be set
-          # https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables#_committing
-          git config user.name beacon-buddy
-          git config user.email beacon-buddy@beacon.bio
 
+          # Push Tag
           tag=${{ steps.project_toml.outputs.tag }}
-          git tag $tag ${{ steps.commit.outputs.sha }}
+          git tag $tag $(git rev-parse HEAD)
           git push origin $tag
       - name: Publish Pre-Release
         uses: softprops/action-gh-release@v1
