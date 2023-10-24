@@ -88,10 +88,11 @@ jobs:
           git push origin $tag
       - name: Publish Pre-Release
         uses: ncipollo/release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.DOCUMENTER_KEY }}
         with:
           prerelease: true
           tag: ${{ steps.project_toml.outputs.tag }}
           commit: ${{ steps.commit.outputs.sha }}
           artifacts: ${{ env.tarballs_dir }}/*.tar.gz
-          token: ${{ secrets.DOCUMENTER_KEY }}
           generateReleaseNotes: true
