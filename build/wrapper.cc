@@ -269,6 +269,9 @@ Status JuliaGcsClient::Connect() {
 }
 
 void JuliaGcsClient::Disconnect() {
+    if (!gcs_client_){
+        return;
+    }
     io_service_->stop();
     io_service_thread_->join();
     gcs_client_->Disconnect();

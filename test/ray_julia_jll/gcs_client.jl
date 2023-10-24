@@ -4,6 +4,7 @@
                           ToString, Disconnect
 
     client = JuliaGcsClient("127.0.0.1:6379")
+    @test isnothing(Disconnect(client))
 
     ns = string("TESTING-", uuid4())
 
