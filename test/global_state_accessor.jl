@@ -12,11 +12,11 @@
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
                                                               NODE_IP_ADDRESS)
 
-    raylet_regex = r"^/tmp/ray/session_[0-9,_,-]+/sockets/raylet"
-    @test !isnothing(match(raylet_regex, String(raylet)))
+    raylet_regex = r"^/tmp/ray/session_[0-9_-]+/sockets/raylet"
+    @test occursin(raylet_regex, String(raylet))
 
     store_regex = r"^/tmp/ray/session_[0-9,_,-]+/sockets/plasma_store"
-    @test !isnothing(match(store_regex, String(store)))
+    @test occursin(store_regex, String(store))
 
     @test node_port isa Number
 
