@@ -39,7 +39,7 @@ function default_log_dir(session_dir)
 end
 
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
-              session_dir="/tmp/ray/session_latest",
+              session_dir=DEFAULT_SESSION_DIR,
               logs_dir=default_log_dir(session_dir))
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
