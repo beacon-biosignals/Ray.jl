@@ -1,5 +1,10 @@
 _mib_string(num_bytes) = string(div(num_bytes, 1024 * 1024), " MiB")
 
+# https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/utils.py#L744-L746
+const _check_msg = "Check that its definition is not implicitly capturing a large " *
+                   "array or other object in scope. Tip: use `Ray.put()` to put large " *
+                   "objects in the Ray object store."
+
 function check_oversized_function(serialized, function_descriptor)
     len = length(serialized)
     if len > FUNCTION_SIZE_ERROR_THRESHOLD
