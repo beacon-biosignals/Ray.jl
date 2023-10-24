@@ -28,16 +28,12 @@ end
         @test T <: BaseID
     end
 
-    if hasmethod(FromRandom, Tuple{Type{T}})
-        @testset "FromRandom" begin
-            id = FromRandom(T)
-            @test id isa T
-            @test ncodeunits(Hex(id)) == 2 * siz
-        end
-    end
-
-    @testset "FromHex" begin
+    @testset "FromHex / Hex" begin
         id = FromHex(T, "a"^(2 * siz))
+        @test id isa T
+        @test Hex(id) == "a"^(2 * siz)
+
+        id = FromHex(T, "A"^(2 * siz))
         @test id isa T
         @test Hex(id) == "a"^(2 * siz)
 
@@ -53,7 +49,7 @@ end
         @test_throws ArgumentError FromHex(T, "α"^(2 * siz))
     end
 
-    @testset "FromBinary" begin
+    @testset "FromBinary / Binary" begin
         bytes = fill(0xbb, siz)
         bytes[2] = 0x00  # Add a null terminator
         bytes_str = String(deepcopy(bytes))
@@ -85,16 +81,30 @@ end
         @test_throws ArgumentError FromBinary(T, fill(0xbb, siz + 1))
     end
 
+    if hasmethod(FromRandom, Tuple{Type{T}})
+        @testset "FromRandom" begin
+            id = FromRandom(T)
+            @test id isa T
+            @test ncodeunits(Hex(id)) == 2 * siz
+        end
+    end
+
     @testset "hex string constructor" begin
         hex_str = "c"^(2 * siz)
         @test T(hex_str) == FromHex(T, hex_str)
     end
 
-    @testset "Nil" begin
+    @testset "Nil / IsNil" begin
         id = Nil(T)
         @test id isa T
-        @test Hex(id) == "f"^(2 * siz)
         @test IsNil(id)
+        @test Hex(id) == "f"^(2 * siz)
+
+        @test IsNil(FromBinary(T, UInt8[]))
+        @test IsNil(FromBinary(T, fill(0xff, siz)))
+        @test IsNil(FromHex(T, "f"^(2 * siz)))
+        @test IsNil(FromHex(T, "F"^(2 * siz)))
+        @test !IsNil(FromHex(T, "e"^(2 * siz)))
     end
 
     @testset "equality" begin
