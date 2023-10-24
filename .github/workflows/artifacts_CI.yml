@@ -66,9 +66,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - name: Publish Release
-        uses: softprops/action-gh-release@v1
+      - name: Publish Pre-Release
+        uses: ncipollo/release-action
         with:
-          # Any info keys (i.e. prerelease) that are not explicitly set will retain the original
-          # value if there is already an existing release for the tag.
+          allowUpdates: true
+          updateOnlyUnreleased: true
           prerelease: false
+          makeLatest: "legacy"
+          token: ${{ secrets.BEACON_BUDDY_GH_TOKEN }}
