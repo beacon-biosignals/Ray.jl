@@ -70,8 +70,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         runtime_env = JOB_RUNTIME_ENV[]
     end
 
-    # gcs-address=127.0.0.1:6379
-    gcs_address = read("/tmp/ray/ray_current_cluster", String)
+    gcs_address = read("/tmp/ray/ray_current_cluster", String) # host:port (e.g. 127.0.0.1:6379)
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
