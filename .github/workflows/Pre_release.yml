@@ -1,6 +1,13 @@
 name: "Publish Pre-Release"
 on:
   workflow_dispatch:
+    inputs:
+      commit:  
+        # Note: The tag itself will not be based off this commit. As we must first commit the 
+        # updates to the Artifacts.toml, then the tag will be based off that commit.
+        description: 'The commit to branch from when making the tag'
+        required: true
+
 # Force a single workflow to run at a time. This ensures we don't accidentally
 # try to perform concurrent publishing of releases.
 concurrency: publish-release
@@ -17,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0  # Needed determine latest tag
           persist-credentials: true
-          ref: main
+          ref: ${{ inputs.commit }}
       - name: Get Latest Tag
         id: latest_tag
         uses: WyriHaximus/github-action-get-previous-tag@v1
@@ -43,7 +50,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
-          commit: ${{ github.sha }}  # pull the artifacts for the last commit on main
+          commit: ${{ inputs.commit }}  # pull the artifacts for the given commit
           name: ray_julia_libraries
           path: ${{ env.tarballs_dir }}
           workflow: CI.yml
