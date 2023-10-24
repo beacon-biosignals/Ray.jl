@@ -83,11 +83,10 @@ function Connect(body, client::JuliaGcsClient)
     status = Connect(client)
     ok(status) || error("Could not connect to GCS")
     try
-        body(client)
+        return body(client)
     finally
         Disconnect(client)
     end
-    return nothing
 end
 
 #####
