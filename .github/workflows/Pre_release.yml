@@ -80,11 +80,10 @@ jobs:
           msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
-          echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
 
           # Push Tag
           tag=${{ steps.project_toml.outputs.tag }}
-          git tag $tag $(git rev-parse HEAD)
+          git tag $tag
           git push origin $tag
       - name: Publish Pre-Release
         uses: ncipollo/release-action@v1
@@ -93,6 +92,5 @@ jobs:
         with:
           prerelease: true
           tag: ${{ steps.project_toml.outputs.tag }}
-          commit: ${{ steps.commit.outputs.sha }}
           artifacts: ${{ env.tarballs_dir }}/*.tar.gz
           generateReleaseNotes: true
