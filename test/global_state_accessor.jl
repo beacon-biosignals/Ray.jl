@@ -16,7 +16,7 @@
     raylet_regex = r"^/tmp/ray/session_[0-9_-]+/sockets/raylet"
     @test occursin(raylet_regex, String(raylet))
 
-    store_regex = r"^/tmp/ray/session_[0-9,_,-]+/sockets/plasma_store"
+    store_regex = r"^/tmp/ray/session_[0-9_-]+/sockets/plasma_store"
     @test occursin(store_regex, String(store))
 
     @test node_port isa Number
