@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed determine tags
-          persist-credentials: true
+          persist-credentials: false  # Avoid using these credentials as pushing new commits doesn't re-trigger CI jobs
           ref: ${{ inputs.commit }}
       - name: Check for new Project version
         id: project_toml
