@@ -75,4 +75,4 @@ jobs:
           updateOnlyUnreleased: true
           prerelease: false
           makeLatest: "legacy"
-          token: ${{ secrets.BEACON_BUDDY_GH_TOKEN }}
+          token: ${{ secrets.DOCUMENTER_KEY }}
