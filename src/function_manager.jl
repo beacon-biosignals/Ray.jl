@@ -1,6 +1,5 @@
 _mib_string(num_bytes) = string(div(num_bytes, 1024 * 1024), " MiB")
 
-
 function check_oversized_function(serialized, function_descriptor)
     len = length(serialized)
     if len > FUNCTION_SIZE_ERROR_THRESHOLD

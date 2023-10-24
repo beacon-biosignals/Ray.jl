@@ -37,7 +37,6 @@ const _check_msg = "Check that its definition is not implicitly capturing a larg
                    "array or other object in scope. Tip: use `Ray.put()` to put large " *
                    "objects in the Ray object store."
 
-
 # env var to control whether logs are sent do stderr or to file.  if "1", sent
 # to stderr; otherwise, will be sent to files in `/tmp/ray/session_latest/logs/`
 # https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
