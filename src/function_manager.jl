@@ -60,8 +60,6 @@ Base.@kwdef mutable struct FunctionManager
     functions::Dict{String,Any}
 
     function FunctionManager(gcs_client, functions)
-        status = ray_jll.Connect(gcs_client)
-        ray_jll.ok(status) || error("Could not connect to GCS")
         fm = new(gcs_client, functions)
         f(x) = ray_jll.Disconnect(x.gcs_client)
         return finalizer(f, fm)
@@ -74,6 +72,8 @@ const FUNCTION_MANAGER = Ref{FunctionManager}()
 function _init_global_function_manager(gcs_address)
     @info "Connecting function manager to GCS at $gcs_address..."
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
+    status = ray_jll.Connect(gcs_client)
+    ray_jll.ok(status) || error("Could not connect to GCS")
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client, functions=Dict{String,Any}())
     return nothing
 end
