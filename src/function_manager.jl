@@ -74,6 +74,7 @@ function _init_global_function_manager(gcs_address)
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
     status = ray_jll.Connect(gcs_client)
     ray_jll.check_status(status)
+    finalizer(ray_jll.Disconnect, gcs_client)
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client, functions=Dict{String,Any}())
     return nothing
 end
