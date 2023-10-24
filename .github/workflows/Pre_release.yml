@@ -7,6 +7,7 @@ on:
         # updates to the Artifacts.toml, then the tag will be based off that commit.
         description: 'The commit to branch from when making the tag'
         required: true
+  push:
 
 # Force a single workflow to run at a time. This ensures we don't accidentally
 # try to perform concurrent publishing of releases.
