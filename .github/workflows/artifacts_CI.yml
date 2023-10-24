@@ -69,7 +69,7 @@ jobs:
     needs: [test]
     steps:
       - name: Publish Pre-Release
-        uses: ncipollo/release-action
+        uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
           updateOnlyUnreleased: true

@@ -89,7 +89,7 @@ jobs:
           git tag $tag $(git rev-parse HEAD)
           git push origin $tag
       - name: Publish Pre-Release
-        uses: ncipollo/release-action
+        uses: ncipollo/release-action@v1
         with:
           prerelease: true
           tag: ${{ steps.project_toml.outputs.tag }}
