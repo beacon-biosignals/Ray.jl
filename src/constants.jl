@@ -48,3 +48,5 @@ const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
 const NODE_IP_ADDRESS = "127.0.0.1"
 
 const DEFAULT_SESSION_DIR = "/tmp/ray/session_latest"
+
+const GCS_ADDRESS_FILE = "/tmp/ray/ray_current_cluster"

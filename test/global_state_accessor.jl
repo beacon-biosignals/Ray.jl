@@ -1,7 +1,8 @@
 @testset "GlobalStateAccessor" begin
-    using Ray: GLOBAL_STATE_ACCESSOR, NODE_IP_ADDRESS, get_node_to_connect_for_driver
+    using Ray: GLOBAL_STATE_ACCESSOR, NODE_IP_ADDRESS, get_node_to_connect_for_driver,
+               GCS_ADDRESS_FILE
 
-    gcs_address = read("/tmp/ray/ray_current_cluster", String)
+    gcs_address = read(GCS_ADDRESS_FILE, String)
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
     ray_jll.Connect(GLOBAL_STATE_ACCESSOR[])
