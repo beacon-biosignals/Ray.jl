@@ -31,8 +31,6 @@ jobs:
       - name: Check for new Project version
         id: project_toml
         shell: julia --color=yes --project {0}
-        env:
-          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
         run: |
           using Pkg.Types
           project = read_project("Project.toml")
