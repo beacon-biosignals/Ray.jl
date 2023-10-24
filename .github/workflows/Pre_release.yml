@@ -5,7 +5,7 @@ on:
       commit:  
         # Note: The tag itself will not be based off this commit. As we must first commit the 
         # updates to the Artifacts.toml, then the tag will be based off that commit.
-        description: 'The commit to branch from when making the tag'
+        description: The commit to branch from when making the tag
         required: true
   push:
 
