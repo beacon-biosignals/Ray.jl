@@ -64,6 +64,8 @@ jobs:
   release:
     name: "Publish Release"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: [test]
     steps:
       - name: Publish Pre-Release
