@@ -127,7 +127,7 @@ end
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
     msg = sprint(showerror, ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx))
     @test startswith(msg, "ObjectReconstructionFailedMaxAttemptsExceededError: Failed to retrieve object")
-    @test contains(msg, "The object cannot be reconstructed")
+    @test contains(msg, "The object cannot be reconstructed because the maximum")
 end
 
 @testset "ObjectReconstructionFailedLineageEvictedError" begin
