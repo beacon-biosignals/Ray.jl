@@ -41,7 +41,7 @@ macro process_eval(ex...)
     return esc(:(process_eval($expr; $(kwargs...))))
 end
 
-function process_eval(expr::Expr; stdout=devnull, stderr=devnull)
+function process_eval(expr::Expr; stdout=devnull, stderr=Pipe())
     # Avoid returning the result with STDOUT as other output and `atexit` hooks make it
     # difficult to read the serialized result.
     code = quote
@@ -75,7 +75,6 @@ function process_eval(expr::Expr; stdout=devnull, stderr=devnull)
     cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
 
     input = Pipe()
-    stderr = stderr === devnull ? Pipe() : stderr
     result_file = tempname()
     p = run(pipeline(cmd; stdin=input, stdout, stderr); wait=false)
 
@@ -85,6 +84,9 @@ function process_eval(expr::Expr; stdout=devnull, stderr=devnull)
     if success(p)
         return deserialize(result_file)
     elseif stderr isa Pipe || stderr isa IOBuffer
+        # In the event that a caller would pass in `stderr` and wrap `process_eval` in a
+        # `try`/`catch` and try to read the passed in `stderr` they would find the data has
+        # been already consumed. For our testing use cases this is not a problem.
         err_str = if stderr isa Pipe
             String(readavailable(stderr))
         else
