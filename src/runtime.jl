@@ -128,9 +128,9 @@ function get_node_to_connect_for_driver(global_state_accessor, node_ip_address)
                                                CxxPtr(node_to_connect))
     node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect)
 
-    raylet_socket_name = ray_jll.raylet_socket_name(node_info)[]
-    store_socket_name = ray_jll.object_store_socket_name(node_info)[]
-    node_manager_port = ray_jll.node_manager_port(node_info)
+    raylet_socket_name = ray_jll.raylet_socket_name(node_info)[])::StdString
+    store_socket_name = ray_jll.object_store_socket_name(node_info)[])::StdString
+    node_manager_port = ray_jll.node_manager_port(node_info)::Int
 
     return (raylet_socket_name, store_socket_name, node_manager_port)
 end
