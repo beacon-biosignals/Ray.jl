@@ -105,6 +105,15 @@ end
     msg = sprint(showerror, OwnerDiedError(obj_ctx))
     @test startswith(msg, "OwnerDiedError: Failed to retrieve object")
     @test contains(msg, "The object's owner has exited")
+    @test contains(msg, "Check cluster logs (\"/tmp/ray/session_latest/logs\")")
+
+    addr = ray_jll.Address((; raylet_id="a"^(2 * 28), worker_id="b"^(2 * 28),
+                            ip_address="127.0.0.1", port=1000))
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), addr, "")
+    msg = sprint(showerror, OwnerDiedError(obj_ctx))
+    @test startswith(msg, "OwnerDiedError: Failed to retrieve object")
+    @test contains(msg, "The object's owner has exited")
+    @test contains(msg, "Check cluster logs (\"/tmp/ray/session_latest/logs/*" * r"b{56}" * "*\" at IP address 127.0.0.1)")
 end
 
 @testset "RaySystemError" begin

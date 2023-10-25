@@ -287,13 +287,14 @@ struct OwnerDiedError <: RayError
 end
 
 function Base.showerror(io::IO, ex::OwnerDiedError)
-    log_loc = "/tmp/ray/session_latest/logs"
-
-    # log_loc = if ex.object_context.owner_address != ray_jll.Address()
-    #     "\"/tmp/ray/session_latest/logs/*$(worker_id.hex())*\" at IP address $ip_addr"
-    # else
-    #     "\"/tmp/ray/session_latest/logs\""
-    # end
+    log_loc = if ex.object_context.owner_address != ray_jll.Address()
+        addr = ex.object_context.owner_address
+        ip_addr = ray_jll.ip_address(addr)[]
+        worker_id = ray_jll.FromBinary(ray_jll.WorkerID, ray_jll.worker_id(addr))
+        "\"/tmp/ray/session_latest/logs/*$(ray_jll.Hex(worker_id))*\" at IP address $ip_addr"
+    else
+        "\"/tmp/ray/session_latest/logs\""
+    end
 
     print(io, "$OwnerDiedError: ")
     print_object_lost(io, ex.object_context)
