@@ -29,7 +29,7 @@
 
     @testset "log to stderr" begin
         err = IOBuffer()
-        @process_eval stderr=err begin
+        @process_eval stderr = err begin
             using Ray
             Ray.init(; logs_dir="")
         end
@@ -40,7 +40,7 @@
 
     @testset "log to stderr: env var" begin
         err = IOBuffer()
-        @process_eval stderr=err begin
+        @process_eval stderr = err begin
             using Ray
             ENV[Ray.LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE] = "1"
             Ray.init()
