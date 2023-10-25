@@ -63,26 +63,21 @@ function process_eval(expr::Expr; stdout=devnull)
         end
 
         ast = deserialize(stdin)
-        result_file = deserialize(stdin)
-
-        open(result_file, "w") do io
-            serialize(io, eval_toplevel(ast))
-            return nothing
-        end
+        serialize(stdout, eval_toplevel(ast))
+        return nothing
     end
 
     cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
 
     input = Pipe()
     err = Pipe()
-    result_file = tempname()
-    p = run(pipeline(cmd; stdin=input, stdout=stdout, stderr=err); wait=false)
+    out = Pipe()
+    p = run(pipeline(cmd; stdin=input, stdout=out, stderr=err); wait=false)
 
     serialize(input, expr)
-    serialize(input, result_file)
     wait(p)
     if success(p)
-        return deserialize(result_file)
+        return deserialize(out)
     else
         err_str = String(readavailable(err))
         error("Executing `process_eval` failed:\n\"\"\"\"\n$err_str\"\"\"\"")
