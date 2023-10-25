@@ -8,13 +8,12 @@
     @testset "custom logs_dir" begin
         mktempdir() do logs_dir
             cp("/tmp/ray/session_latest/logs/raylet.out", joinpath(logs_dir, "raylet.out"))
+            err = IOBuffer()
             code = quote
                 using Ray
                 Ray.init(; logs_dir=$logs_dir)
             end
-            cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
-            err = IOBuffer()
-            run(pipeline(cmd; stderr=err))
+            process_eval(code; stderr=err)
 
             logfiles = readdir(logs_dir; join=true)
             @test count(contains("julia-core-driver"), logfiles) == 1
@@ -29,43 +28,37 @@
     end
 
     @testset "log to stderr" begin
-        code = quote
+        err = IOBuffer()
+        @process_eval stderr = err begin
             using Ray
             Ray.init(; logs_dir="")
         end
-        cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
-        out = IOBuffer()
-        err = IOBuffer()
-        run(pipeline(cmd; stdout=out, stderr=err))
+
         stderr_logs = String(take!(err))
         @test contains(stderr_logs, "Constructing CoreWorkerProcess")
     end
 
     @testset "log to stderr: env var" begin
-        code = quote
+        err = IOBuffer()
+        @process_eval stderr = err begin
             using Ray
             ENV[Ray.LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE] = "1"
             Ray.init()
         end
-        cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
-        out = IOBuffer()
-        err = IOBuffer()
-        run(pipeline(cmd; stdout=out, stderr=err))
+
         stderr_logs = String(take!(err))
         @test contains(stderr_logs, "Constructing CoreWorkerProcess")
     end
 
     @testset "kwarg takes precedence over env var" begin
         mktempdir() do logs_dir
+            err = IOBuffer()
             code = quote
                 using Ray
                 ENV[Ray.LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE] = "1"
                 Ray.init(; logs_dir=$logs_dir)
             end
-            cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
-            out = IOBuffer()
-            err = IOBuffer()
-            run(pipeline(cmd; stdout=out, stderr=err))
+            process_eval(code; stderr=err)
 
             logfiles = readdir(logs_dir; join=true)
             @test count(contains("julia-core-driver"), logfiles) == 1
