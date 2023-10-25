@@ -66,10 +66,6 @@ jobs:
         working-directory: ${{ env.build_dir }}
       - name: Commit Changes and Push Tag
         id: commit
-        env:
-          # Avoid using the workflows GITHUB_TOKEN as it will not re-trigger CI jobs
-          # https://github.community/t/push-from-action-does-not-trigger-subsequent-action/16854
-          GITHUB_TOKEN: ${{ secrets.DOCUMENTER_KEY }}
         run: |
           # Alternatively environment variables can be used but both author/committer need to be set
           # https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables#_committing
