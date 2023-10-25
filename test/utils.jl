@@ -35,12 +35,13 @@ local_count(oid_hex) = first(get(Ray.get_all_reference_counts(), oid_hex, 0))
 
 # Useful in running tests which require us to re-run `Ray.init` which currently can only be
 # called once as it is infeasible to reset global `Ref`'s using `isassigned` conditionals.
-macro process_eval(ex)
-    expr = QuoteNode(ex)
-    return esc(:(process_eval($expr)))
+macro process_eval(ex...)
+    kwargs = ex[1:(end - 1)]
+    expr = QuoteNode(ex[end])
+    return esc(:(process_eval($expr; $(kwargs...))))
 end
 
-function process_eval(expr::Expr; stdout=devnull)
+function process_eval(expr::Expr; stdout=devnull, stderr=Pipe())
     # Avoid returning the result with STDOUT as other output and `atexit` hooks make it
     # difficult to read the serialized result.
     code = quote
@@ -74,17 +75,25 @@ function process_eval(expr::Expr; stdout=devnull)
     cmd = `$(Base.julia_cmd()) --project=$(Ray.project_dir()) -e $code`
 
     input = Pipe()
-    err = Pipe()
     result_file = tempname()
-    p = run(pipeline(cmd; stdin=input, stdout=stdout, stderr=err); wait=false)
+    p = run(pipeline(cmd; stdin=input, stdout, stderr); wait=false)
 
     serialize(input, expr)
     serialize(input, result_file)
     wait(p)
     if success(p)
         return deserialize(result_file)
-    else
-        err_str = String(readavailable(err))
+    elseif stderr isa Pipe || stderr isa IOBuffer
+        # In the event that a caller would pass in `stderr` and wrap `process_eval` in a
+        # `try`/`catch` and try to read the passed in `stderr` they would find the data has
+        # been already consumed. For our testing use cases this is not a problem.
+        err_str = if stderr isa Pipe
+            String(readavailable(stderr))
+        else
+            String(take!(stderr))
+        end
         error("Executing `process_eval` failed:\n\"\"\"\"\n$err_str\"\"\"\"")
+    else
+        error("Executing `process_eval` failed")
     end
 end
