@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed determine tags
-          persist-credentials: false  # Avoid using these credentials as pushing new commits doesn't re-trigger CI jobs
+          persist-credentials: true
           ref: ${{ inputs.commit }}
       - name: Check for new Project version
         id: project_toml
@@ -80,17 +80,17 @@ jobs:
           msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
-      - name: Push Tag
-        run: |  
+          echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
+
+          # Push Tag
           tag=${{ steps.project_toml.outputs.tag }}
-          git tag $tag
+          git tag $tag $(git rev-parse HEAD)
           git push origin $tag
       - name: Publish Pre-Release
         uses: ncipollo/release-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.DOCUMENTER_KEY }}
         with:
           prerelease: true
           tag: ${{ steps.project_toml.outputs.tag }}
+          commit: ${{ steps.commit.outputs.sha }}
           artifacts: ${{ env.tarballs_dir }}/*.tar.gz
           generateReleaseNotes: true
