@@ -80,8 +80,8 @@ jobs:
           msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
-
-          # Push Tag
+      - name: Push Tag
+        run: |  
           tag=${{ steps.project_toml.outputs.tag }}
           git tag $tag
           git push origin $tag
