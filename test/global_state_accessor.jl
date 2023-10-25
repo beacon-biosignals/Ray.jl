@@ -13,13 +13,12 @@
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
                                                               NODE_IP_ADDRESS)
 
-    raylet_regex = r"^/tmp/ray/session_[0-9_-]+/sockets/raylet"
-    @test occursin(raylet_regex, String(raylet))
-
-    store_regex = r"^/tmp/ray/session_[0-9_-]+/sockets/plasma_store"
-    @test occursin(store_regex, String(store))
-
-    @test node_port isa Number
+    @test raylet isa StdString
+    @test occursin(r"^/tmp/ray/session_[0-9_-]+/sockets/raylet", raylet)
+    @test store isa StdString
+    @test occursin(r"^/tmp/ray/session_[0-9_-]+/sockets/plasma_store", store)
+    @test node_port isa Integer
+    @test 0 <= node_port <= 65535
 
     ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[])
 end
