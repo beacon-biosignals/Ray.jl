@@ -55,7 +55,7 @@ end
 # so "jlfun" seems reasonable
 const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 
-Base.@kwdef struct FunctionManager
+Base.@kwdef mutable struct FunctionManager
     gcs_client::ray_jll.JuliaGcsClient
     functions::Dict{String,Any}
 end
