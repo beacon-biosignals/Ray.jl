@@ -23,6 +23,7 @@ export start_worker, submit_task, @ray_import, ObjectRef
 # exceptions
 export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectFreedError,
        ObjectLostError, ObjectReconstructionFailedError,
+       ObjectReconstructionFailedLineageEvictedError,
        ObjectReconstructionFailedMaxAttemptsExceededError, OutOfDiskError, OwnerDiedError,
        RayError, RaySystemError, RayTaskError, ReferenceCountingAssertionError,
        TaskCancelledError, WorkerCrashedError

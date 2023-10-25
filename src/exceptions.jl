@@ -47,6 +47,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         ObjectReconstructionFailedError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED)
         ObjectReconstructionFailedMaxAttemptsExceededError(ObjectContext(obj))
+    elseif error_type == ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED)
+        ObjectReconstructionFailedLineageEvictedError(ObjectContext(obj))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -344,6 +346,25 @@ function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceede
     print(io, "The object cannot be reconstructed because the maximum number of task " *
                "retries has been exceeded. To prevent this error, set `max_retries` " *
                "(default 3).")
+    return nothing
+end
+
+"""
+    ObjectReconstructionFailedLineageEvictedError <: RayError
+
+Indicates that the object cannot be reconstructed because its lineage was evicted due to
+memory pressure.
+"""
+struct ObjectReconstructionFailedLineageEvictedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectReconstructionFailedLineageEvictedError)
+    print(io, "$ObjectReconstructionFailedLineageEvictedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object cannot be reconstructed because its lineage has been evicted " *
+               "to reduce memory pressure. To prevent this error, set the environment " *
+               "variable RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.")
     return nothing
 end
 
