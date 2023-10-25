@@ -45,6 +45,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         OwnerDiedError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE)
         ObjectReconstructionFailedError(ObjectContext(obj))
+    elseif error_type == ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED)
+        ObjectReconstructionFailedMaxAttemptsExceededError(ObjectContext(obj))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -320,6 +322,28 @@ function Base.showerror(io::IO, ex::ObjectReconstructionFailedError)
     print_object_lost(io, ex.object_context)
     print(io, "The object cannot be reconstructed because it was created by an actor, " *
                "a `Ray.put` call, or its `ObjectRef` was created by a different worker.")
+    return nothing
+end
+
+"""
+    ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
+
+Indicates that the object cannot be reconstructed because the maximum number of task retries
+has been exceeded.
+"""
+struct ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceededError)
+    print(io, "$ObjectReconstructionFailedMaxAttemptsExceededError: ")
+    print_object_lost(io, ex.object_context)
+
+    # TODO: Update this message with more details on how to set `max_retries` once
+    # implemented: https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L593
+    print(io, "The object cannot be reconstructed because the maximum number of task " *
+               "retries has been exceeded. To prevent this error, set `max_retries` " *
+               "(default 3).")
     return nothing
 end
 

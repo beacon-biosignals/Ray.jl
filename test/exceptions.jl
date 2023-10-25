@@ -123,6 +123,13 @@ end
     @test contains(msg, "The object cannot be reconstructed")
 end
 
+@testset "ObjectReconstructionFailedMaxAttemptsExceededError" begin
+    obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
+    msg = sprint(showerror, ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx))
+    @test startswith(msg, "ObjectReconstructionFailedMaxAttemptsExceededError: Failed to retrieve object")
+    @test contains(msg, "The object cannot be reconstructed")
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -152,5 +159,6 @@ end
     @test RayError(ray_jll.ErrorType(:OBJECT_FREED), "", obj_ctx) == ObjectFreedError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OWNER_DIED), "", obj_ctx) == OwnerDiedError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE), "", obj_ctx) == ObjectReconstructionFailedError(obj_ctx)
+    @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED), "", obj_ctx) == ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx)
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end
