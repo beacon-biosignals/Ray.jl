@@ -26,7 +26,7 @@ export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectFree
        ObjectReconstructionFailedLineageEvictedError,
        ObjectReconstructionFailedMaxAttemptsExceededError, OutOfDiskError, OwnerDiedError,
        RayError, RaySystemError, RayTaskError, ReferenceCountingAssertionError,
-       TaskCancelledError, WorkerCrashedError
+       RuntimeEnvSetupError, TaskCancelledError, WorkerCrashedError
 
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll

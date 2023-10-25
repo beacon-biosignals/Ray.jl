@@ -49,6 +49,10 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         ObjectReconstructionFailedMaxAttemptsExceededError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED)
         ObjectReconstructionFailedLineageEvictedError(ObjectContext(obj))
+    elseif error_type == ray_jll.ErrorType(:RUNTIME_ENV_SETUP_FAILED)
+        # TODO: Extract message from `RayErrorInfo`:
+        # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/serialization.py#L347-L352C24
+        RuntimeEnvSetupError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -365,6 +369,22 @@ function Base.showerror(io::IO, ex::ObjectReconstructionFailedLineageEvictedErro
     print(io, "The object cannot be reconstructed because its lineage has been evicted " *
                "to reduce memory pressure. To prevent this error, set the environment " *
                "variable RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.")
+    return nothing
+end
+
+"""
+    RuntimeEnvSetupError <: RayError
+
+Raised when a runtime environment fails to be set up.
+"""
+struct RuntimeEnvSetupError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::RuntimeEnvSetupError)
+    print(io, "$RuntimeEnvSetupError: ")
+    print(io, "Failed to set up runtime environment.")
+    !isempty(ex.msg) && print(io, "\n$(ex.msg)")
     return nothing
 end
 

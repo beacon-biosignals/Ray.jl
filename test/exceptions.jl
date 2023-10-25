@@ -137,6 +137,11 @@ end
     @test contains(msg, "The object cannot be reconstructed because its lineage")
 end
 
+@testset "RuntimeEnvSetupError" begin
+    msg = sprint(showerror, RuntimeEnvSetupError("foo"))
+    @test msg == "RuntimeEnvSetupError: Failed to set up runtime environment.\nfoo"
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -168,5 +173,6 @@ end
     @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE), "", obj_ctx) == ObjectReconstructionFailedError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED), "", obj_ctx) == ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED), "", obj_ctx) == ObjectReconstructionFailedLineageEvictedError(obj_ctx)
+    @test RayError(ray_jll.ErrorType(:RUNTIME_ENV_SETUP_FAILED), "foo", obj_ctx) == RuntimeEnvSetupError("foo")
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end
