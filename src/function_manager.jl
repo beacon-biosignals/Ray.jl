@@ -55,15 +55,9 @@ end
 # so "jlfun" seems reasonable
 const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 
-Base.@kwdef mutable struct FunctionManager
+Base.@kwdef struct FunctionManager
     gcs_client::ray_jll.JuliaGcsClient
     functions::Dict{String,Any}
-
-    function FunctionManager(gcs_client, functions)
-        fm = new(gcs_client, functions)
-        f(x) = ray_jll.Disconnect(x.gcs_client)
-        return finalizer(f, fm)
-    end
 end
 
 const FUNCTION_MANAGER = Ref{FunctionManager}()
