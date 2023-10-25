@@ -123,6 +123,8 @@ jobs:
               done
           fi
 
+          bazel clean --expunge
+
           pushd python
           pip install . --verbose  # Fresh build takes ~50 minutes on basic GH runner
           popd
