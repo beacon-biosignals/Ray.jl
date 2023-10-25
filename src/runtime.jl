@@ -61,7 +61,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         runtime_env = JOB_RUNTIME_ENV[]
     end
 
-    gcs_address = read(GCS_ADDRESS_FILE, String) # host:port (e.g. 127.0.0.1:6379)
+    gcs_address = read(GCS_ADDRESS_FILE, String) # host:port (e.g. "127.0.0.1:6379")
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
@@ -94,14 +94,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         "Node port: $node_port, GCS Address: $gcs_address, JobID: $job_id"
     end
 
-    ray_jll.initialize_driver(raylet,
-                              store,
-                              gcs_address,
-                              NODE_IP_ADDRESS,
-                              node_port,
-                              job_id,
-                              logs_dir,
-                              serialized_job_config)
+    ray_jll.initialize_driver(raylet, store, gcs_address, NODE_IP_ADDRESS, node_port,
+                              job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
 
