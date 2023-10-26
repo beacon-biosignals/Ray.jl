@@ -40,7 +40,10 @@ public:
     JuliaGcsClient(const std::string &gcs_address);
 
     ~JuliaGcsClient() {
+        // Automatically disconnect a client to avoid a SIGABRT (6)
+        // https://github.com/beacon-biosignals/Ray.jl/pull/211#issuecomment-1780070784
         if (gcs_client_) {
+            std::cerr << "\x1B[31mWarning: Forgot to disconnect JuliaGcsClient\033[0m" << std::endl;
             this->Disconnect();
         }
     }
