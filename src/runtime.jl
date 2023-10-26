@@ -38,6 +38,33 @@ function default_log_dir(session_dir)
     return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
 end
 
+# In ray-2.5.1 the node_ip is a constant if run on a local cluster t but if run on a
+# distributed cluster it's determined...somehow...
+# in later versions it's read from node_ip_address.json
+# https://github.com/ray-project/ray/blob/a03efd9931128d387649dd48b0e4864b43d3bfb4/python/ray/_private/services.py#L650-L658
+function get_node_ip_address(session_dir)
+    line = open(joinpath(session_dir, "logs", "raylet.out")) do io
+        while !eof(io)
+            line = readline(io)
+            if contains(line, "Starting agent process with command")
+                return line
+            end
+        end
+    end
+
+    line !== nothing || error("Unable to locate agent process information")
+
+    # 127.0.0.1
+    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
+    if node_ip_match !== nothing
+        node_ip = String(node_ip_match[1])
+        return node_ip
+    else
+        error("Unable to find Node IP address")
+        return nothing
+    end
+end
+
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
               session_dir=DEFAULT_SESSION_DIR,
               logs_dir=default_log_dir(session_dir))
@@ -84,17 +111,19 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
+    node_ip_address = get_node_ip_address(session_dir)
+
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
-                                                              NODE_IP_ADDRESS)
+                                                              node_ip_address)
 
     # TODO: downgrade to debug
     # https://github.com/beacon-biosignals/Ray.jl/issues/53
     @info begin
-        "Raylet socket: $raylet, Object store: $store, Node IP: $NODE_IP_ADDRESS, " *
+        "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip_address, " *
         "Node port: $node_port, GCS Address: $gcs_address, JobID: $job_id"
     end
 
-    ray_jll.initialize_driver(raylet, store, gcs_address, NODE_IP_ADDRESS, node_port,
+    ray_jll.initialize_driver(raylet, store, gcs_address, node_ip_address, node_port,
                               job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)

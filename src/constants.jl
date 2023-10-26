@@ -37,10 +37,6 @@ const FUNCTION_MANAGER_NAMESPACE = "jlfun"
 # https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
 const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
 
-# In ray-2.5.1 this is constant but in later versions it's read from NODE_IP_ADDRESS.json
-# https://github.com/ray-project/ray/blob/a03efd9931128d387649dd48b0e4864b43d3bfb4/python/ray/_private/services.py#L650-L658
-const NODE_IP_ADDRESS = "127.0.0.1"
-
 const DEFAULT_SESSION_DIR = "/tmp/ray/session_latest"
 
 const GCS_ADDRESS_FILE = "/tmp/ray/ray_current_cluster"
