@@ -39,8 +39,13 @@ public:
     JuliaGcsClient(const ray::gcs::GcsClientOptions &options);
     JuliaGcsClient(const std::string &gcs_address);
 
-    ray::Status Connect();
+    ~JuliaGcsClient() {
+        if (gcs_client_) {
+            this->Disconnect();
+        }
+    }
 
+    ray::Status Connect();
     void Disconnect();
 
     // Get, Put, Exists, Keys use methods belonging to an InternalKV field of the GCSClient
