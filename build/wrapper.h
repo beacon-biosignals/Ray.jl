@@ -35,39 +35,40 @@ std::string ToString(ray::FunctionDescriptor function_descriptor);
 // - gcs_rpc_server_reconnect_timeout_s (default 60): timeout for reconnecting to GCSClient
 // - gcs_server_request_timeout_seconds (default 60): timeout for fetching from GCSClient
 class JuliaGcsClient {
-public:
-    JuliaGcsClient(const ray::gcs::GcsClientOptions &options);
-    JuliaGcsClient(const std::string &gcs_address);
+    public:
+        JuliaGcsClient(const ray::gcs::GcsClientOptions &options);
+        JuliaGcsClient(const std::string &gcs_address);
 
-    ~JuliaGcsClient() {
-        // Automatically disconnect a client to avoid a SIGABRT (6)
-        // https://github.com/beacon-biosignals/Ray.jl/pull/211#issuecomment-1780070784
-        if (gcs_client_) {
-            std::cerr << "\x1B[31mWarning: Forgot to disconnect JuliaGcsClient\033[0m" << std::endl;
-            this->Disconnect();
+        ~JuliaGcsClient() {
+            // Automatically disconnect a client to avoid a SIGABRT (6)
+            // https://github.com/beacon-biosignals/Ray.jl/pull/211#issuecomment-1780070784
+            if (gcs_client_) {
+                std::cerr << "\x1B[31mWarning: Forgot to disconnect JuliaGcsClient\033[0m" << std::endl;
+                this->Disconnect();
+            }
         }
-    }
 
-    ray::Status Connect();
-    void Disconnect();
+        ray::Status Connect();
+        void Disconnect();
 
-    // Get, Put, Exists, Keys use methods belonging to an InternalKV field of the GCSClient
-    // https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/accessor.h#L687
-    std::string Get(const std::string &ns, const std::string &key);
+        // Get, Put, Exists, Keys use methods belonging to an InternalKV field of the GCSClient
+        // https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/accessor.h#L687
+        std::string Get(const std::string &ns, const std::string &key);
 
-    bool Put(const std::string &ns,
-            const std::string &key,
-            const std::string &value,
-            bool overwrite);
+        bool Put(const std::string &ns,
+                 const std::string &key,
+                 const std::string &value,
+                 bool overwrite);
 
-    std::vector<std::string> Keys(const std::string &ns, const std::string &prefix);
+        std::vector<std::string> Keys(const std::string &ns, const std::string &prefix);
 
-    bool Exists(const std::string &ns, const std::string &key);
+        bool Exists(const std::string &ns, const std::string &key);
 
-    std::unique_ptr<ray::gcs::GcsClient> gcs_client_;
-    ray::gcs::GcsClientOptions options_;
-    std::unique_ptr<instrumented_io_context> io_service_;
-    std::unique_ptr<std::thread> io_service_thread_;
+    private:
+        std::unique_ptr<ray::gcs::GcsClient> gcs_client_;
+        ray::gcs::GcsClientOptions options_;
+        std::unique_ptr<instrumented_io_context> io_service_;
+        std::unique_ptr<std::thread> io_service_thread_;
 };
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod);
