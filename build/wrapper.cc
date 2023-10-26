@@ -297,12 +297,12 @@ bool JuliaGcsClient::Put(const std::string &ns,
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
-    bool added_num;
-    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added_num);
+    bool added;
+    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
-    return added_num;
+    return added;
 }
 
 std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns, const std::string &prefix) {
@@ -315,6 +315,16 @@ std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns, const std::
         throw std::runtime_error(status.ToString());
     }
     return results;
+}
+
+void JuliaGcsClient::Del(const std::string &ns, const std::string &key, bool del_by_prefix) {
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    Status status = gcs_client_->InternalKV().Del(ns, key, del_by_prefix);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
 }
 
 bool JuliaGcsClient::Exists(const std::string &ns, const std::string &key) {
@@ -738,6 +748,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Put", &JuliaGcsClient::Put)
         .method("Get", &JuliaGcsClient::Get)
         .method("Keys", &JuliaGcsClient::Keys)
+        .method("Del", &JuliaGcsClient::Del)
         .method("Exists", &JuliaGcsClient::Exists);
 
     mod.add_type<gcs::GcsClientOptions>("GcsClientOptions")

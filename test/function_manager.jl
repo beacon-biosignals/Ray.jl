@@ -2,7 +2,7 @@
     using Ray: FUNCTION_MANAGER_NAMESPACE, FunctionManager, function_key, export_function!,
                import_function!
     using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, function_descriptor,
-                          JuliaFunctionDescriptor, Exists
+                          JuliaFunctionDescriptor
 
     Connect(JuliaGcsClient("127.0.0.1:6379")) do gcs_client
         fm = FunctionManager(gcs_client, Dict{String,Any}())
@@ -19,10 +19,13 @@
 
         @test f2.(1:10) == f.(1:10)
 
+        # ensure function doesn't exist in GCS
         mfd = function_descriptor(MyMod.f)
-        @test_throws ErrorException import_function!(fm, mfd, jobid)
         mkey = function_key(mfd, jobid)
-        @test !(ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey))
+        ray_jll.Del(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey, false)
+
+        @test_throws ErrorException import_function!(fm, mfd, jobid)
+        @test !ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey)
         export_function!(fm, MyMod.f, jobid)
 
         # can import the function even when it's aliased in another module:
