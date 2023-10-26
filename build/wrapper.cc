@@ -297,12 +297,12 @@ bool JuliaGcsClient::Put(const std::string &ns,
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
-    bool added_num;
-    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added_num);
+    bool added;
+    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
-    return added_num;
+    return added;
 }
 
 std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns, const std::string &prefix) {

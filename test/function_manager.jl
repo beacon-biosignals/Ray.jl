@@ -22,7 +22,7 @@
         mfd = function_descriptor(MyMod.f)
         @test_throws ErrorException import_function!(fm, mfd, jobid)
         mkey = function_key(mfd, jobid)
-        @test !(ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey))
+        @test !ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey)
         export_function!(fm, MyMod.f, jobid)
 
         # can import the function even when it's aliased in another module:
