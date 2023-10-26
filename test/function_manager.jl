@@ -21,10 +21,10 @@
 
         # ensure function doesn't exist in GCS
         mfd = function_descriptor(MyMod.f)
-        ray_jll.Del(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, function_key(mfd, jobid), false)
+        mkey = function_key(mfd, jobid)
+        ray_jll.Del(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey, false)
 
         @test_throws ErrorException import_function!(fm, mfd, jobid)
-        mkey = function_key(mfd, jobid)
         @test !ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey)
         export_function!(fm, MyMod.f, jobid)
 
