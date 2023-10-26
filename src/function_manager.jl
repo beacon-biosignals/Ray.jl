@@ -32,9 +32,10 @@ const FUNCTION_MANAGER = Ref{FunctionManager}()
 function _init_global_function_manager(gcs_address)
     @info "Connecting function manager to GCS at $gcs_address..."
     gcs_client = ray_jll.JuliaGcsClient(gcs_address)
-    ray_jll.Connect(gcs_client)
+    finalizer(ray_jll.Disconnect, gcs_client)
+    status = ray_jll.Connect(gcs_client)
+    ray_jll.check_status(status)
     FUNCTION_MANAGER[] = FunctionManager(; gcs_client, functions=Dict{String,Any}())
-
     return nothing
 end
 
@@ -49,30 +50,14 @@ function export_function!(fm::FunctionManager, f, job_id=get_job_id())
     @debug "Exporting function to function store:" fd key function_locations
     # DFK: I _think_ the string memory may be mangled if we don't `deepcopy`. Not sure but
     # it can't hurt
-    if ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, deepcopy(key), -1)
+    if ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, deepcopy(key))
         @debug "Function already present in GCS store:" fd key
     else
         @debug "Exporting function to GCS store:" fd key
         val = base64encode(serialize, f)
         check_oversized_function(val, fd)
-        ray_jll.Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true, -1)
+        ray_jll.Put(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, val, true)
     end
-end
-
-function timedwait_for_function(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescriptor,
-                                job_id=get_job_id(); timeout_s=10)
-    key = function_key(fd, job_id)
-    status = try
-        exists = ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, timeout_s)
-        exists ? :ok : :timed_out
-    catch e
-        if e isa ErrorException && contains(e.msg, "Deadline Exceeded")
-            return :timed_out
-        else
-            rethrow()
-        end
-    end
-    return status
 end
 
 # XXX: this will error if the function is not found in the store.
@@ -85,7 +70,7 @@ function import_function!(fm::FunctionManager, fd::ray_jll.JuliaFunctionDescript
     return get!(fm.functions, fd.function_hash) do
         key = function_key(fd, job_id)
         @debug "Function not found locally, retrieving from function store" fd key
-        val = ray_jll.Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key, -1)
+        val = ray_jll.Get(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key)
         try
             io = IOBuffer()
             iob64 = Base64DecodePipe(io)

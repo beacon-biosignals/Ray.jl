@@ -79,6 +79,16 @@ function check_status(status::Status)
     return nothing
 end
 
+function Connect(body, client::JuliaGcsClient)
+    status = Connect(client)
+    check_status(status)
+    try
+        return body(client)
+    finally
+        Disconnect(client)
+    end
+end
+
 #####
 ##### Function descriptor wrangling
 #####
