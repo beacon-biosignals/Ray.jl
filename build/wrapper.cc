@@ -81,6 +81,7 @@ void initialize_worker(
     options.metrics_agent_port = -1;
     options.startup_token = startup_token;
     options.runtime_env_hash = runtime_env_hash;
+    // https://github.com/ray-project/ray/blob/4ab0ba0823a9d113a6a0ceb10d7ddd56596e9c1a/src/ray/core_worker/test/mock_worker.cc#L52
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
@@ -94,13 +95,15 @@ void initialize_worker(
             const std::string &serialized_retry_exception_allowlist,
             std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns,
             std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *dynamic_returns,
+            std::vector<std::pair<ObjectID, bool>> *streaming_generator_returns,
             std::shared_ptr<LocalMemoryBuffer> &creation_task_exception_pb_bytes,
             bool *is_retryable_error,
             std::string *application_error,
             const std::vector<ConcurrencyGroup> &defined_concurrency_groups,
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
-            bool is_streaming_generator) {
+            bool is_streaming_generator,
+            bool should_retry_exceptions) {
 
           std::vector<std::shared_ptr<RayObject>> return_vec;
           task_executor(ray_function,
