@@ -378,6 +378,7 @@ namespace jlcxx
     template<> struct SuperType<rpc::Address> { typedef google::protobuf::Message type; };
     template<> struct SuperType<rpc::JobConfig> { typedef google::protobuf::Message type; };
     template<> struct SuperType<rpc::ObjectReference> { typedef google::protobuf::Message type; };
+    template<> struct SuperType<rpc::GcsNodeInfo> { typedef google::protobuf::Message type; };
     template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
     template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
@@ -688,6 +689,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<rpc::ObjectReference>("ObjectReference", jlcxx::julia_base_type<google::protobuf::Message>());
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
+    // message GcsNodeInfo
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/gcs.proto#L286
+    mod.add_type<rpc::GcsNodeInfo>("GcsNodeInfo", jlcxx::julia_base_type<google::protobuf::Message>())
+        .constructor<>()
+        .method("raylet_socket_name", &rpc::GcsNodeInfo::raylet_socket_name)
+        .method("object_store_socket_name", &rpc::GcsNodeInfo::object_store_socket_name)
+        .method("node_manager_port", &rpc::GcsNodeInfo::node_manager_port);
+
     // class RayObject
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
@@ -738,7 +747,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .constructor<const gcs::GcsClientOptions&>()
         .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
-        .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
+        .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect)
+        .method("GetNodeToConnectForDriver", &ray::gcs::GlobalStateAccessor::GetNodeToConnectForDriver);
 
     mod.method("report_error", &report_error);
 

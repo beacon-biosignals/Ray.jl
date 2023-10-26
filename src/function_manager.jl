@@ -1,34 +1,5 @@
-# NOTES:
-#
-# python function manager maintains a local table of "execution info" with a
-# "function_id" key and values that are named tuples of name/function/max_calls.
-#
-# python remote function sets a UUID4 at construction time:
-# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/remote_function.py#L128
-#
-# ...that's used to set the function_hash (???)...
-# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/remote_function.py#L263-L265
-#
-# later comment suggests that "ideally" they'd use the hash of the pickled
-# function:
-# https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/includes/function_descriptor.pxi#L183-L186
-#
-# ...but that it's not stable for some reason.  but.....neither is a random
-# UUID?????
-#
-# the function table key is built like
-# <key type>:<jobid>:key
-
-# function manager holds:
-# local cache of functions (keyed by function id/hash from descriptor)
-# gcs client
-# ~~maybe job id?~~ this is managed by the core worker process
-
-# https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/ray_constants.py#L122-L123
-const FUNCTION_SIZE_WARN_THRESHOLD = 10_000_000  # in bytes
-const FUNCTION_SIZE_ERROR_THRESHOLD = 100_000_000  # in bytes
-
 _mib_string(num_bytes) = string(div(num_bytes, 1024 * 1024), " MiB")
+
 # https://github.com/beacon-biosignals/ray/blob/1c0cddc478fa33d4c244d3c30aba861a77b0def9/python/ray/_private/utils.py#L744-L746
 const _check_msg = "Check that its definition is not implicitly capturing a large " *
                    "array or other object in scope. Tip: use `Ray.put()` to put large " *
@@ -51,11 +22,7 @@ function check_oversized_function(serialized, function_descriptor)
     return nothing
 end
 
-# python uses "fun" for the namespace: https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/python/ray/_private/ray_constants.py#L380
-# so "jlfun" seems reasonable
-const FUNCTION_MANAGER_NAMESPACE = "jlfun"
-
-Base.@kwdef mutable struct FunctionManager
+Base.@kwdef struct FunctionManager
     gcs_client::ray_jll.JuliaGcsClient
     functions::Dict{String,Any}
 end
