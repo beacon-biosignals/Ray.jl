@@ -61,7 +61,7 @@ class JuliaGcsClient {
                  bool overwrite);
 
         std::vector<std::string> Keys(const std::string &ns, const std::string &prefix);
-
+        void Del(const std::string &ns, const std::string &key, bool del_by_prefix);
         bool Exists(const std::string &ns, const std::string &key);
 
     private:

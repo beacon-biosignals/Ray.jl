@@ -1,7 +1,6 @@
 @testset "GCS client" begin
     using UUIDs
-    using .ray_julia_jll: JuliaGcsClient, Connect, Put, Get, Keys, Exists, Status, ok,
-                          ToString, Disconnect
+    using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, Del, Put, Get, Keys, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
     @test isnothing(Disconnect(client))
@@ -42,8 +41,15 @@
         @test !Put(client, ns, "computer", "blah", true)
         @test Get(client, ns, "computer") == "blah"
 
+        # delete
+        result = Del(client, ns, "computer", false)
+        @test result isa Nothing
+        @test !Exists(client, ns, "computer")
+
+        # deleting a non-existent key doesn't fail
+        Del(client, ns, "computer", false)
 
         # throw on missing key
-        @test_throws ErrorException Get(client, ns, "none")
+        @test_throws ErrorException Get(client, ns, "computer")
     end
 end
