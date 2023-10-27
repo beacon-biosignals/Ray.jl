@@ -103,7 +103,8 @@ void initialize_worker(
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
             bool is_streaming_generator,
-            bool should_retry_exceptions) {
+            bool should_retry_exceptions,
+            int64_t generator_backpressure_num_objects) {
 
           std::vector<std::shared_ptr<RayObject>> return_vec;
           task_executor(ray_function,
