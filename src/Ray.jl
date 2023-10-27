@@ -26,7 +26,6 @@ export RayError, RaySystemError, RayTaskError
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll
 
-include("constants.jl")
 include("exceptions.jl")
 include("function_manager.jl")
 include("runtime_env.jl")
