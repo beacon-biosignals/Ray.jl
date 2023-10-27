@@ -38,33 +38,6 @@ function default_log_dir(session_dir)
     return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
 end
 
-# In ray-2.5.1 the node_ip is a constant if run on a local cluster t but if run on a
-# distributed cluster it's determined...somehow...
-# in later versions it's read from node_ip_address.json
-# https://github.com/ray-project/ray/blob/a03efd9931128d387649dd48b0e4864b43d3bfb4/python/ray/_private/services.py#L650-L658
-function get_node_ip_address(session_dir)
-    line = open(joinpath(session_dir, "logs", "raylet.out")) do io
-        while !eof(io)
-            line = readline(io)
-            if contains(line, "Starting agent process with command")
-                return line
-            end
-        end
-    end
-
-    line !== nothing || error("Unable to locate agent process information")
-
-    # 127.0.0.1
-    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    if node_ip_match !== nothing
-        node_ip = String(node_ip_match[1])
-        return node_ip
-    else
-        error("Unable to find Node IP address")
-        return nothing
-    end
-end
-
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
               session_dir=DEFAULT_SESSION_DIR,
               logs_dir=default_log_dir(session_dir))
@@ -111,7 +84,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    node_ip_address = get_node_ip_address(session_dir)
+    node_ip_address = String(split(gcs_address, ":")[1])  # total shot in the dark
 
     raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
                                                               node_ip_address)
