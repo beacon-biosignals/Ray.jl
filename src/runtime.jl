@@ -44,6 +44,28 @@ function default_log_dir(session_dir)
     return redirect_logs ? "" : realpath(joinpath(session_dir, "logs"))
 end
 
+function get_node_to_connect_for_driver(global_state_accessor, node_ip_address)
+
+    node_to_connect = StdString()
+
+    status = ray_jll.GetNodeToConnectForDriver(global_state_accessor,
+                                               node_ip_address,
+                                               CxxPtr(node_to_connect))
+
+    node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect)
+
+    @info "parsing GCS address..."
+    gcs_address = read("/tmp/ray/ray_current_cluster", String) # host:port (e.g. "127.0.0.1:6379")
+    @info "parsing raylet socket..."
+    raylet_socket_name = ray_jll.raylet_socket_name(node_info)[]::StdString
+    @info "parsing object store socket..."
+    store_socket_name = ray_jll.object_store_socket_name(node_info)[]::StdString
+    @info "parsing node manager port..."
+    node_manager_port = ray_jll.node_manager_port(node_info)::Integer
+
+    return (gcs_address, raylet_socket_name, store_socket_name, node_manager_port)
+end
+
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
               session_dir="/tmp/ray/session_latest",
               logs_dir=default_log_dir(session_dir))
@@ -77,6 +99,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     # "" to disable file logging without using env var
     args = parse_ray_args_from_raylet_out(session_dir)
     gcs_address = args[3]
+    node_ip_address = args[4]
+    @info "args: $args"
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
@@ -85,6 +109,9 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     atexit(() -> ray_jll.Disconnect(GLOBAL_STATE_ACCESSOR[]))
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
+
+    args2 = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[], node_ip_address)
+    @info "args2: $args2"
 
     # When submitting a job via `ray job submit` this metadata includes the
     # "job_submission_id" which lets Ray know that this driver is associated with a
