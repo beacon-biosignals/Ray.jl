@@ -111,9 +111,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
-    raylet2, store2, gcs_address2, node_ip_address2, node_port2 = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
-                                                                                    node_ip_address)
-    # @info "args2: $args2"
+    args2 = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[], node_ip_address)
+    @info "args2: $args2"
 
     # When submitting a job via `ray job submit` this metadata includes the
     # "job_submission_id" which lets Ray know that this driver is associated with a
@@ -128,7 +127,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(raylet2, store2, gcs_address2, node_ip_address2, node_port2,
+    raylet2, store2, gcs_address2, node_ip_address2, node_port2 = args2
+    ray_jll.initialize_driver(args2...,
                               job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
