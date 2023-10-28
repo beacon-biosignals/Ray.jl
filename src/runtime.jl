@@ -63,7 +63,8 @@ function get_node_to_connect_for_driver(global_state_accessor, node_ip_address)
     @info "parsing node manager port..."
     node_manager_port = ray_jll.node_manager_port(node_info)::Integer
 
-    return (gcs_address, raylet_socket_name, store_socket_name, node_manager_port)
+    return (raylet_socket_name, store_socket_name, gcs_address,
+            node_ip_address, node_manager_port)
 end
 
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
@@ -126,7 +127,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
+    ray_jll.initialize_driver(args2..., job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
 
