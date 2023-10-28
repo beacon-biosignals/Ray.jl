@@ -98,9 +98,9 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     # we use session_dir here instead of logs_dir since logs_dir can be set to
     # "" to disable file logging without using env var
-    raylet, store, gcs_address, node_ip_address, node_port = parse_ray_args_from_raylet_out(session_dir)
-    # gcs_address = args[3]
-    # node_ip_address = args[4]
+    args = parse_ray_args_from_raylet_out(session_dir)
+    gcs_address = args[3]
+    node_ip_address = args[4]
     # @info "args: $args"
 
     opts = ray_jll.GcsClientOptions(gcs_address)
@@ -127,9 +127,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    raylet2, store2, gcs_address2, node_ip_address2, node_port2 = args2
-    ray_jll.initialize_driver(args2...,
-                              job_id, logs_dir, serialized_job_config)
+    ray_jll.initialize_driver(args2..., job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
 
