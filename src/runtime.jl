@@ -128,7 +128,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(raylet2, store2, gcs_address2, node_ip_address2, node_port,
+    ray_jll.initialize_driver(raylet2, store2, gcs_address2, node_ip_address2, node_port2,
                               job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
