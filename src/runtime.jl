@@ -98,10 +98,10 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     # we use session_dir here instead of logs_dir since logs_dir can be set to
     # "" to disable file logging without using env var
-    args = parse_ray_args_from_raylet_out(session_dir)
-    gcs_address = args[3]
-    node_ip_address = args[4]
-    @info "args: $args"
+    raylet, store, gcs_address, node_ip_address, node_port = parse_ray_args_from_raylet_out(session_dir)
+    # gcs_address = args[3]
+    # node_ip_address = args[4]
+    # @info "args: $args"
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
@@ -111,8 +111,9 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
 
     job_id = ray_jll.GetNextJobID(GLOBAL_STATE_ACCESSOR[])
 
-    args2 = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[], node_ip_address)
-    @info "args2: $args2"
+    raylet2, store2, gcs_address2, node_ip_address2, node_port2 = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
+                                                                                    node_ip_address)
+    # @info "args2: $args2"
 
     # When submitting a job via `ray job submit` this metadata includes the
     # "job_submission_id" which lets Ray know that this driver is associated with a
@@ -127,7 +128,8 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(args2..., job_id, logs_dir, serialized_job_config)
+    ray_jll.initialize_driver(raylet2, store2, gcs_address, node_ip_address, node_port,
+                              job_id, logs_dir, serialized_job_config)
 
     atexit(ray_jll.shutdown_driver)
 
