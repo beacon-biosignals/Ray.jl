@@ -1,4 +1,4 @@
-name: Artifacts CI
+name: "Publish Release"
 on:
   workflow_dispatch:
   push:
