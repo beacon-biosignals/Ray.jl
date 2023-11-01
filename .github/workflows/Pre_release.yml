@@ -90,5 +90,4 @@ jobs:
           prerelease: true
           tag: ${{ steps.project_toml.outputs.tag }}
           artifacts: ${{ env.tarballs_dir }}/*.tar.gz
-          generateReleaseNotes: true
           body: ${{ steps.build_changelog.outputs.changelog }}
