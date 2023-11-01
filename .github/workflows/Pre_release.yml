@@ -64,7 +64,7 @@ jobs:
           include(joinpath(pwd(), "bind_artifacts.jl"))
           bind_artifacts()
         working-directory: ${{ env.build_dir }}
-      - name: Commit Changes and Push Tag
+      - name: Commit Changes
         id: commit
         run: |
           # Alternatively environment variables can be used but both author/committer need to be set
@@ -72,12 +72,12 @@ jobs:
           git config user.name beacon-buddy
           git config user.email beacon-buddy@beacon.bio
 
-          # Commit changes
           msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
 
-          # Push Tag
+      - name: Tag and push
+        run: |
           tag=${{ steps.project_toml.outputs.tag }}
           git tag $tag
           git push origin $tag
