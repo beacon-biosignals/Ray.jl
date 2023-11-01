@@ -1,4 +1,4 @@
-name: "Publish Pre-Release"
+name: Publish Pre-Release
 on:
   workflow_dispatch:
     inputs:
@@ -7,7 +7,6 @@ on:
         # updates to the Artifacts.toml, then the tag will be based off that commit.
         description: The commit to branch from when making the tag
         required: true
-  push:
 
 # Force a single workflow to run at a time. This ensures we don't accidentally
 # try to perform concurrent publishing of releases.
@@ -18,7 +17,7 @@ env:
   tarballs_dir: ./build/tarballs
 jobs:
   release:
-    name: "Publish Pre-Release"
+    name: Publish Pre-Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -81,7 +80,7 @@ jobs:
           tag=${{ steps.project_toml.outputs.tag }}
           git tag $tag ${{ steps.commit.outputs.sha }}
           git push origin $tag
-      - name: "Build Changelog"
+      - name: Build Changelog
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@v4
       - name: Publish Pre-Release

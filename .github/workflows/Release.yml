@@ -1,4 +1,4 @@
-name: "Publish Release"
+name: Publish Release
 on:
   workflow_dispatch:
   push:
@@ -62,7 +62,7 @@ jobs:
           with:
             annotate: true
   release:
-    name: "Publish Release"
+    name: Publish Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
