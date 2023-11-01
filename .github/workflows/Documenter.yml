@@ -4,7 +4,9 @@ on:
   push:
     branches:
       - main
-    tags: ["*"]  # Triggers from tags ignore the `paths` filter: https://github.com/orgs/community/discussions/26273
+    release:
+      types:
+        - released
     paths:
       - "docs/**"
       - ".github/workflows/Documenter.yml"
@@ -21,6 +23,7 @@ env:
   build_dir: ./build
 jobs:
   docs:
+    if: github.event_name == 'release' && github.event.action == 'published'
     name: Build
     runs-on: ubuntu-latest
     permissions:
