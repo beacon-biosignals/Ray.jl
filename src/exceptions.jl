@@ -38,7 +38,11 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
     elseif error_type == ray_jll.ErrorType(:OUT_OF_MEMORY)
         OutOfMemoryError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:NODE_DIED)
-        NodeDiedError(deserialize_error_info(data))
+        # TODO: Use `repr` to show the raw bytes of this message until we confirm that
+        # `deserialize_error_info` works with this error. Once we discover an example of
+        # this issue we should add it to our testsuite for `deserialize_error_info`.
+        NodeDiedError(repr(String(data)))
+        # NodeDiedError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:OBJECT_DELETED)
         ReferenceCountingAssertionError(ObjectContext(obj))
     elseif error_type == ray_jll.ErrorType(:OBJECT_FREED)
@@ -54,15 +58,24 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
     elseif error_type == ray_jll.ErrorType(:RUNTIME_ENV_SETUP_FAILED)
         # TODO: Extract message from `RayErrorInfo`:
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/serialization.py#L347-L352C24
-        RuntimeEnvSetupError(deserialize_error_info(data))
+        RuntimeEnvSetupError(repr(String(data)))
+        # RuntimeEnvSetupError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED)
         TaskPlacementGroupRemoved()
     elseif error_type == ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED)
         ActorPlacementGroupRemoved()
     elseif error_type == ray_jll.ErrorType(:TASK_UNSCHEDULABLE_ERROR)
-        TaskUnschedulableError(deserialize_error_info(data))
+        # TODO: Use `repr` to show the raw bytes of this message until we confirm that
+        # `deserialize_error_info` works with this error. Once we discover an example of
+        # this issue we should add it to our testsuite for `deserialize_error_info`.
+        TaskUnschedulableError(repr(String(data)))
+        # TaskUnschedulableError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:ACTOR_UNSCHEDULABLE_ERROR)
-        ActorUnschedulableError(deserialize_error_info(data))
+        # TODO: Use `repr` to show the raw bytes of this message until we confirm that
+        # `deserialize_error_info` works with this error. Once we discover an example of
+        # this issue we should add it to our testsuite for `deserialize_error_info`.
+        ActorUnschedulableError(repr(String(data)))
+        # ActorUnschedulableError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
