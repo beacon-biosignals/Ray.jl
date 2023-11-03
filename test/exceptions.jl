@@ -157,6 +157,11 @@ end
     @test msg == "TaskUnschedulableError: The task is not schedulable: foo"
 end
 
+@testset "ActorUnschedulableError" begin
+    msg = sprint(showerror, ActorUnschedulableError("foo"))
+    @test msg == "ActorUnschedulableError: The actor is not schedulable: foo"
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -192,5 +197,6 @@ end
     @test RayError(ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == TaskPlacementGroupRemoved()
     @test RayError(ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == ActorPlacementGroupRemoved()
     @test RayError(ray_jll.ErrorType(:TASK_UNSCHEDULABLE_ERROR), "foo", obj_ctx) == TaskUnschedulableError("foo")
+    @test RayError(ray_jll.ErrorType(:ACTOR_UNSCHEDULABLE_ERROR), "foo", obj_ctx) == ActorUnschedulableError("foo")
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end

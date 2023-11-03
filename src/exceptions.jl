@@ -61,6 +61,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         ActorPlacementGroupRemoved()
     elseif error_type == ray_jll.ErrorType(:TASK_UNSCHEDULABLE_ERROR)
         TaskUnschedulableError(deserialize_error_info(data))
+    elseif error_type == ray_jll.ErrorType(:ACTOR_UNSCHEDULABLE_ERROR)
+        ActorUnschedulableError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -436,6 +438,23 @@ end
 function Base.showerror(io::IO, ex::TaskUnschedulableError)
     print(io, "$TaskUnschedulableError: ")
     print(io, "The task is not schedulable: $(ex.msg)")
+    return nothing
+end
+
+"""
+    ActorUnschedulableError <: RayError
+
+Raised when the actor cannot be scheduled.
+
+One example is that the node specified through NodeAffinitySchedulingStrategy is dead.
+"""
+struct ActorUnschedulableError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::ActorUnschedulableError)
+    print(io, "$ActorUnschedulableError: ")
+    print(io, "The actor is not schedulable: $(ex.msg)")
     return nothing
 end
 
