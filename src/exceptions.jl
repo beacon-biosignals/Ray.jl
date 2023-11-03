@@ -59,6 +59,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         TaskPlacementGroupRemoved()
     elseif error_type == ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED)
         ActorPlacementGroupRemoved()
+    elseif error_type == ray_jll.ErrorType(:TASK_UNSCHEDULABLE_ERROR)
+        TaskUnschedulableError(deserialize_error_info(data))
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -417,6 +419,23 @@ struct ActorPlacementGroupRemoved <: RayError end
 function Base.showerror(io::IO, ex::ActorPlacementGroupRemoved)
     print(io, "$ActorPlacementGroupRemoved: ")
     print(io, "The placement group corresponding to this Actor has been removed.")
+    return nothing
+end
+
+"""
+    TaskUnschedulableError <: RayError
+
+Raised when the task cannot be scheduled.
+
+One example is that the node specified through NodeAffinitySchedulingStrategy is dead.
+"""
+struct TaskUnschedulableError <: RayError
+    msg::String
+end
+
+function Base.showerror(io::IO, ex::TaskUnschedulableError)
+    print(io, "$TaskUnschedulableError: ")
+    print(io, "The task is not schedulable: $(ex.msg)")
     return nothing
 end
 
