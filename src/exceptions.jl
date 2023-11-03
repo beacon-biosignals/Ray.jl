@@ -98,48 +98,32 @@ end
 
 
 """
-    RayTaskError <: RayError
+    ActorPlacementGroupRemoved <: RayError
 
-Indicates that a Ray task threw an exception during execution.
-
-If a Ray task throws an exception during execution, a `RayTaskError` is stored for the
-Ray task's output. When the object is retrieved, the contained exception is detected and
-thrown thereby propogating the exception to the Ray task caller.
+Raised when the corresponding placement group was removed.
 """
-struct RayTaskError <: RayError
-    task_name::String
-    pid::Int
-    ip::IPAddr
-    task_id::String
-    captured::CapturedException
-end
+struct ActorPlacementGroupRemoved <: RayError end
 
-function RayTaskError(task_name::AbstractString, captured::CapturedException)
-    return RayTaskError(task_name, getpid(), getipaddr(), get_task_id(), captured)
-end
-
-function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
-    print(io, "$RayTaskError: $(ex.task_name) ")
-    print(io, "(pid=$(ex.pid), ip=$(ex.ip), task_id=$(ex.task_id))")
-    if backtrace
-        bt !== nothing && Base.show_backtrace(io, bt)
-        println(io)
-    end
-    printstyled(io, "\nnested exception: "; color=Base.error_color())
-    # Call 3-argument `showerror` to allow specifying `backtrace`
-    showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
+function Base.showerror(io::IO, ex::ActorPlacementGroupRemoved)
+    print(io, "$ActorPlacementGroupRemoved: ")
+    print(io, "The placement group corresponding to this Actor has been removed.")
     return nothing
 end
 
 """
-    TaskCancelledError <: RayError
+    ActorUnschedulableError <: RayError
 
-Raised when this task is cancelled.
+Raised when the actor cannot be scheduled.
+
+One example is that the node specified through NodeAffinitySchedulingStrategy is dead.
 """
-struct TaskCancelledError <: RayError end
+struct ActorUnschedulableError <: RayError
+    msg::String
+end
 
-function Base.showerror(io::IO, ex::TaskCancelledError)
-    print(io, "$TaskCancelledError: This task or its dependency was cancelled")
+function Base.showerror(io::IO, ex::ActorUnschedulableError)
+    print(io, "$ActorUnschedulableError: ")
+    print(io, "The actor is not schedulable: $(ex.msg)")
     return nothing
 end
 
@@ -157,15 +141,133 @@ function Base.showerror(io::IO, ::LocalRayletDiedError)
 end
 
 """
-    WorkerCrashedError <: RayError
+    NodeDiedError <: RayError
 
-Indicates that the worker died unexpectedly while executing a task.
+Indicates that the node is either dead or unreachable.
 """
-struct WorkerCrashedError <: RayError end
+struct NodeDiedError <: RayError
+    msg::String
+end
 
-function Base.showerror(io::IO, ::WorkerCrashedError)
-    print(io, "$WorkerCrashedError: The worker died unexpectedly while executing this " *
-              "task. Check julia-core-worker-*.log files for more information.")
+function Base.showerror(io::IO, ex::NodeDiedError)
+    print(io, "$NodeDiedError: $(ex.msg)")
+    return nothing
+end
+
+
+"""
+    ObjectFetchTimedOutError <: RayError
+
+Indicates that an object fetch timed out.
+"""
+struct ObjectFetchTimedOutError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
+    print(io, "$ObjectFetchTimedOutError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "Fetch for object $(ex.object_context.object_ref_hex) timed out because no " *
+              "locations were found for the object. This may indicate a system-level bug.")
+
+    return nothing
+end
+
+"""
+    ObjectFreedError <: RayError
+
+Indicates that an object was manually freed by the application.
+
+Currently should never happen as Ray.jl doesn't currently implement `free` like
+[Ray for Python does](https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/internal_api.py#L170).
+"""
+struct ObjectFreedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectFreedError)
+    print(io, "$ObjectFreedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object was manually freed using the internal `free` call. Please " *
+               "ensure that `free` is only called once the object is no longer needed.")
+    return nothing
+end
+
+"""
+    ObjectLostError <: RayError
+
+Indicates that the object is lost from distributed memory, due to node failure or system
+error.
+"""
+struct ObjectLostError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectLostError)
+    print(io, "$ObjectLostError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "All copies of $(ex.object_context.object_ref_hex) have been lost due to " *
+              "node failure. Check cluster logs (\"/tmp/ray/session_latest/logs\") for " *
+              "more information about the failure.")
+
+    return nothing
+end
+
+"""
+    ObjectReconstructionFailedError <: RayError
+
+Indicates that the object cannot be reconstructed.
+"""
+struct ObjectReconstructionFailedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectReconstructionFailedError)
+    print(io, "$ObjectReconstructionFailedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object cannot be reconstructed because it was created by an actor, " *
+               "a `Ray.put` call, or its `ObjectRef` was created by a different worker.")
+    return nothing
+end
+
+"""
+    ObjectReconstructionFailedLineageEvictedError <: RayError
+
+Indicates that the object cannot be reconstructed because its lineage was evicted due to
+memory pressure.
+"""
+struct ObjectReconstructionFailedLineageEvictedError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectReconstructionFailedLineageEvictedError)
+    print(io, "$ObjectReconstructionFailedLineageEvictedError: ")
+    print_object_lost(io, ex.object_context)
+    print(io, "The object cannot be reconstructed because its lineage has been evicted " *
+               "to reduce memory pressure. To prevent this error, set the environment " *
+               "variable RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.")
+    return nothing
+end
+
+"""
+    ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
+
+Indicates that the object cannot be reconstructed because the maximum number of task retries
+has been exceeded.
+"""
+struct ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
+    object_context::ObjectContext
+end
+
+function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceededError)
+    print(io, "$ObjectReconstructionFailedMaxAttemptsExceededError: ")
+    print_object_lost(io, ex.object_context)
+
+    # TODO: Update this message with more details on how to set `max_retries` once
+    # implemented: https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L593
+    print(io, "The object cannot be reconstructed because the maximum number of task " *
+               "retries has been exceeded. To prevent this error, set `max_retries` " *
+               "(default 3).")
     return nothing
 end
 
@@ -208,95 +310,6 @@ function Base.showerror(io::IO, ex::OutOfMemoryError)
 end
 
 """
-    NodeDiedError <: RayError
-
-Indicates that the node is either dead or unreachable.
-"""
-struct NodeDiedError <: RayError
-    msg::String
-end
-
-function Base.showerror(io::IO, ex::NodeDiedError)
-    print(io, "$NodeDiedError: $(ex.msg)")
-    return nothing
-end
-
-"""
-    ObjectLostError <: RayError
-
-Indicates that the object is lost from distributed memory, due to node failure or system
-error.
-"""
-struct ObjectLostError <: RayError
-    object_context::ObjectContext
-end
-
-function Base.showerror(io::IO, ex::ObjectLostError)
-    print(io, "$ObjectLostError: ")
-    print_object_lost(io, ex.object_context)
-    print(io, "All copies of $(ex.object_context.object_ref_hex) have been lost due to " *
-              "node failure. Check cluster logs (\"/tmp/ray/session_latest/logs\") for " *
-              "more information about the failure.")
-
-    return nothing
-end
-
-"""
-    ObjectFetchTimedOutError <: RayError
-
-Indicates that an object fetch timed out.
-"""
-struct ObjectFetchTimedOutError <: RayError
-    object_context::ObjectContext
-end
-
-function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
-    print(io, "$ObjectFetchTimedOutError: ")
-    print_object_lost(io, ex.object_context)
-    print(io, "Fetch for object $(ex.object_context.object_ref_hex) timed out because no " *
-              "locations were found for the object. This may indicate a system-level bug.")
-
-    return nothing
-end
-
-"""
-    ReferenceCountingAssertionError <: RayError
-
-Indicates that an object has been deleted while there was still a reference to it.
-"""
-struct ReferenceCountingAssertionError <: RayError
-    object_context::ObjectContext
-end
-
-function Base.showerror(io::IO, ex::ReferenceCountingAssertionError)
-    print(io, "$ReferenceCountingAssertionError: ")
-    print_object_lost(io, ex.object_context)
-    print(io, "The object has already been deleted by the reference counting protocol. " *
-              "This should not happen.")
-    return nothing
-end
-
-"""
-    ObjectFreedError <: RayError
-
-Indicates that an object was manually freed by the application.
-
-Currently should never happen as Ray.jl doesn't currently implement `free` like
-[Ray for Python does](https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/internal_api.py#L170).
-"""
-struct ObjectFreedError <: RayError
-    object_context::ObjectContext
-end
-
-function Base.showerror(io::IO, ex::ObjectFreedError)
-    print(io, "$ObjectFreedError: ")
-    print_object_lost(io, ex.object_context)
-    print(io, "The object was manually freed using the internal `free` call. Please " *
-               "ensure that `free` is only called once the object is no longer needed.")
-    return nothing
-end
-
-"""
     OwnerDiedError <: RayError
 
 Indicates that the owner of the object has died while there is still a reference to the
@@ -325,60 +338,71 @@ function Base.showerror(io::IO, ex::OwnerDiedError)
 end
 
 """
-    ObjectReconstructionFailedError <: RayError
+    RaySystemError <: RayError
 
-Indicates that the object cannot be reconstructed.
+Indicates that Ray encountered a system error.
+
+This exception is thrown when:
+- The raylet is killed.
+- Deserialization of a `ObjectRef` contains an unknown metadata error type.
 """
-struct ObjectReconstructionFailedError <: RayError
-    object_context::ObjectContext
+struct RaySystemError <: RayError
+    msg::String
 end
 
-function Base.showerror(io::IO, ex::ObjectReconstructionFailedError)
-    print(io, "$ObjectReconstructionFailedError: ")
-    print_object_lost(io, ex.object_context)
-    print(io, "The object cannot be reconstructed because it was created by an actor, " *
-               "a `Ray.put` call, or its `ObjectRef` was created by a different worker.")
+function Base.showerror(io::IO, ex::RaySystemError)
+    print(io, "$RaySystemError: $(ex.msg)")
     return nothing
 end
 
 """
-    ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
+    RayTaskError <: RayError
 
-Indicates that the object cannot be reconstructed because the maximum number of task retries
-has been exceeded.
+Indicates that a Ray task threw an exception during execution.
+
+If a Ray task throws an exception during execution, a `RayTaskError` is stored for the
+Ray task's output. When the object is retrieved, the contained exception is detected and
+thrown thereby propogating the exception to the Ray task caller.
 """
-struct ObjectReconstructionFailedMaxAttemptsExceededError <: RayError
-    object_context::ObjectContext
+struct RayTaskError <: RayError
+    task_name::String
+    pid::Int
+    ip::IPAddr
+    task_id::String
+    captured::CapturedException
 end
 
-function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceededError)
-    print(io, "$ObjectReconstructionFailedMaxAttemptsExceededError: ")
-    print_object_lost(io, ex.object_context)
+function RayTaskError(task_name::AbstractString, captured::CapturedException)
+    return RayTaskError(task_name, getpid(), getipaddr(), get_task_id(), captured)
+end
 
-    # TODO: Update this message with more details on how to set `max_retries` once
-    # implemented: https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L593
-    print(io, "The object cannot be reconstructed because the maximum number of task " *
-               "retries has been exceeded. To prevent this error, set `max_retries` " *
-               "(default 3).")
+function Base.showerror(io::IO, ex::RayTaskError, bt=nothing; backtrace=true)
+    print(io, "$RayTaskError: $(ex.task_name) ")
+    print(io, "(pid=$(ex.pid), ip=$(ex.ip), task_id=$(ex.task_id))")
+    if backtrace
+        bt !== nothing && Base.show_backtrace(io, bt)
+        println(io)
+    end
+    printstyled(io, "\nnested exception: "; color=Base.error_color())
+    # Call 3-argument `showerror` to allow specifying `backtrace`
+    showerror(io, ex.captured.ex, ex.captured.processed_bt; backtrace)
     return nothing
 end
 
 """
-    ObjectReconstructionFailedLineageEvictedError <: RayError
+    ReferenceCountingAssertionError <: RayError
 
-Indicates that the object cannot be reconstructed because its lineage was evicted due to
-memory pressure.
+Indicates that an object has been deleted while there was still a reference to it.
 """
-struct ObjectReconstructionFailedLineageEvictedError <: RayError
+struct ReferenceCountingAssertionError <: RayError
     object_context::ObjectContext
 end
 
-function Base.showerror(io::IO, ex::ObjectReconstructionFailedLineageEvictedError)
-    print(io, "$ObjectReconstructionFailedLineageEvictedError: ")
+function Base.showerror(io::IO, ex::ReferenceCountingAssertionError)
+    print(io, "$ReferenceCountingAssertionError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object cannot be reconstructed because its lineage has been evicted " *
-               "to reduce memory pressure. To prevent this error, set the environment " *
-               "variable RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.")
+    print(io, "The object has already been deleted by the reference counting protocol. " *
+              "This should not happen.")
     return nothing
 end
 
@@ -399,6 +423,18 @@ function Base.showerror(io::IO, ex::RuntimeEnvSetupError)
 end
 
 """
+    TaskCancelledError <: RayError
+
+Raised when this task is cancelled.
+"""
+struct TaskCancelledError <: RayError end
+
+function Base.showerror(io::IO, ex::TaskCancelledError)
+    print(io, "$TaskCancelledError: This task or its dependency was cancelled")
+    return nothing
+end
+
+"""
     TaskPlacementGroupRemoved <: RayError
 
 Raised when the corresponding placement group was removed.
@@ -408,19 +444,6 @@ struct TaskPlacementGroupRemoved <: RayError end
 function Base.showerror(io::IO, ex::TaskPlacementGroupRemoved)
     print(io, "$TaskPlacementGroupRemoved: ")
     print(io, "The placement group corresponding to this task has been removed.")
-    return nothing
-end
-
-"""
-    ActorPlacementGroupRemoved <: RayError
-
-Raised when the corresponding placement group was removed.
-"""
-struct ActorPlacementGroupRemoved <: RayError end
-
-function Base.showerror(io::IO, ex::ActorPlacementGroupRemoved)
-    print(io, "$ActorPlacementGroupRemoved: ")
-    print(io, "The placement group corresponding to this Actor has been removed.")
     return nothing
 end
 
@@ -442,36 +465,14 @@ function Base.showerror(io::IO, ex::TaskUnschedulableError)
 end
 
 """
-    ActorUnschedulableError <: RayError
+    WorkerCrashedError <: RayError
 
-Raised when the actor cannot be scheduled.
-
-One example is that the node specified through NodeAffinitySchedulingStrategy is dead.
+Indicates that the worker died unexpectedly while executing a task.
 """
-struct ActorUnschedulableError <: RayError
-    msg::String
-end
+struct WorkerCrashedError <: RayError end
 
-function Base.showerror(io::IO, ex::ActorUnschedulableError)
-    print(io, "$ActorUnschedulableError: ")
-    print(io, "The actor is not schedulable: $(ex.msg)")
-    return nothing
-end
-
-"""
-    RaySystemError <: RayError
-
-Indicates that Ray encountered a system error.
-
-This exception is thrown when:
-- The raylet is killed.
-- Deserialization of a `ObjectRef` contains an unknown metadata error type.
-"""
-struct RaySystemError <: RayError
-    msg::String
-end
-
-function Base.showerror(io::IO, ex::RaySystemError)
-    print(io, "$RaySystemError: $(ex.msg)")
+function Base.showerror(io::IO, ::WorkerCrashedError)
+    print(io, "$WorkerCrashedError: The worker died unexpectedly while executing this " *
+              "task. Check julia-core-worker-*.log files for more information.")
     return nothing
 end
