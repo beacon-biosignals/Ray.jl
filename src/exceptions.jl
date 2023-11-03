@@ -21,6 +21,8 @@ Abstract super type of all Ray exception types.
 abstract type RayError <: Exception end
 
 function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,Nothing})
+    # Mirrors logic found in:
+    # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/serialization.py#L289
     ex = if error_type == ray_jll.ErrorType(:WORKER_DIED)
         WorkerCrashedError()
     elseif error_type == ray_jll.ErrorType(:LOCAL_RAYLET_DIED)
