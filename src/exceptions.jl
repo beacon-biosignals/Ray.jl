@@ -57,6 +57,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         RuntimeEnvSetupError(deserialize_error_info(data))
     elseif error_type == ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED)
         TaskPlacementGroupRemoved()
+    elseif error_type == ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED)
+        ActorPlacementGroupRemoved()
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -402,6 +404,19 @@ struct TaskPlacementGroupRemoved <: RayError end
 function Base.showerror(io::IO, ex::TaskPlacementGroupRemoved)
     print(io, "$TaskPlacementGroupRemoved: ")
     print(io, "The placement group corresponding to this task has been removed.")
+    return nothing
+end
+
+"""
+    ActorPlacementGroupRemoved <: RayError
+
+Raised when the corresponding placement group was removed.
+"""
+struct ActorPlacementGroupRemoved <: RayError end
+
+function Base.showerror(io::IO, ex::ActorPlacementGroupRemoved)
+    print(io, "$ActorPlacementGroupRemoved: ")
+    print(io, "The placement group corresponding to this Actor has been removed.")
     return nothing
 end
 

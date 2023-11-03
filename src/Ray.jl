@@ -21,9 +21,10 @@ using Sockets: IPAddr, getipaddr
 export start_worker, submit_task, @ray_import, ObjectRef
 
 # exceptions
-export LocalRayletDiedError, NodeDiedError, ObjectFetchTimedOutError, ObjectFreedError,
-       ObjectLostError, ObjectReconstructionFailedError,
-       ObjectReconstructionFailedLineageEvictedError,
+
+export ActorPlacementGroupRemoved, LocalRayletDiedError, NodeDiedError,
+       ObjectFetchTimedOutError, ObjectFreedError, ObjectLostError,
+       ObjectReconstructionFailedError, ObjectReconstructionFailedLineageEvictedError,
        ObjectReconstructionFailedMaxAttemptsExceededError, OutOfDiskError, OwnerDiedError,
        RayError, RaySystemError, RayTaskError, ReferenceCountingAssertionError,
        RuntimeEnvSetupError, TaskCancelledError, TaskPlacementGroupRemoved,

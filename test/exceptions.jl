@@ -147,6 +147,11 @@ end
     @test msg == "TaskPlacementGroupRemoved: The placement group corresponding to this task has been removed."
 end
 
+@testset "ActorPlacementGroupRemoved" begin
+    msg = sprint(showerror, ActorPlacementGroupRemoved())
+    @test msg == "ActorPlacementGroupRemoved: The placement group corresponding to this Actor has been removed."
+end
+
 @testset "RaySystemError" begin
     e = RaySystemError("foo")
     @test sprint(showerror, e) == "RaySystemError: foo"
@@ -180,5 +185,6 @@ end
     @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED), "", obj_ctx) == ObjectReconstructionFailedLineageEvictedError(obj_ctx)
     @test RayError(ray_jll.ErrorType(:RUNTIME_ENV_SETUP_FAILED), "foo", obj_ctx) == RuntimeEnvSetupError("foo")
     @test RayError(ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == TaskPlacementGroupRemoved()
+    @test RayError(ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == ActorPlacementGroupRemoved()
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end
