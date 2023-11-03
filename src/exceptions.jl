@@ -55,6 +55,8 @@ function RayError(error_type::Integer, data, obj::Union{ObjectRef,ObjectContext,
         # TODO: Extract message from `RayErrorInfo`:
         # https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/serialization.py#L347-L352C24
         RuntimeEnvSetupError(deserialize_error_info(data))
+    elseif error_type == ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED)
+        TaskPlacementGroupRemoved()
     else
         RaySystemError("Unrecognized error type $error_type")
     end
@@ -387,6 +389,19 @@ function Base.showerror(io::IO, ex::RuntimeEnvSetupError)
     print(io, "$RuntimeEnvSetupError: ")
     print(io, "Failed to set up runtime environment.")
     !isempty(ex.msg) && print(io, "\n$(ex.msg)")
+    return nothing
+end
+
+"""
+    TaskPlacementGroupRemoved <: RayError
+
+Raised when the corresponding placement group was removed.
+"""
+struct TaskPlacementGroupRemoved <: RayError end
+
+function Base.showerror(io::IO, ex::TaskPlacementGroupRemoved)
+    print(io, "$TaskPlacementGroupRemoved: ")
+    print(io, "The placement group corresponding to this task has been removed.")
     return nothing
 end
 
