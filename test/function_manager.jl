@@ -1,70 +1,75 @@
 @testset "function manager" begin
-    using Ray: FunctionManager, export_function!, import_function!, timedwait_for_function
-    using .ray_julia_jll: JuliaGcsClient, Connect, function_descriptor,
-                          JuliaFunctionDescriptor, Exists
+    using Ray: FUNCTION_MANAGER_NAMESPACE, FunctionManager, function_key, export_function!,
+               import_function!
+    using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, function_descriptor,
+                          JuliaFunctionDescriptor
 
-    client = JuliaGcsClient("127.0.0.1:6379")
-    Connect(client)
+    Connect(JuliaGcsClient("127.0.0.1:6379")) do gcs_client
+        fm = FunctionManager(gcs_client, Dict{String,Any}())
 
-    fm = FunctionManager(client, Dict{String,Any}())
+        jobid = 1337
 
-    jobid = 1337
+        f = x -> isless(x, 5)
+        export_function!(fm, f, jobid)
 
-    f = x -> isless(x, 5)
-    export_function!(fm, f, jobid)
+        fd = function_descriptor(f)
+        key = function_key(fd, jobid)
+        @test ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, key)
+        f2 = import_function!(fm, fd, jobid)
 
-    fd = function_descriptor(f)
-    @test timedwait_for_function(fm, fd, jobid; timeout_s=10) == :ok
-    f2 = import_function!(fm, fd, jobid)
+        @test f2.(1:10) == f.(1:10)
 
-    @test f2.(1:10) == f.(1:10)
+        # ensure function doesn't exist in GCS
+        mfd = function_descriptor(MyMod.f)
+        mkey = function_key(mfd, jobid)
+        ray_jll.Del(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey, false)
 
-    mfd = function_descriptor(MyMod.f)
-    @test_throws ErrorException import_function!(fm, mfd, jobid)
-    @test timedwait_for_function(fm, mfd, jobid; timeout_s=1) == :timed_out
-    export_function!(fm, MyMod.f, jobid)
+        @test_throws ErrorException import_function!(fm, mfd, jobid)
+        @test !ray_jll.Exists(fm.gcs_client, FUNCTION_MANAGER_NAMESPACE, mkey)
+        export_function!(fm, MyMod.f, jobid)
 
-    # can import the function even when it's aliased in another module:
-    nfd = function_descriptor(NotMyMod.f)
-    @test mfd.function_hash == nfd.function_hash
-    mf2 = import_function!(fm, nfd, jobid)
-    @test MyMod.f.(1:10) == mf2.(1:10)
+        # can import the function even when it's aliased in another module:
+        nfd = function_descriptor(NotMyMod.f)
+        @test mfd.function_hash == nfd.function_hash
+        mf2 = import_function!(fm, nfd, jobid)
+        @test MyMod.f.(1:10) == mf2.(1:10)
 
-    mmfd = function_descriptor(MyMod.MySubMod.f)
-    @test mmfd.module_name == "Main.MyMod.MySubMod"
-    @test mmfd.function_name == "f"
-    @test mmfd.function_hash != mfd.function_hash
+        mmfd = function_descriptor(MyMod.MySubMod.f)
+        @test mmfd.module_name == "Main.MyMod.MySubMod"
+        @test mmfd.function_name == "f"
+        @test mmfd.function_hash != mfd.function_hash
 
-    export_function!(fm, MyMod.MySubMod.f, jobid)
-    mmf2 = import_function!(fm, mmfd, jobid)
-    @test mmf2.(1:10) == MyMod.MySubMod.f.(1:10) != MyMod.f.(1:10)
+        export_function!(fm, MyMod.MySubMod.f, jobid)
+        mmf2 = import_function!(fm, mmfd, jobid)
+        @test mmf2.(1:10) == MyMod.MySubMod.f.(1:10) != MyMod.f.(1:10)
 
-    fc = let
-        xthresh = 3
-        x -> isless(x, xthresh)
-    end
-    export_function!(fm, fc, jobid)
-
-    fcd = function_descriptor(fc)
-    fc2 = import_function!(fm, fcd, jobid)
-    @test fc.(1:10) == fc2.(1:10) != f.(1:10)
-
-    @testset "warn/error for large functions" begin
-        # for some reason, using `let` to introduce local scope does not work
-        # during test execution to generate a closure, even though it works
-        # locally, so we use a factory instead:
-        function bigfactory(size)
-            x = rand(UInt8, size)
-            return f(y) = y * sum(x)
+        fc = let
+            xthresh = 3
+            x -> isless(x, xthresh)
         end
-        bigf = bigfactory(Ray.FUNCTION_SIZE_WARN_THRESHOLD)
-        @test_logs (:warn, r"very large") export_function!(fm, bigf, jobid)
-        bigfd = function_descriptor(bigf)
-        bigf2 = import_function!(fm, bigfd, jobid)
-        @test bigf(100) == bigf2(100)
+        export_function!(fm, fc, jobid)
 
-        biggerf = bigfactory(Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
-        @test_throws ArgumentError export_function!(fm, biggerf, jobid)
+        fcd = function_descriptor(fc)
+        fc2 = import_function!(fm, fcd, jobid)
+        @test fc.(1:10) == fc2.(1:10) != f.(1:10)
+
+        @testset "warn/error for large functions" begin
+            # for some reason, using `let` to introduce local scope does not work
+            # during test execution to generate a closure, even though it works
+            # locally, so we use a factory instead:
+            function bigfactory(size)
+                x = rand(UInt8, size)
+                return f(y) = y * sum(x)
+            end
+            bigf = bigfactory(Ray.FUNCTION_SIZE_WARN_THRESHOLD)
+            @test_logs (:warn, r"very large") export_function!(fm, bigf, jobid)
+            bigfd = function_descriptor(bigf)
+            bigf2 = import_function!(fm, bigfd, jobid)
+            @test bigf(100) == bigf2(100)
+
+            biggerf = bigfactory(Ray.FUNCTION_SIZE_ERROR_THRESHOLD)
+            @test_throws ArgumentError export_function!(fm, biggerf, jobid)
+        end
     end
 
     # XXX: this works when run in global scope but unfortunately something about

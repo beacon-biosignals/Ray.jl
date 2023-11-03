@@ -1,44 +1,55 @@
 @testset "GCS client" begin
     using UUIDs
-    using .ray_julia_jll: JuliaGcsClient, Connect, Put, Get, Keys, Exists, Status, ok,
-                          ToString
+    using .ray_julia_jll: JuliaGcsClient, Connect, Disconnect, Del, Put, Get, Keys, Exists
 
     client = JuliaGcsClient("127.0.0.1:6379")
+    @test isnothing(Disconnect(client))
 
     ns = string("TESTING-", uuid4())
 
     # throws if not connected
-    @test_throws ErrorException Put(client, ns, "computer", "mistaek", false, -1)
-    @test_throws ErrorException Get(client, ns, "computer", -1)
-    @test_throws ErrorException Keys(client, ns, "", -1)
-    @test_throws ErrorException Exists(client, ns, "computer", -1)
+    @test_throws ErrorException Put(client, ns, "computer", "mistaek", false)
+    @test_throws ErrorException Get(client, ns, "computer")
+    @test_throws ErrorException Keys(client, ns, "")
+    @test_throws ErrorException Exists(client, ns, "computer")
 
-    status = Connect(client)
-    @test ok(status)
-    @test ToString(status) == "OK"
+    Connect(client) do client
+        added = Put(client, ns, "computer", "mistaek", false)
+        @test added isa Bool
+        @test added == true
 
-    @test Put(client, ns, "computer", "mistaek", false, -1) == 1
-    @test Get(client, ns, "computer", -1) == "mistaek"
-    @test Keys(client, ns, "", -1) == ["computer"]
-    @test Keys(client, ns, "comp", -1) == ["computer"]
-    @test Keys(client, ns, "comppp", -1) == []
-    @test Exists(client, ns, "computer", -1)
+        result = Get(client, ns, "computer")
+        @test result isa StdString
+        @test result == "mistaek"
 
-    # no overwrite
-    @test Put(client, ns, "computer", "blah", false, -1) == 0
-    @test Get(client, ns, "computer", -1) == "mistaek"
+        results = Keys(client, ns, "")
+        @test results isa StdVector{StdString}
+        @test results == ["computer"]
 
-    # overwrite ("added" only increments on new key I think)
-    @test Put(client, ns, "computer", "blah", true, -1) == 0
-    @test Get(client, ns, "computer", -1) == "blah"
+        @test Keys(client, ns, "comp") == ["computer"]
+        @test Keys(client, ns, "comppp") == []
 
-    # throw on missing key
-    @test_throws ErrorException Get(client, ns, "none", -1)
+        exists = Exists(client, ns, "computer")
+        @test exists isa Bool
+        @test exists == true
 
-    # ideally we'd throw on connect but it returns OK......
-    badclient = JuliaGcsClient("127.0.0.1:6378")
-    status = Connect(badclient)
+        # no overwrite
+        @test !Put(client, ns, "computer", "blah", false)
+        @test Get(client, ns, "computer") == "mistaek"
 
-    # ...but then throws when we try to do anything so at least there's that
-    @test_throws ErrorException Put(badclient, ns, "computer", "mistaek", false, -1)
+        # overwrite ("added" only increments on new key I think)
+        @test !Put(client, ns, "computer", "blah", true)
+        @test Get(client, ns, "computer") == "blah"
+
+        # delete
+        result = Del(client, ns, "computer", false)
+        @test result isa Nothing
+        @test !Exists(client, ns, "computer")
+
+        # deleting a non-existent key doesn't fail
+        Del(client, ns, "computer", false)
+
+        # throw on missing key
+        @test_throws ErrorException Get(client, ns, "computer")
+    end
 end

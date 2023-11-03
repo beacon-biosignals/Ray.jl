@@ -1,3 +1,12 @@
+"""
+    const GLOBAL_STATE_ACCESSOR::Ref{ray_jll.GlobalStateAccessor}
+
+Global binding for GCS client interface to access global state information.
+This is set during [`Ray.init`](@ref) and used there to get the the raylet name, object
+store name, node manager port, and the next job IDJob ID for the driver.
+"""
+const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
+
 const JOB_RUNTIME_ENV = Ref{RuntimeEnv}()
 
 macro ray_import(ex)
@@ -20,21 +29,6 @@ function _ray_import(runtime_env::RuntimeEnv)
     return nothing
 end
 
-"""
-    const GLOBAL_STATE_ACCESSOR::Ref{ray_jll.GlobalStateAccessor}
-
-Global binding for GCS client interface to access global state information.
-Currently only used to get the next job ID.
-
-This is set during `init` and used there to get the Job ID for the driver.
-"""
-const GLOBAL_STATE_ACCESSOR = Ref{ray_jll.GlobalStateAccessor}()
-
-# env var to control whether logs are sent do stderr or to file.  if "1", sent
-# to stderr; otherwise, will be sent to files in `/tmp/ray/session_latest/logs/`
-# https://github.com/beacon-biosignals/ray/blob/4ceb62daaad05124713ff9d94ffbdad35ee19f86/python/ray/_private/ray_constants.py#L198
-const LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE = "RAY_LOG_TO_STDERR"
-
 function default_log_dir(session_dir)
     redirect_logs = Base.get(ENV, LOGGING_REDIRECT_STDERR_ENVIRONMENT_VARIABLE, "0") == "1"
     # realpath() resolves relative paths and symlinks, including the default
@@ -45,7 +39,7 @@ function default_log_dir(session_dir)
 end
 
 function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
-              session_dir="/tmp/ray/session_latest",
+              session_dir=DEFAULT_SESSION_DIR,
               logs_dir=default_log_dir(session_dir))
     # XXX: this is at best EXREMELY IMPERFECT check.  we should do something
     # more like what hte python Worker class does, getting node ID at
@@ -67,16 +61,7 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
         runtime_env = JOB_RUNTIME_ENV[]
     end
 
-    # TODO: use something like the java config bootstrap address (?) to get this
-    # https://github.com/beacon-biosignals/Ray.jl/issues/52
-    # information instead of parsing logs?  I can't quite tell where it's coming
-    # from (set from a `ray.address` config option):
-    # https://github.com/beacon-biosignals/ray/blob/7ad1f47a9c849abf00ca3e8afc7c3c6ee54cda43/java/runtime/src/main/java/io/ray/runtime/config/RayConfig.java#L165-L171
-
-    # we use session_dir here instead of logs_dir since logs_dir can be set to
-    # "" to disable file logging without using env var
-    args = parse_ray_args_from_raylet_out(session_dir)
-    gcs_address = args[3]
+    gcs_address = read(GCS_ADDRESS_FILE, String) # host:port (e.g. "127.0.0.1:6379")
 
     opts = ray_jll.GcsClientOptions(gcs_address)
     GLOBAL_STATE_ACCESSOR[] = ray_jll.GlobalStateAccessor(opts)
@@ -99,7 +84,19 @@ function init(runtime_env::Union{RuntimeEnv,Nothing}=nothing;
     job_config = JobConfig(RuntimeEnvInfo(runtime_env), metadata)
     serialized_job_config = _serialize(job_config)
 
-    ray_jll.initialize_driver(args..., job_id, logs_dir, serialized_job_config)
+    raylet, store, node_port = get_node_to_connect_for_driver(GLOBAL_STATE_ACCESSOR[],
+                                                              NODE_IP_ADDRESS)
+
+    # TODO: downgrade to debug
+    # https://github.com/beacon-biosignals/Ray.jl/issues/53
+    @info begin
+        "Raylet socket: $raylet, Object store: $store, Node IP: $NODE_IP_ADDRESS, " *
+        "Node port: $node_port, GCS Address: $gcs_address, JobID: $job_id"
+    end
+
+    ray_jll.initialize_driver(raylet, store, gcs_address, NODE_IP_ADDRESS, node_port,
+                              job_id, logs_dir, serialized_job_config)
+
     atexit(ray_jll.shutdown_driver)
 
     _init_global_function_manager(gcs_address)
@@ -125,79 +122,17 @@ Get the current task ID for this worker in hex format.
 """
 get_task_id() = String(ray_jll.Hex(ray_jll.GetCurrentTaskId(ray_jll.GetCoreWorker())))
 
-function parse_ray_args_from_raylet_out(session_dir)
-    #=
-    "Starting agent process with command: ... \
-    --node-ip-address=127.0.0.1 --metrics-export-port=60404 --dashboard-agent-port=60493 \
-    --listen-port=52365 --node-manager-port=58888 \
-    --object-store-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/plasma_store \
-    --raylet-name=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/sockets/raylet \
-    --temp-dir=/tmp/ray --session-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385 \
-    --runtime-env-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/runtime_resources \
-    --log-dir=/tmp/ray/session_2023-08-14_14-54-36_055139_41385/logs \
-    --logging-rotate-bytes=536870912 --logging-rotate-backup-count=5 \
-    --session-name=session_2023-08-14_14-54-36_055139_41385 \
-    --gcs-address=127.0.0.1:6379 --minimal --agent-id 470211272"
-    =#
-    line = open(joinpath(session_dir, "logs", "raylet.out")) do io
-        while !eof(io)
-            line = readline(io)
-            if contains(line, "Starting agent process")
-                return line
-            end
-        end
-    end
+function get_node_to_connect_for_driver(global_state_accessor, node_ip_address)
+    node_to_connect = StdString()
+    status = ray_jll.GetNodeToConnectForDriver(global_state_accessor, node_ip_address,
+                                               CxxPtr(node_to_connect))
+    node_info = ray_jll.ParseFromString(ray_jll.GcsNodeInfo, node_to_connect)
 
-    line !== nothing || error("Unable to locate agent process information")
+    raylet_socket_name = ray_jll.raylet_socket_name(node_info)[]::StdString
+    store_socket_name = ray_jll.object_store_socket_name(node_info)[]::StdString
+    node_manager_port = ray_jll.node_manager_port(node_info)::Integer
 
-    # --raylet-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/raylet
-    raylet_match = match(r"raylet-name=((\/[a-z,0-9,_,-]+)+)", line)
-    raylet = if raylet_match !== nothing
-        String(raylet_match[1])
-    else
-        error("Unable to find Raylet socket")
-    end
-
-    # --object-store-name=/tmp/ray/session_2023-08-14_18-52-23_003681_54068/sockets/plasma_store
-    store_match = match(r"object-store-name=((\/[a-z,0-9,_,-]+)+)", line)
-    store = if store_match !== nothing
-        String(store_match[1])
-    else
-        error("Unable to find Object Store socket")
-    end
-
-    # --gcs-address=127.0.0.1:6379
-    gcs_match = match(r"gcs-address=(([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})", line)
-    gcs_address = if gcs_match !== nothing
-        String(gcs_match[1])
-    else
-        error("Unable to find GCS address")
-    end
-
-    # --node-ip-address=127.0.0.1
-    node_ip_match = match(r"node-ip-address=(([0-9]{1,3}\.){3}[0-9]{1,3})", line)
-    node_ip = if node_ip_match !== nothing
-        String(node_ip_match[1])
-    else
-        error("Unable to find Node IP address")
-    end
-
-    # --node-manager-port=63639
-    port_match = match(r"node-manager-port=([0-9]{1,5})", line)
-    node_port = if port_match !== nothing
-        parse(Int, port_match[1])
-    else
-        error("Unable to find Node Manager port")
-    end
-
-    # TODO: downgrade to debug
-    # https://github.com/beacon-biosignals/Ray.jl/issues/53
-    @info begin
-        "Raylet socket: $raylet, Object store: $store, Node IP: $node_ip, " *
-        "Node port: $node_port, GCS Address: $gcs_address"
-    end
-
-    return (raylet, store, gcs_address, node_ip, node_port)
+    return (raylet_socket_name, store_socket_name, node_manager_port)
 end
 
 initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(args...)
@@ -205,7 +140,8 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 # TODO: Move task related code into a "task.jl" file
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
-                     resources::Dict{String,Float64}=Dict("CPU" => 1.0))
+                     resources::Dict{String,Float64}=Dict("CPU" => 1.0),
+                     max_retries::Integer=0)
     export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
     task_args = serialize_args(flatten_args(args, kwargs))
@@ -220,7 +156,8 @@ function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
         ray_jll._submit_task(fd,
                              transform_task_args(task_args),
                              serialized_runtime_env_info,
-                             resources)
+                             resources,
+                             max_retries)
     end
     # CoreWorker::SubmitTask calls TaskManager::AddPendingTask which initializes
     # the local ref count to 1, so we don't need to do that here.

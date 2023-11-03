@@ -144,7 +144,8 @@ std::vector<std::shared_ptr<RayObject>> cast_to_task_args(void *ptr) {
 ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
                       const std::vector<TaskArg *> &task_args,
                       const std::string &serialized_runtime_env_info,
-                      const std::unordered_map<std::string, double> &resources) {
+                      const std::unordered_map<std::string, double> &resources,
+                      int max_retries) {
 
     auto &worker = CoreWorkerProcess::GetCoreWorker();
 
@@ -171,8 +172,8 @@ ObjectID _submit_task(const ray::JuliaFunctionDescriptor &jl_func_descriptor,
         func,
         args,
         options,
-        /*max_retries=*/0,
-        /*retry_exceptions=*/false,
+        max_retries,                // application error counter, gate for OOM retry (!=0)
+        /*retry_exceptions=*/false, // only applies to application errors
         scheduling_strategy,
         /*debugger_breakpoint=*/""
     );
@@ -257,62 +258,82 @@ JuliaGcsClient::JuliaGcsClient(const std::string &gcs_address) {
 }
 
 Status JuliaGcsClient::Connect() {
-    gcs_client_ = std::make_unique<gcs::PythonGcsClient>(options_);
-    return gcs_client_->Connect();
+    // https://github.com/beacon-biosignals/ray/blob/448a83caf44108fc1bc44fa7c6c358cffcfcb0d7/src/ray/gcs/gcs_client/test/usage_stats_client_test.cc#L34-L41
+    io_service_ = std::make_unique<instrumented_io_context>();
+    io_service_thread_ = std::make_unique<std::thread>([this] {
+        std::unique_ptr<boost::asio::io_service::work> work(
+            new boost::asio::io_service::work(*io_service_));
+        io_service_->run();
+    });
+    gcs_client_ = std::make_unique<gcs::GcsClient>(options_);
+    return gcs_client_->Connect(*io_service_);
 }
 
-std::string JuliaGcsClient::Get(const std::string &ns,
-                                const std::string &key,
-                                int64_t timeout_ms) {
+void JuliaGcsClient::Disconnect() {
+    if (!gcs_client_){
+        return;
+    }
+    io_service_->stop();
+    io_service_thread_->join();
+    gcs_client_->Disconnect();
+    gcs_client_.reset();
+}
+
+std::string JuliaGcsClient::Get(const std::string &ns, const std::string &key) {
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     std::string value;
-    Status status = gcs_client_->InternalKVGet(ns, key, timeout_ms, value);
+    Status status = gcs_client_->InternalKV().Get(ns, key, value);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
     return value;
 }
 
-int JuliaGcsClient::Put(const std::string &ns,
+bool JuliaGcsClient::Put(const std::string &ns,
                         const std::string &key,
                         const std::string &value,
-                        bool overwrite,
-                        int64_t timeout_ms) {
+                        bool overwrite) {
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
-    int added_num;
-    Status status = gcs_client_->InternalKVPut(ns, key, value, overwrite, timeout_ms, added_num);
+    bool added;
+    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
-    return added_num;
+    return added;
 }
 
-std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns,
-                                              const std::string &prefix,
-                                              int64_t timeout_ms) {
+std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns, const std::string &prefix) {
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     std::vector<std::string> results;
-    Status status = gcs_client_->InternalKVKeys(ns, prefix, timeout_ms, results);
+    Status status = gcs_client_->InternalKV().Keys(ns, prefix, results);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
     return results;
 }
 
-bool JuliaGcsClient::Exists(const std::string &ns,
-                            const std::string &key,
-                            int64_t timeout_ms) {
+void JuliaGcsClient::Del(const std::string &ns, const std::string &key, bool del_by_prefix) {
+    if (!gcs_client_) {
+        throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
+    }
+    Status status = gcs_client_->InternalKV().Del(ns, key, del_by_prefix);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
+}
+
+bool JuliaGcsClient::Exists(const std::string &ns, const std::string &key) {
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     bool exists;
-    Status status = gcs_client_->InternalKVExists(ns, key, timeout_ms, exists);
+    Status status = gcs_client_->InternalKV().Exists(ns, key, exists);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -368,6 +389,7 @@ namespace jlcxx
     template<> struct SuperType<rpc::Address> { typedef google::protobuf::Message type; };
     template<> struct SuperType<rpc::JobConfig> { typedef google::protobuf::Message type; };
     template<> struct SuperType<rpc::ObjectReference> { typedef google::protobuf::Message type; };
+    template<> struct SuperType<rpc::GcsNodeInfo> { typedef google::protobuf::Message type; };
     template<> struct SuperType<TaskArgByReference> { typedef TaskArg type; };
     template<> struct SuperType<TaskArgByValue> { typedef TaskArg type; };
 
@@ -678,6 +700,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<rpc::ObjectReference>("ObjectReference", jlcxx::julia_base_type<google::protobuf::Message>());
     jlcxx::stl::apply_stl<rpc::ObjectReference>(mod);
 
+    // message GcsNodeInfo
+    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/gcs.proto#L286
+    mod.add_type<rpc::GcsNodeInfo>("GcsNodeInfo", jlcxx::julia_base_type<google::protobuf::Message>())
+        .constructor<>()
+        .method("raylet_socket_name", &rpc::GcsNodeInfo::raylet_socket_name)
+        .method("object_store_socket_name", &rpc::GcsNodeInfo::object_store_socket_name)
+        .method("node_manager_port", &rpc::GcsNodeInfo::node_manager_port);
+
     // class RayObject
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/ray_object.h#L28
     mod.add_type<RayObject>("RayObject")
@@ -715,9 +745,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.add_type<JuliaGcsClient>("JuliaGcsClient")
         .constructor<const std::string&>()
         .method("Connect", &JuliaGcsClient::Connect)
+        .method("Disconnect", &JuliaGcsClient::Disconnect)
         .method("Put", &JuliaGcsClient::Put)
         .method("Get", &JuliaGcsClient::Get)
         .method("Keys", &JuliaGcsClient::Keys)
+        .method("Del", &JuliaGcsClient::Del)
         .method("Exists", &JuliaGcsClient::Exists);
 
     mod.add_type<gcs::GcsClientOptions>("GcsClientOptions")
@@ -727,7 +759,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .constructor<const gcs::GcsClientOptions&>()
         .method("GetNextJobID", &ray::gcs::GlobalStateAccessor::GetNextJobID)
         .method("Connect", &ray::gcs::GlobalStateAccessor::Connect)
-        .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect);
+        .method("Disconnect", &ray::gcs::GlobalStateAccessor::Disconnect)
+        .method("GetNodeToConnectForDriver", &ray::gcs::GlobalStateAccessor::GetNodeToConnectForDriver);
 
     mod.method("report_error", &report_error);
 

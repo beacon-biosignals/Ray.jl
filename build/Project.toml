@@ -12,7 +12,7 @@ URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
 CodecZlib = "0.7.3"
-CxxWrap = "0.14.1"
+CxxWrap = "0.14.2"
 Mustache = "1"
 Tar = "1"
 TOML = "1"

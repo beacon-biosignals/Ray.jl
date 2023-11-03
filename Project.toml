@@ -21,7 +21,7 @@ libcxxwrap_julia_jll = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
 [compat]
 Aqua = "0.5"
 ArgParse = "1"
-CxxWrap = "0.14.1"
+CxxWrap = "0.14.2"
 JSON3 = "1"
 LoggingExtras = "1"
 MultilineStrings = "0.1.1"

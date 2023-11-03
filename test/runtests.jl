@@ -29,6 +29,7 @@ include("utils.jl")
 
     setup_ray_head_node() do
         include("function_manager.jl")
+        include("global_state_accessor.jl")
         setup_core_worker() do
             include("object_ref.jl")
             include("ray_serializer.jl")
