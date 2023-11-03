@@ -4,13 +4,14 @@
         data = "\xcd\t\x93\x90\f\x7f\0\0\x90\xc5\t\x90*\x8b\x13Task was killed due to the node running low on memory.\nMemory on the node (IP: 10.0.22.131, ID: 6416deba2a6076b39bac8f9e2a405e5699ba1edddccf9d7e32cbb9ed) where the task (task ID: f8fbd7e11d4841630de13f6d9a990c6f5cf47f6c02000000, name=v0_4_4.process_segment, pid=606, memory used=3.33GB) was running was 51.33GB / 54.00GB (0.950537), which exceeds the memory usage threshold of 0.95. Ray killed this worker (ID: ad3de5a37126424c0dbc38c9b757d413753be34304bf078c3d58247d) because it was the most recently scheduled task; to see more information about memory usage on this node, use `ray logs raylet.out -ip 10.0.22.131`. To see the logs of the worker, use `ray logs worker-ad3de5a37126424c0dbc38c9b757d413753be34304bf078c3d58247d*out -ip 10.0.22.131. Top 10 memory users:\nPID\tMEM(GB)\tCOMMAND\n590\t4.04\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n434\t4.02\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n163\t3.98\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n572\t3.50\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n591\t3.43\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n606\t3.33\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n159\t3.19\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n160\t3.15\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n161\t3.14\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\n158\t2.87\t/usr/local/julia/bin/julia -Cnative -J/usr/local/julia/lib/julia/sys.so -g1 -e using Ray; start_work...\nRefer to the documentation on how to address the out of memory issue: https://docs.ray.io/en/latest/ray-core/scheduling/ray-oom-prevention.html. Consider provisioning more memory on this node or reducing task parallelism by requesting more CPUs per task. Set max_retries to enable retry when the task crashes due to OOM. To adjust the kill threshold, set the environment variable `RAY_memory_usage_threshold` when starting Ray. To disable worker killing, set the environment variable `RAY_memory_monitor_refresh_ms` to zero.X\x16"
         msg = Ray.deserialize_error_info(Vector{UInt8}(data))
         @test startswith(msg, "Task was killed")
-        @test endswith(msg, "environment variable `RAY_memory_monitor_refresh_ms` to zero.X")
+        @test endswith(msg, "variable `RAY_memory_monitor_refresh_ms` to zero.X")
     end
 end
 
 @testset "ActorPlacementGroupRemoved" begin
     msg = sprint(showerror, ActorPlacementGroupRemoved())
-    @test msg == "ActorPlacementGroupRemoved: The placement group corresponding to this Actor has been removed."
+    expected = "ActorPlacementGroupRemoved: The placement group corresponding to this Actor has been removed."
+    @test msg == expected
 end
 
 @testset "ActorUnschedulableError" begin
@@ -30,50 +31,59 @@ end
 
 @testset "ObjectFetchTimedOutError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectFetchTimedOutError(obj_ctx))
+    e = ObjectFetchTimedOutError(obj_ctx)
+    msg = sprint(showerror, e)
     @test startswith(msg, "ObjectFetchTimedOutError: Failed to retrieve object")
     @test contains(msg, "Fetch for object")
 end
 
 @testset "ObjectFreedError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectFreedError(obj_ctx))
+    e = ObjectFreedError(obj_ctx)
+    msg = sprint(showerror, e)
     @test startswith(msg, "ObjectFreedError: Failed to retrieve object")
     @test contains(msg, "The object was manually freed")
 end
 
 @testset "ObjectLostError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectLostError(obj_ctx))
+    e = ObjectLostError(obj_ctx)
+    msg = sprint(showerror, e)
     @test startswith(msg, "ObjectLostError: Failed to retrieve object")
     @test contains(msg, "All copies of")
 end
 
 @testset "ObjectReconstructionFailedError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectReconstructionFailedError(obj_ctx))
+    e = ObjectReconstructionFailedError(obj_ctx)
+    msg = sprint(showerror, e)
     @test startswith(msg, "ObjectReconstructionFailedError: Failed to retrieve object")
     @test contains(msg, "The object cannot be reconstructed")
 end
 
 @testset "ObjectReconstructionFailedLineageEvictedError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectReconstructionFailedLineageEvictedError(obj_ctx))
-    @test startswith(msg, "ObjectReconstructionFailedLineageEvictedError: Failed to retrieve object")
+    e = ObjectReconstructionFailedLineageEvictedError(obj_ctx)
+    msg = sprint(showerror, e)
+    @test startswith(msg, "$(typeof(e)): Failed to retrieve object")
     @test contains(msg, "The object cannot be reconstructed because its lineage")
 end
 
 @testset "ObjectReconstructionFailedMaxAttemptsExceededError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx))
-    @test startswith(msg, "ObjectReconstructionFailedMaxAttemptsExceededError: Failed to retrieve object")
+    e = ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx)
+    msg = sprint(showerror, e)
+    @test startswith(msg, "$(typeof(e)): Failed to retrieve object")
     @test contains(msg, "The object cannot be reconstructed because the maximum")
 end
 
 @testset "OutOfDiskError" begin
     obj_ctx = Ray.ObjectContext("f"^(2 * 28), ray_jll.Address(), "")
-    msg = sprint(showerror, OutOfDiskError(obj_ctx))
-    @test startswith(msg, r"OutOfDiskError: (Ray\.)?ObjectContext\(.*?\)\nThe local object store is full of objects")
+    e = OutOfDiskError(obj_ctx)
+    msg = sprint(showerror, e)
+    @test startswith(msg,
+                     r"OutOfDiskError: (Ray\.)?ObjectContext\(.*?\)\n" *
+                     "The local object store is full of objects")
 end
 
 @testset "OutOfMemoryError" begin
@@ -94,7 +104,9 @@ end
     msg = sprint(showerror, OwnerDiedError(obj_ctx))
     @test startswith(msg, "OwnerDiedError: Failed to retrieve object")
     @test contains(msg, "The object's owner has exited")
-    @test contains(msg, "Check cluster logs (\"/tmp/ray/session_latest/logs/*" * r"b{56}" * "*\" at IP address 127.0.0.1)")
+    @test contains(msg,
+                   "Check cluster logs (\"/tmp/ray/session_latest/logs/*" * r"b{56}" *
+                   "*\" at IP address 127.0.0.1)")
 end
 
 @testset "RaySystemError" begin
@@ -164,7 +176,8 @@ end
 
 @testset "TaskPlacementGroupRemoved" begin
     msg = sprint(showerror, TaskPlacementGroupRemoved())
-    @test msg == "TaskPlacementGroupRemoved: The placement group corresponding to this task has been removed."
+    expected = "TaskPlacementGroupRemoved: The placement group corresponding to this task has been removed."
+    @test msg == expected
 end
 
 @testset "TaskUnschedulableError" begin
@@ -183,24 +196,29 @@ end
     data = "foo\0"
     esc_data = "\"foo\\0\""
 
-    @test RayError(ray_jll.ErrorType(:WORKER_DIED), "", obj_ctx) == WorkerCrashedError()
-    @test RayError(ray_jll.ErrorType(:LOCAL_RAYLET_DIED), "", obj_ctx) == LocalRayletDiedError()
-    @test RayError(ray_jll.ErrorType(:TASK_CANCELLED), "", obj_ctx) == TaskCancelledError()
-    @test RayError(ray_jll.ErrorType(:OBJECT_LOST), "", obj_ctx) == ObjectLostError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OBJECT_FETCH_TIMED_OUT), "", obj_ctx) == ObjectFetchTimedOutError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OUT_OF_DISK_ERROR), "", obj_ctx) == OutOfDiskError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OUT_OF_MEMORY), data, obj_ctx) == Ray.OutOfMemoryError("foo")
-    @test RayError(ray_jll.ErrorType(:NODE_DIED), data, obj_ctx) == NodeDiedError(esc_data)
-    @test RayError(ray_jll.ErrorType(:OBJECT_DELETED), "", obj_ctx) == ReferenceCountingAssertionError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OBJECT_FREED), "", obj_ctx) == ObjectFreedError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OWNER_DIED), "", obj_ctx) == OwnerDiedError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE), "", obj_ctx) == ObjectReconstructionFailedError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED), "", obj_ctx) == ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED), "", obj_ctx) == ObjectReconstructionFailedLineageEvictedError(obj_ctx)
-    @test RayError(ray_jll.ErrorType(:RUNTIME_ENV_SETUP_FAILED), data, obj_ctx) == RuntimeEnvSetupError(esc_data)
-    @test RayError(ray_jll.ErrorType(:TASK_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == TaskPlacementGroupRemoved()
-    @test RayError(ray_jll.ErrorType(:ACTOR_PLACEMENT_GROUP_REMOVED), "", obj_ctx) == ActorPlacementGroupRemoved()
-    @test RayError(ray_jll.ErrorType(:TASK_UNSCHEDULABLE_ERROR), data, obj_ctx) == TaskUnschedulableError(esc_data)
-    @test RayError(ray_jll.ErrorType(:ACTOR_UNSCHEDULABLE_ERROR), data, obj_ctx) == ActorUnschedulableError(esc_data)
+    RayError(sym::Symbol) = Ray.RayError(ray_jll.ErrorType(sym), data, obj_ctx)
+    RayError(args...) = Ray.RayError(args...)
+
+    @test RayError(:WORKER_DIED) == WorkerCrashedError()
+    @test RayError(:LOCAL_RAYLET_DIED) == LocalRayletDiedError()
+    @test RayError(:TASK_CANCELLED) == TaskCancelledError()
+    @test RayError(:OBJECT_LOST) == ObjectLostError(obj_ctx)
+    @test RayError(:OBJECT_FETCH_TIMED_OUT) == ObjectFetchTimedOutError(obj_ctx)
+    @test RayError(:OUT_OF_DISK_ERROR) == OutOfDiskError(obj_ctx)
+    @test RayError(:OUT_OF_MEMORY) == Ray.OutOfMemoryError("foo")
+    @test RayError(:NODE_DIED) == NodeDiedError(esc_data)
+    @test RayError(:OBJECT_DELETED) == ReferenceCountingAssertionError(obj_ctx)
+    @test RayError(:OBJECT_FREED) == ObjectFreedError(obj_ctx)
+    @test RayError(:OWNER_DIED) == OwnerDiedError(obj_ctx)
+    @test RayError(:OBJECT_UNRECONSTRUCTABLE) == ObjectReconstructionFailedError(obj_ctx)
+    @test RayError(:OBJECT_UNRECONSTRUCTABLE_MAX_ATTEMPTS_EXCEEDED) ==
+          ObjectReconstructionFailedMaxAttemptsExceededError(obj_ctx)
+    @test RayError(:OBJECT_UNRECONSTRUCTABLE_LINEAGE_EVICTED) ==
+          ObjectReconstructionFailedLineageEvictedError(obj_ctx)
+    @test RayError(:RUNTIME_ENV_SETUP_FAILED) == RuntimeEnvSetupError(esc_data)
+    @test RayError(:TASK_PLACEMENT_GROUP_REMOVED) == TaskPlacementGroupRemoved()
+    @test RayError(:ACTOR_PLACEMENT_GROUP_REMOVED) == ActorPlacementGroupRemoved()
+    @test RayError(:TASK_UNSCHEDULABLE_ERROR) == TaskUnschedulableError(esc_data)
+    @test RayError(:ACTOR_UNSCHEDULABLE_ERROR) == ActorUnschedulableError(esc_data)
     @test RayError(-1, nothing, obj_ctx) == RaySystemError("Unrecognized error type -1")
 end

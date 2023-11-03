@@ -13,6 +13,7 @@ using Dates: Dates, DateFormat, @dateformat_str, now
 using JSON3
 using Logging
 using LoggingExtras
+using MultilineStrings
 using Pkg
 using Serialization: Serialization, AbstractSerializer, Serializer, deserialize,
                      reset_state, serialize, serialize_type, ser_version, writeheader

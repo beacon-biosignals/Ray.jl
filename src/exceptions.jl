@@ -109,7 +109,6 @@ function print_object_lost(io::IO, ctx::ObjectContext)
     return nothing
 end
 
-
 """
     ActorPlacementGroupRemoved <: RayError
 
@@ -148,8 +147,8 @@ Indicates that the task's local raylet died.
 struct LocalRayletDiedError <: RayError end
 
 function Base.showerror(io::IO, ::LocalRayletDiedError)
-    print(io, "$LocalRayletDiedError: The task's local raylet died. Check raylet.out for " *
-              "more information.")
+    print(io, "$LocalRayletDiedError: ")
+    print(io, "The task's local raylet died. Check raylet.out for more information.")
     return nothing
 end
 
@@ -167,7 +166,6 @@ function Base.showerror(io::IO, ex::NodeDiedError)
     return nothing
 end
 
-
 """
     ObjectFetchTimedOutError <: RayError
 
@@ -180,8 +178,10 @@ end
 function Base.showerror(io::IO, ex::ObjectFetchTimedOutError)
     print(io, "$ObjectFetchTimedOutError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "Fetch for object $(ex.object_context.object_ref_hex) timed out because no " *
-              "locations were found for the object. This may indicate a system-level bug.")
+    print(io, m"""
+              Fetch for object $(ex.object_context.object_ref_hex) timed out because no
+              locations were found for the object. This may indicate a system-level bug.
+              """)
 
     return nothing
 end
@@ -201,8 +201,10 @@ end
 function Base.showerror(io::IO, ex::ObjectFreedError)
     print(io, "$ObjectFreedError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object was manually freed using the internal `free` call. Please " *
-               "ensure that `free` is only called once the object is no longer needed.")
+    print(io, m"""
+              The object was manually freed using the internal `free` call. Please ensure
+              that `free` is only called once the object is no longer needed.
+              """)
     return nothing
 end
 
@@ -219,9 +221,11 @@ end
 function Base.showerror(io::IO, ex::ObjectLostError)
     print(io, "$ObjectLostError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "All copies of $(ex.object_context.object_ref_hex) have been lost due to " *
-              "node failure. Check cluster logs (\"/tmp/ray/session_latest/logs\") for " *
-              "more information about the failure.")
+    print(io, m"""
+              All copies of $(ex.object_context.object_ref_hex) have been lost due to node
+              failure. Check cluster logs ("/tmp/ray/session_latest/logs") for more
+              information about the failure.
+              """)
 
     return nothing
 end
@@ -238,8 +242,10 @@ end
 function Base.showerror(io::IO, ex::ObjectReconstructionFailedError)
     print(io, "$ObjectReconstructionFailedError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object cannot be reconstructed because it was created by an actor, " *
-               "a `Ray.put` call, or its `ObjectRef` was created by a different worker.")
+    print(io, m"""
+              The object cannot be reconstructed because it was created by an actor, a
+              `Ray.put` call, or its `ObjectRef` was created by a different worker.
+              """)
     return nothing
 end
 
@@ -256,9 +262,11 @@ end
 function Base.showerror(io::IO, ex::ObjectReconstructionFailedLineageEvictedError)
     print(io, "$ObjectReconstructionFailedLineageEvictedError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object cannot be reconstructed because its lineage has been evicted " *
-               "to reduce memory pressure. To prevent this error, set the environment " *
-               "variable RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.")
+    print(io, m"""
+              The object cannot be reconstructed because its lineage has been evicted to
+              reduce memory pressure. To prevent this error, set the environment variable
+              RAY_max_lineage_bytes=<bytes> (default 1GB) during `ray start`.
+              """)
     return nothing
 end
 
@@ -278,9 +286,10 @@ function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceede
 
     # TODO: Update this message with more details on how to set `max_retries` once
     # implemented: https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L593
-    print(io, "The object cannot be reconstructed because the maximum number of task " *
-               "retries has been exceeded. To prevent this error, set `max_retries` " *
-               "(default 3).")
+    print(io, m"""
+              The object cannot be reconstructed because the maximum number of task retries
+              has been exceeded. To prevent this error, set `max_retries` (default 3).
+              """)
     return nothing
 end
 
@@ -299,9 +308,12 @@ end
 function Base.showerror(io::IO, ex::OutOfDiskError)
     print(io, "$OutOfDiskError: ")
     show(io, ex.object_context)
-    print(io, "\nThe local object store is full of objects that are still in scope and " *
-              "cannot be evicted. Tip: Use the `ray memory` command to list active " *
-              "objects in the cluster.")
+    println(io)
+    print(io, m"""
+              The local object store is full of objects that are still in scope and cannot
+              be evicted. Tip: Use the `ray memory` command to list active objects in the
+              cluster.
+              """)
     return nothing
 end
 
@@ -344,9 +356,11 @@ function Base.showerror(io::IO, ex::OwnerDiedError)
 
     print(io, "$OwnerDiedError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object's owner has exited. This is the Julia worker that first " *
-              "created the `ObjectRef` via `submit_task` or `Ray.put`. Check cluster " *
-              "logs ($log_loc) for more information about the Julia worker failure.")
+    print(io, m"""
+              The object's owner has exited. This is the Julia worker that first created
+              the `ObjectRef` via `submit_task` or `Ray.put`. Check cluster logs ($log_loc)
+              for more information about the Julia worker failure.
+              """)
     return nothing
 end
 
@@ -414,8 +428,10 @@ end
 function Base.showerror(io::IO, ex::ReferenceCountingAssertionError)
     print(io, "$ReferenceCountingAssertionError: ")
     print_object_lost(io, ex.object_context)
-    print(io, "The object has already been deleted by the reference counting protocol. " *
-              "This should not happen.")
+    print(io, m"""
+              The object has already been deleted by the reference counting protocol.
+              This should not happen.
+              """)
     return nothing
 end
 
@@ -485,7 +501,10 @@ Indicates that the worker died unexpectedly while executing a task.
 struct WorkerCrashedError <: RayError end
 
 function Base.showerror(io::IO, ::WorkerCrashedError)
-    print(io, "$WorkerCrashedError: The worker died unexpectedly while executing this " *
-              "task. Check julia-core-worker-*.log files for more information.")
+    print(io, "$WorkerCrashedError: ")
+    print(io, m"""
+              The worker died unexpectedly while executing this task. Check
+              julia-core-worker-*.log files for more information.
+              """)
     return nothing
 end
