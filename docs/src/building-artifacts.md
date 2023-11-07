@@ -20,5 +20,4 @@ Once the PR has been merged into `main` and the CI has passed you must trigger t
 2. Generate the `Artifacts.toml` bindings and commit them.
 3. Create a new tag and GitHub pre-release which includes the artifacts as assets.
 
-The creation of the tag will trigger the "Artifacts CI" workflow which is responsible for verifying the generated artifacts work. 
-It will then promote the GitHub pre-release to a full release once those checks pass.
+Then you must trigger the ["Release" GitHub Action](https://github.com/beacon-biosignals/Ray.jl/actions/workflows/Release.yml) workflow which is responsible for verifying the generated artifacts work and promoting the aforementioned pre-release to a full release, setting it to "latest" if necessary.
