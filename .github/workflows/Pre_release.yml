@@ -33,12 +33,12 @@ jobs:
         run: |
           using Pkg.Types
           project = read_project("Project.toml")
-          tags = parse.(VersionNumber, split(readchomp(`git tag -l`), "\n"))
-          @info "Project version: project.version"
-          project.version in tags && error("Tag v$(project.version) already exists")
+          project_version_tag = "v$(project.version)"
+          @info "Project version: $project_version_tag"
+          tags = readlines(`git tag -l`)
+          project_version_tag in tags && error("Tag $project_version_tag already exists")
           open(ENV["GITHUB_OUTPUT"], "a") do io
-              println(io, "version=$(project.version)")
-              println(io, "tag=v$(project.version)")
+              println(io, "tag=$(project_version_tag)")
           end
       - name: Download artifacts
         id: download-artifact
@@ -71,7 +71,7 @@ jobs:
           git config user.name beacon-buddy
           git config user.email beacon-buddy@beacon.bio
 
-          msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.version }} assets"
+          msg="Update Artifacts.toml to use ${{ steps.project_toml.outputs.tag }} assets"
           git checkout --detach
           git commit -m "$msg" -- Artifacts.toml
           echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
