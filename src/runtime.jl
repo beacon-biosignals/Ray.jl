@@ -206,7 +206,7 @@ initialize_coreworker_driver(args...) = ray_jll.initialize_coreworker_driver(arg
 function submit_task(f::Function, args::Tuple, kwargs::NamedTuple=NamedTuple();
                      runtime_env::Union{RuntimeEnv,Nothing}=nothing,
                      resources::Dict{String,Float64}=Dict("CPU" => 1.0),
-                     max_retries::Integer=0)
+                     max_retries::Integer=DEFAULT_TASK_MAX_RETRIES)
     export_function!(FUNCTION_MANAGER[], f, get_job_id())
     fd = ray_jll.function_descriptor(f)
     task_args = serialize_args(flatten_args(args, kwargs))

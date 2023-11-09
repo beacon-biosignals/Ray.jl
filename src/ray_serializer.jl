@@ -127,7 +127,7 @@ function deserialize_from_ray_object(ray_obj::SharedPtr{ray_jll.RayObject},
             error("Encountered unhandled metadata$from: $metadata")
         end
 
-        throw(RayError(error_type, data))
+        throw(RayError(error_type, data, outer_object_ref))
     end
 
     s = RaySerializer(IOBuffer(data))
