@@ -44,3 +44,6 @@ const NODE_IP_ADDRESS = "127.0.0.1"
 const DEFAULT_SESSION_DIR = "/tmp/ray/session_latest"
 
 const GCS_ADDRESS_FILE = "/tmp/ray/ray_current_cluster"
+
+# Default `max_retries` option for non-actor tasks. Ray for Python defaults to 3.
+const DEFAULT_TASK_MAX_RETRIES = 0

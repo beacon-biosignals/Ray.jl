@@ -283,12 +283,10 @@ end
 function Base.showerror(io::IO, ex::ObjectReconstructionFailedMaxAttemptsExceededError)
     print(io, "$ObjectReconstructionFailedMaxAttemptsExceededError: ")
     print_object_lost(io, ex.object_context)
-
-    # TODO: Update this message with more details on how to set `max_retries` once
-    # implemented: https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/exceptions.py#L593
     print(io, m"""
               The object cannot be reconstructed because the maximum number of task retries
-              has been exceeded. To prevent this error, set `max_retries` (default 3).
+              has been exceeded. To prevent this error, set `submit_task(; max_retries)`
+              (default $DEFAULT_TASK_MAX_RETRIES).
               """)
     return nothing
 end
