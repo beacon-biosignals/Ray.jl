@@ -1,2 +1,38 @@
-[ray_julia]
-git-tree-sha1 = "0000000000000000000000000000000000000000"
+[[ray_julia]]
+arch = "x86_64"
+git-tree-sha1 = "be8a485e5aae8d6f93c7b42afb5061be009cd349"
+julia_version = "1.8.0"
+libc = "glibc"
+os = "linux"
+
+    [[ray_julia.download]]
+    sha256 = "cdf497c9945dae5328919a3d0c6987ba5047cd5e598d0f68f0105992f50ee8f7"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.0.4/ray_julia.v0.0.4.x86_64-linux-gnu-julia_version+1.8.0.tar.gz"
+[[ray_julia]]
+arch = "aarch64"
+git-tree-sha1 = "201c8f3f4e1584c38e052ff3960fa1967e991185"
+julia_version = "1.8.0"
+os = "macos"
+
+    [[ray_julia.download]]
+    sha256 = "1f894809ceb61559d3b7f97395f43414a4e399faa887ea8614dd1e293111fc37"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.0.4/ray_julia.v0.0.4.aarch64-apple-darwin-julia_version+1.8.0.tar.gz"
+[[ray_julia]]
+arch = "x86_64"
+git-tree-sha1 = "6832b32cd18d84701b9ccbeabcc4a796cfe22418"
+julia_version = "1.9.0"
+libc = "glibc"
+os = "linux"
+
+    [[ray_julia.download]]
+    sha256 = "0510f2b1decbd5693b394f6c4f136225839fe625ac4b1afd7d047054a8ae322f"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.0.4/ray_julia.v0.0.4.x86_64-linux-gnu-julia_version+1.9.0.tar.gz"
+[[ray_julia]]
+arch = "aarch64"
+git-tree-sha1 = "5c5d31d9e50144512c1d8bb82682ae18dd00e461"
+julia_version = "1.9.0"
+os = "macos"
+
+    [[ray_julia.download]]
+    sha256 = "57dfcd92c42c410ca96cec13999b86c90e52eef64752a1a7732e908a2cf94b6c"
+    url = "https://github.com/beacon-biosignals/Ray.jl/releases/download/v0.0.4/ray_julia.v0.0.4.aarch64-apple-darwin-julia_version+1.9.0.tar.gz"
