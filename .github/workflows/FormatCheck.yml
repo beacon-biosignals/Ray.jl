@@ -18,33 +18,24 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   format-check:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        version:
-          - "1"
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+    name: Julia
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
+          version: "1"
       - uses: julia-actions/cache@v1
         with:
           cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.pkg.name }}-${{ matrix.version }}-${{ matrix.os }}-${{ matrix.arch }}"
           cache-compiled: true
       - name: Install JuliaFormatter
-        shell: julia --color=yes {0}
+        shell: julia --project=@format --color=yes {0}
         run: |
           using Pkg
           Pkg.add(PackageSpec(name="JuliaFormatter", version="1"))
       - name: Check formatting
-        id: check
-        shell: julia --color=yes {0}
+        shell: julia --project=@format --color=yes {0}
         run: |
           using JuliaFormatter
 
@@ -59,15 +50,10 @@ jobs:
           end
           if !formatted
               @error "Found some unformatted files:\n" * read(`git diff --name-only`, String)
+              exit(1)
           end
-          open(ENV["GITHUB_OUTPUT"], "a") do io
-              println(io, "formatted=$formatted")
-          end
+      # Add formatting suggestions to non-draft PRs even if when "Check formatting" fails
       - uses: reviewdog/action-suggester@v1
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
+        if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
         with:
           tool_name: JuliaFormatter
-          fail_on_error: true
-      - name: Fail if not formatted
-        if: ${{ steps.check.outputs.formatted != 'true' }}
-        run: exit 1
