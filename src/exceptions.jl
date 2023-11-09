@@ -191,8 +191,8 @@ end
 
 Indicates that an object was manually freed by the application.
 
-Currently should never happen as Ray.jl doesn't currently implement `free` like
-[Ray for Python does](https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/internal_api.py#L170).
+Currently should never happen as [Ray.jl doesn't currently implement `free`](https://github.com/beacon-biosignals/Ray.jl/issues/230)
+like [Ray for Python does](https://github.com/ray-project/ray/blob/ray-2.5.1/python/ray/_private/internal_api.py#L170).
 """
 struct ObjectFreedError <: RayError
     object_context::ObjectContext
