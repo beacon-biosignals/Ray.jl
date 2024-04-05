@@ -42,7 +42,7 @@ jobs:
           end
       - name: Download artifacts
         id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v3
         with:
           commit: ${{ inputs.commit }}  # pull the artifacts for the given commit
           name: ray_julia_libraries
