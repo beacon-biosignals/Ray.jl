@@ -34,7 +34,7 @@ jobs:
         with:
           version: "1"
       - name: Restore build cache
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         id: build-cache
         with:
           key: build-cache.ray-jl.documenter
@@ -75,7 +75,7 @@ jobs:
 
       # https://github.com/actions/cache/tree/main/save#always-save-cache
       - name: Save build cache
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         if: always() && steps.build-cache.outputs.cache-hit != 'true'
         with:
           key: ${{ steps.build-cache.outputs.cache-primary-key }}
