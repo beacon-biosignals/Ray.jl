@@ -70,8 +70,8 @@ new_local_repository(
 
 # The code below is copied from the Ray project WORKSPACE file and just
 # modifies labels starting with `//` to be `@com_github_ray_project_ray//`
-# (e.g. `sed '\|//visibility|! s|"//|"@com_github_ray_project_ray//|g' WORKSPACE`)
-# https://github.com/ray-project/ray/blob/ray-2.5.1/WORKSPACE#L4-L17
+# (e.g. `sed 's|"//|"@com_github_ray_project_ray//|g' WORKSPACE`)
+# https://github.com/ray-project/ray/blob/ray-2.31.0/WORKSPACE#L13-L26
 
 load("@com_github_ray_project_ray//bazel:ray_deps_setup.bzl", "ray_deps_setup")
 
@@ -87,3 +87,21 @@ ray_deps_build_all()
 load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
 
 grpc_extra_deps()
+
+
+# ---
+
+http_archive(
+    name = "rules_python",
+    sha256 = "c68bdc4fbec25de5b5493b8819cfc877c4ea299c0dcb15c244c5a00208cde311",
+    strip_prefix = "rules_python-0.31.0",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.31.0/rules_python-0.31.0.tar.gz",
+)
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+
+python_register_toolchains(
+    name = "python3_9",
+    python_version = "3.9",
+    register_toolchains = False,
+)
