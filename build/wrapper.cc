@@ -675,7 +675,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.message_lite/
     mod.add_type<google::protobuf::Message>("Message")
         .method("SerializeAsString", &google::protobuf::Message::SerializeAsString)
-        .method("ParseFromString", &google::protobuf::Message::ParseFromString);
+        // TODO: Work around CxxWrap.jl not currently wrapping `std::basic_string_view`
+        // .method("ParseFromString", &google::protobuf::Message::ParseFromString);
+        .method("ParseFromString", [](google::protobuf::Message &message, const std::string data) {
+            return message.ParseFromString(data);
+        });
 
     // https://protobuf.dev/reference/cpp/api-docs/google.protobuf.util.json_util/
     mod.method("JsonStringToMessage", [](const std::string json, google::protobuf::Message *message) {
