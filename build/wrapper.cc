@@ -81,6 +81,7 @@ void initialize_worker(
     options.metrics_agent_port = -1;
     options.startup_token = startup_token;
     options.runtime_env_hash = runtime_env_hash;
+    // https://github.com/ray-project/ray/blob/3bdcab68d49b74411144c61df8e64e7f291f92e2/src/ray/core_worker/core_worker_options.h#L35
     options.task_execution_callback =
         [task_executor](
             const rpc::Address &caller_address,
@@ -94,13 +95,16 @@ void initialize_worker(
             const std::string &serialized_retry_exception_allowlist,
             std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *returns,
             std::vector<std::pair<ObjectID, std::shared_ptr<RayObject>>> *dynamic_returns,
+            std::vector<std::pair<ObjectID, bool>> *streaming_generator_returns,
             std::shared_ptr<LocalMemoryBuffer> &creation_task_exception_pb_bytes,
             bool *is_retryable_error,
             std::string *application_error,
             const std::vector<ConcurrencyGroup> &defined_concurrency_groups,
             const std::string name_of_concurrency_group_to_execute,
             bool is_reattempt,
-            bool is_streaming_generator) {
+            bool is_streaming_generator,
+            bool retry_exception,
+            int64_t generator_backpressure_num_objects) {
 
           std::vector<std::shared_ptr<RayObject>> return_vec;
           task_executor(ray_function,
@@ -202,7 +206,7 @@ Status get(const ObjectID object_id, const int64_t timeout_ms, std::shared_ptr<R
     // Retrieve our data from the object store
     std::vector<ObjectID> get_obj_ids = {object_id};
     std::vector<shared_ptr<RayObject>> result_vec;
-    auto status = worker.Get(get_obj_ids, timeout_ms, &result_vec);
+    auto status = worker.Get(get_obj_ids, timeout_ms, result_vec);
     *result = result_vec[0];
 
     // TODO (maybe?): allow multiple return values
@@ -284,7 +288,7 @@ std::string JuliaGcsClient::Get(const std::string &ns, const std::string &key) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     std::string value;
-    Status status = gcs_client_->InternalKV().Get(ns, key, value);
+    Status status = gcs_client_->InternalKV().Get(ns, key, -1, value);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -299,7 +303,7 @@ bool JuliaGcsClient::Put(const std::string &ns,
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     bool added;
-    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, added);
+    Status status = gcs_client_->InternalKV().Put(ns, key, value, overwrite, -1, added);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -311,7 +315,7 @@ std::vector<std::string> JuliaGcsClient::Keys(const std::string &ns, const std::
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     std::vector<std::string> results;
-    Status status = gcs_client_->InternalKV().Keys(ns, prefix, results);
+    Status status = gcs_client_->InternalKV().Keys(ns, prefix, -1, results);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -322,7 +326,8 @@ void JuliaGcsClient::Del(const std::string &ns, const std::string &key, bool del
     if (!gcs_client_) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
-    Status status = gcs_client_->InternalKV().Del(ns, key, del_by_prefix);
+    int num_deleted = 0;
+    Status status = gcs_client_->InternalKV().Del(ns, key, del_by_prefix, -1, num_deleted);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -333,7 +338,7 @@ bool JuliaGcsClient::Exists(const std::string &ns, const std::string &key) {
         throw std::runtime_error("GCS client not initialized; did you forget to Connect?");
     }
     bool exists;
-    Status status = gcs_client_->InternalKV().Exists(ns, key, exists);
+    Status status = gcs_client_->InternalKV().Exists(ns, key, -1, exists);
     if (!status.ok()) {
         throw std::runtime_error(status.ToString());
     }
@@ -443,7 +448,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     });
 
     // enum StatusCode
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/status.h#L81
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/status.h#L82
     mod.add_bits<ray::StatusCode>("StatusCode", jlcxx::julia_type("CppEnum"));
     mod.set_const("OK", ray::StatusCode::OK);
     mod.set_const("OutOfMemory", ray::StatusCode::OutOfMemory);
@@ -467,13 +472,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("ObjectAlreadySealed", ray::StatusCode::ObjectAlreadySealed);
     mod.set_const("ObjectStoreFull", ray::StatusCode::ObjectStoreFull);
     mod.set_const("TransientObjectStoreFull", ray::StatusCode::TransientObjectStoreFull);
-    mod.set_const("GrpcUnavailable", ray::StatusCode::GrpcUnavailable);
-    mod.set_const("GrpcUnknown", ray::StatusCode::GrpcUnknown);
     mod.set_const("OutOfDisk", ray::StatusCode::OutOfDisk);
     mod.set_const("ObjectUnknownOwner", ray::StatusCode::ObjectUnknownOwner);
     mod.set_const("RpcError", ray::StatusCode::RpcError);
     mod.set_const("OutOfResource", ray::StatusCode::OutOfResource);
     mod.set_const("ObjectRefEndOfStream", ray::StatusCode::ObjectRefEndOfStream);
+    mod.set_const("AuthError", ray::StatusCode::AuthError);
+    mod.set_const("InvalidArgument", ray::StatusCode::InvalidArgument);
 
     // class Status
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/status.h#L127
