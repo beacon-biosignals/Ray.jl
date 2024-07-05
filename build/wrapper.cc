@@ -493,7 +493,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     // abstract Julia type called `BaseID` to assist with dispatch.
     // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L106
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/id.h#L263
     mod.method("ObjectIDSize", &ObjectID::Size);
     mod.add_type<ObjectID>("ObjectID", jlcxx::julia_type("BaseID"))
         .method("ObjectIDFromBinary", &ObjectID::FromBinary)
@@ -508,7 +508,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("IsNil", &ObjectID::IsNil);
 
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L261
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/id.h#L108
     mod.method("JobIDSize", &JobID::Size);
     mod.add_type<JobID>("JobID", jlcxx::julia_type("BaseID"))
         .method("JobIDFromBinary", &JobID::FromBinary)
@@ -523,7 +523,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("IsNil", &JobID::IsNil)
         .method("ToInt", &JobID::ToInt);
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L175
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/id.h#L177
     mod.method("TaskIDSize", &TaskID::Size);
     mod.add_type<TaskID>("TaskID", jlcxx::julia_type("BaseID"))
         .method("TaskIDFromBinary", &TaskID::FromBinary)
@@ -536,7 +536,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("Hex", &TaskID::Hex)
         .method("IsNil", &TaskID::IsNil);
 
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/id.h#L35
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/id.h#L35
     mod.method("WorkerIDSize", &WorkerID::Size);
     mod.add_type<WorkerID>("WorkerID", jlcxx::julia_type("BaseID"))
         .method("WorkerIDFromBinary", &WorkerID::FromBinary)
@@ -641,7 +641,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("CallString", &CallString);
 
     // class RayFunction
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/core_worker/common.h#L46
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/core_worker/common.h#L46
     mod.add_type<RayFunction>("RayFunction")
         .constructor<>()
         .constructor<Language, const FunctionDescriptor &>()
@@ -649,7 +649,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         .method("GetFunctionDescriptor", &RayFunction::GetFunctionDescriptor);
 
     // class Buffer
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/common/buffer.h
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/buffer.h
     mod.add_type<Buffer>("Buffer")
         .method("Data", &Buffer::Data)
         .method("Size", &Buffer::Size)
@@ -688,7 +688,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     });
 
     // message Address
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L86
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/protobuf/common.proto#L125
     mod.add_type<rpc::Address>("Address", jlcxx::julia_base_type<google::protobuf::Message>())
         .constructor<>()
         .method("raylet_id", &rpc::Address::raylet_id)
