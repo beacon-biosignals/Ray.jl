@@ -447,6 +447,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
         return keys;
     });
 
+    // The version of Ray library used (matches the tag). Unable to use `set_const` on a
+    // `char[]` as this causes:
+    // ```
+    // C++ exception while wrapping module ray_julia_jll: Type A7_c has no Julia wrapper
+    // ERROR: LoadError: Type A7_c has no Julia wrapper
+    // ```
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/constants.h#L67
+    mod.method("RayVersion", []() { return kRayVersion; });
+
     // enum StatusCode
     // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/common/status.h#L82
     mod.add_bits<ray::StatusCode>("StatusCode", jlcxx::julia_type("CppEnum"));
