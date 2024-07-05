@@ -7,7 +7,7 @@ For those wanting to contribute to Ray.jl this guide will assist you in creating
 Building the Ray.jl project requires the following tools to be installed. This list is provided for informational purposes and typically users should follow the platform specific install sections.
 
 - [Julia](https://julialang.org/downloads/) version ≥ `v1.8`
-- Python version ≥ `v3.7`
+- Python version ≥ `v3.9`
     - [Python venv](https://docs.python.org/3/library/venv.html)
 - [Bazelisk](https://github.com/bazelbuild/bazelisk)
 - GCC / G++ ≥ `v9`
