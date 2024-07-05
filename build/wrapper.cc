@@ -566,15 +566,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.method("initialize_worker", &initialize_worker);
 
     // enum Language
-    // https://github.com/beacon-biosignals/ray/blob/ray-2.5.1%2B1/src/ray/protobuf/common.proto#L25
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/protobuf/common.proto#L25
     mod.add_bits<rpc::Language>("Language", jlcxx::julia_type("CppEnum"));
     mod.set_const("PYTHON", rpc::Language::PYTHON);
     mod.set_const("JAVA", rpc::Language::JAVA);
     mod.set_const("CPP", rpc::Language::CPP);
-    mod.set_const("JULIA", rpc::Language::JULIA);
+    mod.set_const("JULIA", rpc::Language::JULIA);  // Only defined in https://github.com/beacon-biosignals/ray
 
     // enum WorkerType
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L32
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/protobuf/common.proto#L32
     mod.add_bits<rpc::WorkerType>("WorkerType", jlcxx::julia_type("CppEnum"));
     mod.set_const("WORKER", rpc::WorkerType::WORKER);
     mod.set_const("DRIVER", rpc::WorkerType::DRIVER);
@@ -582,7 +582,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("RESTORE_WORKER", rpc::WorkerType::RESTORE_WORKER);
 
     // enum ErrorType
-    // https://github.com/ray-project/ray/blob/ray-2.5.1/src/ray/protobuf/common.proto#L142
+    // https://github.com/ray-project/ray/blob/ray-2.31.0/src/ray/protobuf/common.proto#L181
     mod.add_bits<rpc::ErrorType>("ErrorType", jlcxx::julia_type("CppEnum"));
     mod.set_const("WORKER_DIED", rpc::ErrorType::WORKER_DIED);
     mod.set_const("ACTOR_DIED", rpc::ErrorType::ACTOR_DIED);
@@ -608,6 +608,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     mod.set_const("OBJECT_FREED", rpc::ErrorType::OBJECT_FREED);
     mod.set_const("OUT_OF_MEMORY", rpc::ErrorType::OUT_OF_MEMORY);
     mod.set_const("NODE_DIED", rpc::ErrorType::NODE_DIED);
+    mod.set_const("END_OF_STREAMING_GENERATOR", rpc::ErrorType::END_OF_STREAMING_GENERATOR);
+    mod.set_const("ACTOR_UNAVAILABLE", rpc::ErrorType::ACTOR_UNAVAILABLE);
 
     // Needed by FunctionDescriptorInterface
     mod.add_bits<ray::rpc::FunctionDescriptor::FunctionDescriptorCase>("FunctionDescriptorCase");

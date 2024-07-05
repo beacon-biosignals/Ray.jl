@@ -20,13 +20,13 @@ const STATUS_CODE_SYMBOLS = (:OK,
                              :ObjectAlreadySealed,
                              :ObjectStoreFull,
                              :TransientObjectStoreFull,
-                             :GrpcUnavailable,
-                             :GrpcUnknown,
                              :OutOfDisk,
                              :ObjectUnknownOwner,
                              :RpcError,
                              :OutOfResource,
-                             :ObjectRefEndOfStream)
+                             :ObjectRefEndOfStream,
+                             :AuthError,
+                             :InvalidArgument)
 
 const LANGUAGE_SYMBOLS = (:PYTHON, :JAVA, :CPP, :JULIA)
 const WORKER_TYPE_SYMBOLS = (:WORKER, :DRIVER, :SPILL_WORKER, :RESTORE_WORKER)
@@ -54,7 +54,9 @@ const ERROR_TYPE_SYMBOLS = (:WORKER_DIED,
                             :OUT_OF_DISK_ERROR,
                             :OBJECT_FREED,
                             :OUT_OF_MEMORY,
-                            :NODE_DIED)
+                            :NODE_DIED,
+                            :END_OF_STREAMING_GENERATOR,
+                            :ACTOR_UNAVAILABLE)
 
 # Generate the following methods for our wrapped enum types:
 # - A constructor allowing you to create a value via a `Symbol` (e.g. `StatusCode(:OK)`).
