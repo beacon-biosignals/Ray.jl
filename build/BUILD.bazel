@@ -14,7 +14,7 @@ JULIA_CORE_WORKER_COPTS = [
     "-isystem external/julia",
     "-Wno-unused-variable",
     "-Wno-pessimizing-move",
-    "-Wno-deprecated",
+    # "-Wno-deprecated",
 ]
 
 cc_binary(
