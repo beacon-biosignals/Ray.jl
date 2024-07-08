@@ -46,14 +46,14 @@ jobs:
           - os: macos-latest-xlarge
             arch: x64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Determine Ray commit
         id: ray-commit
         run: |
           read -r sha < build/ray_commit
           echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
       - name: Clone Ray repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: beacon-biosignals/ray
           path: ${{ env.ray_dir }}
