@@ -33,7 +33,9 @@ jobs:
       matrix:
         version:
           - "1.8"  # Version used with MVP
-          - "1.9"  # Latest release
+          - "1.9"
+          - "1.10" # Latest release
+          - "1.11"
         os:
           - ubuntu-20.04-16core
           - macos-latest-xlarge  # Apple silicon
