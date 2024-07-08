@@ -6,7 +6,7 @@ To get started with using Ray.jl you'll need to start by creating a Ray cluster.
 ray start --head
 ```
 
-After that you can run can run your Ray application in Julia. These applications start with the following commands to connect the Julia process to the Ray cluster:
+After that you can run your Ray application in Julia. These applications start with the following commands to connect the Julia process to the Ray cluster:
 
 ```julia
 using Ray
