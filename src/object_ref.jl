@@ -98,9 +98,6 @@ function _get_ownership_info(obj_ref::ObjectRef)
     return owner_address, serialized_object_status
 end
 
-# TODO: this is not currently used pending investigation of how to properly handle ownership
-# see https://github.com/beacon-biosignals/Ray.jl/issues/77#issuecomment-1717675779
-# and https://github.com/beacon-biosignals/Ray.jl/pull/108
 function _register_ownership(obj_ref::ObjectRef, outer_obj_ref::Union{ObjectRef,Nothing},
                              owner_address::ray_jll.Address,
                              serialized_object_status::String)
