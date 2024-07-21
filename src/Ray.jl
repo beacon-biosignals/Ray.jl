@@ -33,6 +33,8 @@ export ActorPlacementGroupRemoved, ActorUnschedulableError, LocalRayletDiedError
 include(joinpath("ray_julia_jll", "ray_julia_jll.jl"))
 using .ray_julia_jll: ray_julia_jll, ray_julia_jll as ray_jll
 
+const RAY_VERSION = parse(VersionNumber, unsafe_string(ray_jll.RayVersion()))
+
 include("constants.jl")
 include("function_manager.jl")
 include("runtime_env.jl")
