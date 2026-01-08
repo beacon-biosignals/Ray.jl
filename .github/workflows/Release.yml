@@ -19,13 +19,13 @@ jobs:
           - "1.8"  # Version used with MVP
           - "1.9"  # Latest release
         os:
-          - ubuntu-20.04-16core
+          - ubuntu-latest
           - macos-latest-xlarge  # Apple silicon
         arch:
           - x64
           - aarch64
         exclude:
-          - os: ubuntu-20.04-16core
+          - os: ubuntu-latest
             arch: aarch64
           - os: macos-latest-xlarge
             arch: x64
