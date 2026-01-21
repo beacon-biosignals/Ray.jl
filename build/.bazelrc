@@ -1,19 +1,17 @@
 # Must be first. Enables build:windows, build:linux, build:macos, build:freebsd, build:openbsd
 build --enable_platform_specific_config
-###############################################################################
-# On       Windows, provide: BAZEL_SH, and BAZEL_LLVM (if using clang-cl)
-# On all platforms, provide: PYTHON3_BIN_PATH=python
-###############################################################################
+
 # For --compilation_mode=dbg, consider enabling checks in the standard library as well (below).
 build --compilation_mode=opt
 # Using C++ 17 on all platforms.
+build:linux --host_cxxopt="-std=c++17"
+build:macos --host_cxxopt="-std=c++17"
 build:linux --cxxopt="-std=c++17"
 build:macos --cxxopt="-std=c++17"
 # This workaround is needed to prevent Bazel from compiling the same file twice (once PIC and once not).
-build:linux --force_pic
-build:macos --force_pic
+build:linux --copt="-fPIC"
+build:macos --copt="-fPIC"
 
-# TODO(mehrdadn): Revert the "-\\.(asm|S)$" exclusion when this Bazel bug
 # Ignore warnings for protobuf generated files and external projects.
 build --per_file_copt="\\.pb\\.cc$@-w"
 build:linux --per_file_copt="-\\.(asm|S)$,external/.*@-w,-Wno-error=implicit-function-declaration"
